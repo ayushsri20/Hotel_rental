@@ -1,0 +1,167 @@
+from django.db import models
+from django.contrib.auth.models import User
+
+class Room(models.Model):
+    ROOM_TYPES = [
+        ('single', 'Single'),
+        ('double', 'Double'),
+        ('suite', 'Suite'),
+    ]
+    number = models.CharField(max_length=10, unique=True)
+    room_type = models.CharField(max_length=10, choices=ROOM_TYPES)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    is_available = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['number']
+    
+    def __str__(self):
+        return f"Room {self.number} - {self.get_room_type_display()}"
+
+class Booking(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    customer_name = models.CharField(max_length=100)
+    check_in = models.DateField()
+    check_out = models.DateField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['-check_in']
+    
+    def __str__(self):
+        return f"Booking: {self.customer_name} - {self.room.number}"
+
+class Guest(models.Model):
+    """Store guest/people data"""
+    GENDER_CHOICES = [
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('O', 'Other'),
+    ]
+    
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    phone = models.CharField(max_length=15)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='M')
+    date_of_birth = models.DateField(null=True, blank=True)
+    address = models.TextField(blank=True)
+    city = models.CharField(max_length=50, blank=True)
+    state = models.CharField(max_length=50, blank=True)
+    country = models.CharField(max_length=50, blank=True)
+    zip_code = models.CharField(max_length=20, blank=True)
+    id_type = models.CharField(max_length=50, blank=True, help_text="Passport, Aadhar, License, etc.")
+    id_number = models.CharField(max_length=50, blank=True)
+    id_proof_image = models.ImageField(upload_to='id_proofs/', blank=True, null=True, help_text="Photo of ID document")
+    lpu_id = models.CharField(max_length=100, blank=True, help_text="LPU ID or Student ID")
+    lpu_id_photo = models.ImageField(upload_to='lpu_ids/', blank=True, null=True, help_text="Photo of LPU ID")
+    document_verification_image = models.ImageField(upload_to='document_verification/', blank=True, null=True, help_text="Document verification image")
+    check_in_date = models.DateField(null=True, blank=True)
+    check_out_date = models.DateField(null=True, blank=True)
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+
+class MonthlyPayment(models.Model):
+    """Track monthly rent payments for each room/tenant"""
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('partial', 'Partial'),
+        ('paid', 'Paid'),
+        ('overdue', 'Overdue'),
+    ]
+    
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='monthly_payments')
+    guest = models.ForeignKey(Guest, on_delete=models.SET_NULL, null=True, blank=True, related_name='monthly_payments')
+    month = models.DateField(help_text="First day of the month")
+    rent_amount = models.DecimalField(max_digits=8, decimal_places=2)
+    paid_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    paid_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-month']
+        unique_together = ('room', 'month')
+    
+    def __str__(self):
+        return f"{self.room.number} - {self.month.strftime('%B %Y')} - {self.payment_status}"
+    
+    def remaining_amount(self):
+        return self.rent_amount - self.paid_amount
+
+
+class PaymentRecord(models.Model):
+    """Maintain detailed payment history for each payment"""
+    monthly_payment = models.ForeignKey(MonthlyPayment, on_delete=models.CASCADE, related_name='payment_records')
+    payment_date = models.DateField()
+    payment_amount = models.DecimalField(max_digits=8, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=[
+        ('cash', 'Cash'),
+        ('check', 'Check'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('upi', 'UPI'),
+        ('card', 'Card'),
+    ], default='cash')
+    reference_number = models.CharField(max_length=100, blank=True, help_text="Check/Transaction number")
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-payment_date']
+    
+    def __str__(self):
+        return f"{self.monthly_payment.room.number} - ₹{self.payment_amount} - {self.payment_date}"
+
+
+class ElectricityBill(models.Model):
+    """Track electricity consumption and bills"""
+    BILL_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('overdue', 'Overdue'),
+    ]
+    
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='electricity_bills')
+    guest = models.ForeignKey(Guest, on_delete=models.SET_NULL, null=True, blank=True, related_name='electricity_bills')
+    month = models.DateField(help_text="First day of the month")
+    starting_reading = models.DecimalField(max_digits=10, decimal_places=2, help_text="Meter reading at start")
+    ending_reading = models.DecimalField(max_digits=10, decimal_places=2, help_text="Meter reading at end")
+    units_consumed = models.DecimalField(max_digits=8, decimal_places=2)
+    rate_per_unit = models.DecimalField(max_digits=6, decimal_places=2, help_text="Cost per unit in ₹")
+    bill_amount = models.DecimalField(max_digits=8, decimal_places=2)
+    paid_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    bill_status = models.CharField(max_length=20, choices=BILL_STATUS_CHOICES, default='pending')
+    bill_date = models.DateField(auto_now_add=True)
+    due_date = models.DateField()
+    paid_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-month']
+        unique_together = ('room', 'month')
+    
+    def __str__(self):
+        return f"{self.room.number} - {self.month.strftime('%B %Y')} - ₹{self.bill_amount}"
+    
+    def remaining_amount(self):
+        return self.bill_amount - self.paid_amount

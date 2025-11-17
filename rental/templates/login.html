@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
+  <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Rental - Login</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #D4C5B9 0%, #A39B93 100%) !important;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-attachment: fixed;
+    }
+
+    .login-container {
+      background: #F5F1ED;
+      padding: 50px 40px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+      animation: slideIn 0.5s ease-out;
+      visibility: visible;
+      opacity: 1;
+      display: block;
+      border: 2px solid #D4A574;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .logo {
+      text-align: center;
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #6B5638;
+      margin-bottom: 10px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #8B6F47;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #6B5638;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"] {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #D4C5B9;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s ease;
+      font-family: inherit;
+      color: #6B5638;
+      background: #FEFDFB;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    input[type="email"]:focus {
+      outline: none;
+      border-color: #8B6F47;
+      box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
+    }
+
+    .remember-forgot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #6B5638;
+    }
+
+    .remember-forgot a {
+      color: #8B6F47;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .remember-forgot a:hover {
+      text-decoration: underline;
+      color: #6B5638;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 6px;
+      cursor: pointer;
+      accent-color: #8B6F47;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
+      color: #F5DEB3;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .login-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 5px 15px rgba(139, 111, 71, 0.4);
+    }
+
+    .login-btn:active {
+      transform: scale(0.98);
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .back-link a {
+      color: #8B6F47;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+      color: #6B5638;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #f5c6cb;
+      display: none;
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 40px 20px;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      .remember-forgot {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">🏨</div>
+    <h2>Login</h2>
+    <p class="subtitle">Welcome back! Please log in to your account</p>
+
+    <form method="POST" action="{% url 'login' %}">
+      {% csrf_token %}
+
+      {% if error %}
+      <div class="error-message" style="display: block;">
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      </div>
+
+      <div class="remember-forgot">
+        <div class="checkbox-group">
+          <input type="checkbox" id="remember" name="remember">
+          <label for="remember" style="margin: 0;">Remember me</label>
+        </div>
+        <a href="#">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="login-btn">Login</button>
+    </form>
+
+    <div class="back-link">
+      <a href="{% url 'home' %}">← Back to Home</a>
+    </div>
+  </div>
+</body>
+</html>

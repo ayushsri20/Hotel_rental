@@ -1,0 +1,50 @@
+/* Panesar Hotels Theme - Brown, Grey & Tan */
+:root{
+  --bg-gradient-1: linear-gradient(135deg,#D4C5B9,#A39B93);
+  --bg-gradient-2: linear-gradient(135deg,#E8D7C3,#D4C5B9);
+  --bg-gradient-3: linear-gradient(135deg,#D4C5B9,#8B8680);
+  --bg-gradient-4: linear-gradient(135deg,#A39B93,#D4C5B9);
+  --bg-gradient-5: linear-gradient(135deg,#E8D7C3,#A39B93);
+  --bg-gradient-6: linear-gradient(135deg,#D4C5B9,#8B8680);
+
+  --primary: #8B6F47;
+  --secondary: #6B5638;
+  --accent: #D4A574;
+  --text: #6B5638;
+  --muted: #8B7B6B;
+  --card-bg: rgba(245,241,237,0.98);
+}
+
+/* Apply variables */
+body{
+  background: var(--bg, var(--bg-gradient-1));
+  color: var(--text);
+  transition: background 700ms ease, color 400ms ease;
+}
+
+.header, .header-actions, .navbar, .card{
+  background: var(--card-bg);
+  transition: background 400ms ease, box-shadow 300ms ease;
+}
+
+.btn-primary{
+  background: linear-gradient(90deg,var(--primary),var(--secondary));
+  border: none;
+  color: #F5DEB3;
+}
+
+.badge-status-paid{ background:#28a745; color:white; }
+.badge-status-pending{ background:#ffc107; color:#333; }
+.badge-status-overdue{ background:#dc3545; color:white; }
+
+/* A subtle overlay to darken bright palettes for legibility */
+.theme-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+}
+
+/* Smooth transition helpers */
+:root{ --vibe-transition: 600ms cubic-bezier(.22,.78,.28,1); }
+*{ transition: color var(--vibe-transition) ease, background var(--vibe-transition) ease; }

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
+  <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book a Room - Hotel Rental System</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #D4C5B9 0%, #A39B93 100%) !important;
+      min-height: 100vh;
+      padding: 20px;
+      background-attachment: fixed;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #F5F1ED;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 2px solid #D4A574;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      color: #8B6F47;
+      font-size: 32px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .header p {
+      color: #8B6F47;
+      font-size: 14px;
+    }
+
+    .back-button {
+      display: inline-block;
+      margin-bottom: 30px;
+      padding: 8px 16px;
+      background: #E8D7C3;
+      color: #6B5638;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .back-button:hover {
+      background: #8B6F47;
+      color: #F5DEB3;
+    }
+
+    /* Room Selection */
+    .room-selection {
+      margin-bottom: 40px;
+      padding: 20px;
+      background: #E8D7C3;
+      border-radius: 8px;
+      border-left: 4px solid #8B6F47;
+    }
+
+    .room-selection label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #6B5638;
+    }
+
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .room-option {
+      padding: 15px;
+      border: 2px solid #D4C5B9;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      background: #FEFDFB;
+    }
+
+    .room-option input[type="radio"] {
+      display: none;
+    }
+
+    .room-option input[type="radio"]:checked + .room-info {
+      color: #F5DEB3;
+    }
+
+    .room-option input[type="radio"]:checked ~ .room-info {
+      background: #8B6F47;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: -10px;
+    }
+
+    .room-option:has(input:checked) {
+      border-color: #8B6F47;
+      background: #E8D7C3;
+      box-shadow: 0 3px 10px rgba(139, 111, 71, 0.2);
+    }
+
+    .room-info {
+      pointer-events: none;
+    }
+
+    .room-number {
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 5px;
+      color: #6B5638;
+    }
+
+    .room-type {
+      font-size: 13px;
+      color: #8B6F47;
+      margin-bottom: 8px;
+    }
+
+    .room-price {
+      font-weight: 600;
+      color: #8B6F47;
+      font-size: 16px;
+    }
+
+    /* Form Sections */
+    .form-section {
+      margin-bottom: 35px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #6B5638;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #8B6F47;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-icon {
+      font-size: 24px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #6B5638;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 12px;
+      border: 1px solid #D4C5B9;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s ease;
+      background: #FEFDFB;
+      color: #6B5638;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #8B6F47;
+      box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .required::after {
+      content: " *";
+      color: #8B6F47;
+    }
+
+    /* Buttons */
+    .button-group {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 40px;
+      padding-top: 30px;
+      border-top: 2px solid #D4C5B9;
+    }
+
+    .btn {
+      padding: 12px 40px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
+      color: #F5DEB3;
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(139, 111, 71, 0.4);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-cancel {
+      background: #E8D7C3;
+      color: #6B5638;
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .btn-cancel:hover {
+      background: #D4C5B9;
+    }
+
+    /* Alert Messages */
+    .alert {
+      padding: 15px 20px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+      border-left: 4px solid #8B6F47;
+    }
+
+    .alert-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border-left: 4px solid #bee5eb;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .room-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .btn {
+        max-width: 100%;
+      }
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #E8D7C3;
+      border-top: 3px solid #8B6F47;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="{% url 'dashboard' %}" class="back-button">← Back to Dashboard</a>
+
+    <div class="header">
+      <h1>🏠 Book a Room</h1>
+      <p>Fill in your details to book a room in our property</p>
+    </div>
+
+    <!-- Alert Messages -->
+    <div id="alertMessage" class="alert"></div>
+
+    <!-- Room Selection -->
+    <div class="room-selection">
+      <label>Select a Room <span class="required"></span></label>
+      <div class="room-grid" id="roomGrid">
+        <p style="color: #999; text-align: center; grid-column: 1 / -1;">Loading available rooms...</p>
+      </div>
+    </div>
+
+    <!-- Booking Form -->
+    <form id="bookingForm">
+      {% csrf_token %}
+
+      <!-- Personal Information -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">👤</span>
+          Personal Information
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="firstName" class="required">First Name</label>
+            <input type="text" id="firstName" name="first_name" required>
+          </div>
+          <div class="form-group">
+            <label for="lastName" class="required">Last Name</label>
+            <input type="text" id="lastName" name="last_name" required>
+          </div>
+          <div class="form-group">
+            <label for="gender" class="required">Gender</label>
+            <select id="gender" name="gender" required>
+              <option value="">-- Select Gender --</option>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="O">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dob">Date of Birth</label>
+            <input type="date" id="dob" name="date_of_birth">
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">📞</span>
+          Contact Information
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="email" class="required">Email Address</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="phone" class="required">Phone Number</label>
+            <input type="tel" id="phone" name="phone" placeholder="+91" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Address Information -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">🏘️</span>
+          Address Information
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="address">Street Address</label>
+            <textarea id="address" name="address" placeholder="Enter your complete address"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city">
+          </div>
+          <div class="form-group">
+            <label for="state">State/Province</label>
+            <input type="text" id="state" name="state">
+          </div>
+          <div class="form-group">
+            <label for="country">Country</label>
+            <input type="text" id="country" name="country" value="India">
+          </div>
+          <div class="form-group">
+            <label for="zipCode">ZIP/Postal Code</label>
+            <input type="text" id="zipCode" name="zip_code">
+          </div>
+        </div>
+      </div>
+
+      <!-- ID Proof -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">🪪</span>
+          Identity Proof
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="idType" class="required">ID Type</label>
+            <select id="idType" name="id_type" required>
+              <option value="">-- Select ID Type --</option>
+              <option value="Aadhar">Aadhar Card</option>
+              <option value="Passport">Passport</option>
+              <option value="License">Driving License</option>
+              <option value="PAN">PAN Card</option>
+              <option value="Voter">Voter ID</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="idNumber" class="required">ID Number</label>
+            <input type="text" id="idNumber" name="id_number" placeholder="Enter ID number" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Check-in/Check-out Dates -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">📅</span>
+          Stay Dates
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="checkIn" class="required">Check-in Date</label>
+            <input type="date" id="checkIn" name="check_in_date" required>
+          </div>
+          <div class="form-group">
+            <label for="checkOut" class="required">Check-out Date</label>
+            <input type="date" id="checkOut" name="check_out_date" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Contact -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">🆘</span>
+          Emergency Contact
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="emergencyName">Emergency Contact Name</label>
+            <input type="text" id="emergencyName" name="emergency_contact_name" placeholder="Full Name">
+          </div>
+          <div class="form-group">
+            <label for="emergencyPhone">Emergency Contact Phone</label>
+            <input type="tel" id="emergencyPhone" name="emergency_contact_phone" placeholder="+91">
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Notes -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="section-icon">📝</span>
+          Additional Information
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="notes">Special Requests / Notes</label>
+            <textarea id="notes" name="notes" placeholder="Any special requests or additional information"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="button-group">
+        <button type="button" class="btn btn-cancel" onclick="window.location.href='{% url 'dashboard' %}'">Cancel</button>
+        <button type="submit" class="btn btn-submit" id="submitBtn">Complete Booking</button>
+      </div>
+
+      <div class="loading" id="loadingSpinner">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; color: #8B6F47;">Processing your booking...</p>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Load available rooms
+    document.addEventListener('DOMContentLoaded', function() {
+      loadAvailableRooms();
+      setMinCheckInDate();
+    });
+
+    function loadAvailableRooms() {
+      fetch('{% url 'get_available_rooms' %}')
+        .then(response => response.json())
+        .then(data => {
+          const roomGrid = document.getElementById('roomGrid');
+          roomGrid.innerHTML = '';
+
+          if (data.rooms.length === 0) {
+            roomGrid.innerHTML = '<p style="color: #999; text-align: center; grid-column: 1 / -1;">No rooms available at the moment</p>';
+            return;
+          }
+
+          data.rooms.forEach(room => {
+            const roomOption = document.createElement('label');
+            roomOption.className = 'room-option';
+            roomOption.innerHTML = `
+              <input type="radio" name="room_id" value="${room.id}" required>
+              <div class="room-info">
+                <div class="room-number">${room.number}</div>
+                <div class="room-type">${room.room_type}</div>
+                <div class="room-price">₹${parseFloat(room.price).toFixed(2)}/month</div>
+              </div>
+            `;
+            roomGrid.appendChild(roomOption);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading rooms:', error);
+          showAlert('Error loading rooms. Please try again.', 'error');
+        });
+    }
+
+    function setMinCheckInDate() {
+      const checkInInput = document.getElementById('checkIn');
+      const today = new Date().toISOString().split('T')[0];
+      checkInInput.min = today;
+    }
+
+    // Update check-out min date when check-in changes
+    document.getElementById('checkIn').addEventListener('change', function() {
+      const checkOutInput = document.getElementById('checkOut');
+      const checkInDate = new Date(this.value);
+      checkInDate.setDate(checkInDate.getDate() + 1);
+      const minCheckOut = checkInDate.toISOString().split('T')[0];
+      checkOutInput.min = minCheckOut;
+      if (checkOutInput.value && checkOutInput.value <= this.value) {
+        checkOutInput.value = '';
+      }
+    });
+
+    // Form submission
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // Validate room selection
+      const roomId = document.querySelector('input[name="room_id"]:checked');
+      if (!roomId) {
+        showAlert('Please select a room', 'error');
+        return;
+      }
+
+      // Show loading
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('loadingSpinner').style.display = 'block';
+
+      const formData = new FormData(this);
+
+      fetch('{% url 'submit_booking' %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('submitBtn').disabled = false;
+
+        if (data.success) {
+          showAlert('Booking completed successfully! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = '{% url 'dashboard' %}';
+          }, 2000);
+        } else {
+          showAlert(data.message || 'Error processing booking', 'error');
+        }
+      })
+      .catch(error => {
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('submitBtn').disabled = false;
+        console.error('Error:', error);
+        showAlert('Error processing booking. Please try again.', 'error');
+      });
+    });
+
+    function showAlert(message, type) {
+      const alertDiv = document.getElementById('alertMessage');
+      alertDiv.className = `alert alert-${type} show`;
+      alertDiv.textContent = message;
+      window.scrollTo(0, 0);
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          alertDiv.classList.remove('show');
+        }, 3000);
+      }
+    }
+  </script>
+</body>
+</html>
