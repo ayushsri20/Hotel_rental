@@ -13,7 +13,7 @@ services:
     runtime: python
     plan: free
     buildCommand: "bash ./build.sh"
-    startCommand: "gunicorn hotel_project.wsgi:application --workers 4 --worker-class sync --bind 0.0.0.0:10000 --timeout 60 --access-logfile - --error-logfile -"
+    startCommand: "gunicorn hotel_project.wsgi:application --workers 4 --worker-class sync --bind 0.0.0.0:${PORT} --timeout 60 --access-logfile - --error-logfile -"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
