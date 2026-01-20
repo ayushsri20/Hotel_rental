@@ -12,6 +12,7 @@ services:
     name: panesar-pg
     runtime: python
     plan: free
+    rootDir: "."
     buildCommand: "bash ./build.sh"
     startCommand: "gunicorn -w 4 -b 0.0.0.0:${PORT} hotel_project.wsgi:application"
     envVars:

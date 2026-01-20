@@ -3,9 +3,24 @@
 
 set -o errexit  # Exit on error
 
+echo "=== Build Environment ==="
+echo "Current directory: $(pwd)"
+echo "Files in current directory:"
+ls -la | head -20
+echo
+
 echo "Python version: $(python --version)"
 echo "Python path: $(which python)"
+echo "pip version: $(pip --version)"
 echo
+
+# Verify requirements.txt exists
+if [ ! -f "requirements.txt" ]; then
+  echo "ERROR: requirements.txt not found in $(pwd)" >&2
+  echo "Checking parent directories..."
+  find . -name "requirements.txt" -type f 2>/dev/null || echo "requirements.txt not found anywhere"
+  exit 1
+fi
 
 echo "=== Installing dependencies ==="
 pip install --upgrade pip
