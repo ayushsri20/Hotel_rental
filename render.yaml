@@ -12,8 +12,8 @@ services:
     name: panesar-pg
     runtime: python
     plan: free
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn hotel_project.wsgi:application"
+    buildCommand: "bash ./build.sh"
+    startCommand: "gunicorn hotel_project.wsgi:application --workers 4 --worker-class sync --bind 0.0.0.0:10000 --timeout 60 --access-logfile - --error-logfile -"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -22,8 +22,12 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
-        value: "False"
+        value: "false"
       - key: ALLOWED_HOSTS
-        value: "panesar-pg.onrender.com"
-      - key: PYTHON_VERSION
-        value: "3.11.4"
+        value: "*.onrender.com,panesar-pg.onrender.com"
+      - key: DJANGO_SETTINGS_MODULE
+        value: "hotel_project.settings"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PORT
+        value: "10000"
