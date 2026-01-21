@@ -10,6 +10,7 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 import os
 import sys
 from pathlib import Path
+import django
 
 from django.core.wsgi import get_wsgi_application
 
@@ -25,5 +26,18 @@ if not STATIC_ROOT.exists():
         print(f"Created staticfiles directory: {STATIC_ROOT}", file=sys.stderr)
     except Exception as e:
         print(f"Warning: Could not create staticfiles directory: {e}", file=sys.stderr)
+
+# Setup Django
+django.setup()
+
+# Test database connection
+try:
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
+    print("✓ Database connection successful", file=sys.stderr)
+except Exception as e:
+    print(f"✗ Database connection failed: {e}", file=sys.stderr)
+    raise
 
 application = get_wsgi_application()
