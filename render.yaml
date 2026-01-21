@@ -12,7 +12,7 @@ services:
     name: panesar-pg
     runtime: python
     plan: free
-    buildCommand: "pwd && ls -la && pip install --upgrade pip && pip install -r hotel_project/requirements.txt && cd hotel_project && python manage.py collectstatic --noinput && python manage.py migrate --noinput"
+    buildCommand: "cd hotel_project && pip install --upgrade pip && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput"
     startCommand: "cd hotel_project && gunicorn -w 4 -b 0.0.0.0:${PORT} hotel_project.wsgi:application"
     envVars:
       - key: DATABASE_URL
