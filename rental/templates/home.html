@@ -1,13 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 {% load static %}
+
 <head>
-  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
-  <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panesar Hotels and Motels - Welcome</title>
+  <title>Panesar PG - Premium Student Accommodation</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <style>
+    :root {
+      --primary: #947a45;
+      --primary-hover: #7a6438;
+      --bg-main: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --accent: #b08d42;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -15,490 +27,584 @@
     }
 
     body {
-      font-family: 'Georgia', 'Garamond', serif;
-      background: #F5F1ED;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background-attachment: fixed;
-    }
-
-    /* Header with Wooden Theme */
-    .header {
-      background: linear-gradient(180deg, #8B6F47 0%, #6B5638 100%);
-      padding: 15px 30px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 3px solid #5D4E37;
-    }
-
-    .header-logo {
-      font-size: 24px;
-      font-weight: 700;
-      color: #F5DEB3;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-      letter-spacing: 2px;
-    }
-
-    .logout-btn {
-      padding: 8px 20px;
-      background: #D4A574;
-      color: #2C1810;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      font-family: 'Segoe UI', Arial, sans-serif;
-    }
-
-    .logout-btn:hover {
-      background: #E8B88A;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Main Content */
-    .main-content {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 40px 20px;
-    }
-
-    .container {
-      background: white;
-      padding: 50px 40px;
-      border-radius: 12px;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-      max-width: 900px;
-      width: 100%;
-      animation: slideIn 0.6s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .container-header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .logo {
-      font-size: 56px;
-      margin-bottom: 15px;
-    }
-
-    .brand-title {
-      color: #2C1810;
-      font-size: 42px;
-      margin-bottom: 10px;
-      font-weight: 700;
-      text-shadow: none;
-    }
-
-    .subtitle {
-      color: #6B5638;
-      font-size: 18px;
-      margin-bottom: 20px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      color: var(--text-main);
       line-height: 1.6;
-      font-weight: 300;
-      text-shadow: none;
+      overflow-x: hidden;
     }
 
-    /* Content Grid */
-    .content-wrapper {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 40px;
-      align-items: center;
-    }
-
-    /* Center Section - Welcome Box */
-    .welcome-box {
-      background: #FFF8DC;
-      border: 3px solid #D4A574;
-      border-radius: 12px;
-      padding: 30px;
-      text-align: center;
-      margin-bottom: 30px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .welcome-box h2 {
-      color: #2C1810;
-      font-size: 32px;
-      margin-bottom: 20px;
-      font-weight: 700;
-    }
-
-    .welcome-box p {
-      color: #6B5638;
-      font-size: 16px;
-      line-height: 1.8;
-    }
-
-    /* Left Section - Text */
-    .text-section {
-      padding-right: 20px;
-    }
-
-    .section-title {
-      color: #2C1810;
-      font-size: 28px;
-      margin-bottom: 20px;
-      border-bottom: 3px solid #D4A574;
-      padding-bottom: 10px;
-      text-shadow: none;
-    }
-
-    .description-text {
-      color: #6B5638;
-      font-size: 16px;
-      line-height: 1.8;
-      margin-bottom: 25px;
-      text-shadow: none;
-    }
-
-    .features-list {
-      list-style: none;
-      margin-bottom: 30px;
-    }
-
-    .features-list li {
-      color: #2C1810;
-      font-size: 15px;
-      margin-bottom: 12px;
-      padding-left: 30px;
-      position: relative;
-      line-height: 1.6;
-      text-shadow: none;
-    }
-
-    .features-list li:before {
-      content: "✓";
-      position: absolute;
+    /* Animated Background */
+    .bg-decoration {
+      position: fixed;
+      top: 0;
       left: 0;
-      color: #8B6F47;
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    .room-button {
-      display: inline-block;
-      padding: 14px 32px;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #F5DEB3;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 2px solid #5D4E37;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 15px;
-      margin-top: 20px;
-    }
-
-    .room-button:hover {
-      background: linear-gradient(135deg, #A08860 0%, #7A6B5D 100%);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-    }
-
-    .room-button:active {
-      transform: translateY(-1px);
-    }
-
-    /* Center Section - Apartment Image */
-    .image-section {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #E8D7C3 0%, #D4C5B9 100%);
-      padding: 40px;
-      border-radius: 10px;
-      border: 3px solid #D4A574;
-      min-height: 300px;
-      position: relative;
-      overflow: hidden;
-      margin: 30px 0;
-    }
-
-    .apartment-placeholder {
-      text-align: center;
       width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.03;
+      pointer-events: none;
     }
 
-    .apartment-icon {
-      font-size: 140px;
-      margin-bottom: 20px;
-      animation: float 3s ease-in-out infinite;
+    .floating-shape {
+      position: absolute;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .shape1 {
+      width: 300px;
+      height: 300px;
+      top: 10%;
+      left: 5%;
+      animation-delay: 0s;
+    }
+
+    .shape2 {
+      width: 200px;
+      height: 200px;
+      top: 60%;
+      right: 10%;
+      animation-delay: 5s;
+    }
+
+    .shape3 {
+      width: 150px;
+      height: 150px;
+      bottom: 10%;
+      left: 30%;
+      animation-delay: 10s;
     }
 
     @keyframes float {
-      0%, 100% {
-        transform: translateY(0px);
+
+      0%,
+      100% {
+        transform: translate(0, 0) rotate(0deg);
       }
+
+      25% {
+        transform: translate(30px, -30px) rotate(90deg);
+      }
+
+      50% {
+        transform: translate(0, -60px) rotate(180deg);
+      }
+
+      75% {
+        transform: translate(-30px, -30px) rotate(270deg);
+      }
+    }
+
+    /* Header */
+    .header {
+      position: relative;
+      z-index: 10;
+      background: var(--card-bg);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 1.25rem 0;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-icon {
+      font-size: 2rem;
+    }
+
+    .brand-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.75rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.75rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(148, 122, 69, 0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(148, 122, 69, 0.35);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Hero Section */
+    .hero {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 4rem auto;
+      padding: 0 2rem;
+      min-height: 70vh;
+      display: flex;
+      align-items: center;
+      gap: 4rem;
+    }
+
+    .hero-content {
+      flex: 1;
+      animation: slideInLeft 0.8s ease-out;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-60px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: linear-gradient(135deg, rgba(148, 122, 69, 0.1) 0%, rgba(176, 141, 66, 0.1) 100%);
+      border: 1px solid rgba(148, 122, 69, 0.2);
+      border-radius: 2rem;
+      color: var(--primary);
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: 3.75rem;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, var(--text-main) 0%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      line-height: 1.8;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-visual {
+      flex: 1;
+      position: relative;
+      animation: slideInRight 0.8s ease-out;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(60px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .visual-card {
+      background: var(--card-bg);
+      border-radius: 2rem;
+      padding: 3rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .visual-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(148, 122, 69, 0.05) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .visual-icon {
+      font-size: 8rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      z-index: 1;
+      animation: bounce 3s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
       50% {
         transform: translateY(-20px);
       }
     }
 
-    .apartment-text {
-      display: none;
+    .visual-text {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      color: var(--primary);
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
     }
 
-    .apartment-subtext {
-      display: none;
+    /* Features Section */
+    .features {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 6rem auto;
+      padding: 0 2rem;
     }
 
-    /* Buildings Section */
-    .buildings-button {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      width: 100%;
-      text-align: left;
-      transition: all 0.3s ease;
+    .section-header {
+      text-align: center;
+      margin-bottom: 4rem;
     }
 
-    .buildings-button:hover .buildings-section {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 25px rgba(139, 111, 71, 0.25);
-    }
-
-    .buildings-section {
-      background: #FFFAF0;
-      border: 2px solid #D4A574;
-      border-radius: 10px;
-      padding: 30px;
-      margin-top: 40px;
-      transition: all 0.3s ease;
-    }
-
-    .buildings-section h3 {
-      color: #2C1810;
-      font-size: 24px;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #D4A574;
-      padding-bottom: 10px;
-    }
-
-    .buildings-content {
-      color: #6B5638;
-      font-size: 15px;
-      line-height: 1.8;
-      margin-bottom: 20px;
-    }
-
-    .detail-button-text {
-      display: inline-block;
-      padding: 12px 28px;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #F5DEB3;
-      border-radius: 6px;
+    .section-tag {
+      color: var(--primary);
       font-weight: 600;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 14px;
-      transition: all 0.3s ease;
+      font-size: 0.95rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
     }
 
-    .buildings-button:hover .detail-button-text {
-      background: linear-gradient(135deg, #A08860 0%, #7A6B5D 100%);
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2.75rem;
+      margin-top: 1rem;
+      color: var(--text-main);
     }
 
-    .detail-button {
-      display: inline-block;
-      padding: 12px 28px;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #F5DEB3;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 2px solid #5D4E37;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 14px;
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
     }
 
-    .detail-button:hover {
-      background: linear-gradient(135deg, #A08860 0%, #7A6B5D 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+    .feature-card {
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid #e2e8f0;
     }
 
-    /* Responsive Design */
+    .feature-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      border-color: var(--primary);
+    }
+
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+      display: block;
+    }
+
+    .feature-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text-main);
+    }
+
+    .feature-description {
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      position: relative;
+      z-index: 1;
+      max-width: 1000px;
+      margin: 6rem auto;
+      padding: 0 2rem;
+    }
+
+    .cta-card {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      border-radius: 2rem;
+      padding: 4rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(148, 122, 69, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      animation: rotate 15s linear infinite;
+    }
+
+    .cta-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2.5rem;
+      color: white;
+      margin-bottom: 1.5rem;
+      font-weight: 800;
+    }
+
+    .cta-subtitle {
+      font-size: 1.15rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 2.5rem;
+    }
+
+    .btn-light {
+      background: white;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .btn-light:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Footer */
+    .footer {
+      position: relative;
+      z-index: 1;
+      background: var(--card-bg);
+      padding: 3rem 2rem 2rem;
+      margin-top: 6rem;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .footer-text {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
-      .content-wrapper {
+      .hero {
+        flex-direction: column;
+        text-align: center;
+        min-height: auto;
+      }
+
+      .hero-title {
+        font-size: 2.5rem;
+      }
+
+      .hero-cta {
+        justify-content: center;
+      }
+
+      .nav-container {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .features-grid {
         grid-template-columns: 1fr;
-        gap: 20px;
-      }
-
-      .text-section {
-        padding-right: 0;
-      }
-
-      .container {
-        padding: 30px 20px;
-      }
-
-      .brand-title {
-        font-size: 32px;
-      }
-
-      .section-title {
-        font-size: 24px;
-      }
-
-      .welcome-box {
-        padding: 20px;
-      }
-
-      .welcome-box h2 {
-        font-size: 24px;
-      }
-
-      .image-section {
-        min-height: 250px;
-        padding: 30px;
-      }
-
-      .apartment-icon {
-        font-size: 100px;
-      }
-
-      .header {
-        flex-wrap: wrap;
-        gap: 15px;
-      }
-    }
-
-    @media (max-width: 600px) {
-      body {
-        min-height: 100vh;
-      }
-
-      .header {
-        padding: 12px 15px;
-      }
-
-      .header-logo {
-        font-size: 18px;
-      }
-
-      .logout-btn {
-        padding: 6px 15px;
-        font-size: 13px;
-      }
-
-      .container {
-        margin: 10px;
-      }
-
-      .brand-title {
-        font-size: 26px;
-      }
-
-      .subtitle {
-        font-size: 14px;
-      }
-
-      .section-title {
-        font-size: 20px;
-      }
-
-      .welcome-box {
-        padding: 15px;
-      }
-
-      .welcome-box h2 {
-        font-size: 20px;
-      }
-
-      .room-button {
-        padding: 12px 24px;
-        font-size: 14px;
-      }
-
-      .apartment-icon {
-        font-size: 80px;
       }
     }
   </style>
 </head>
+
 <body>
-  <!-- Header -->
-  <div class="header">
-    <div class="header-logo">🏠 PANESAR PG</div>
+  <!-- Background Decoration -->
+  <div class="bg-decoration">
+    <div class="floating-shape shape1"></div>
+    <div class="floating-shape shape2"></div>
+    <div class="floating-shape shape3"></div>
   </div>
 
-  <!-- Main Content -->
-  <div class="main-content">
-    <div class="container">
-      <div class="container-header">
-        <div class="logo">🏨</div>
-        <h1 class="brand-title">PANESAR HOTELS AND MOTELS</h1>
-        <p class="subtitle">Premium Accommodations & Property Management</p>
+  <!-- Header -->
+  <header class="header">
+    <nav class="nav-container">
+      <div class="logo-section">
+        <span class="logo-icon">🏛️</span>
+        <h1 class="brand-name">Panesar PG</h1>
       </div>
+      <div class="header-actions">
+        {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="btn btn-outline">Dashboard</a>
+        <a href="{% url 'logout' %}" class="btn btn-primary">Logout</a>
+        {% else %}
+        <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+        {% endif %}
+      </div>
+    </nav>
+  </header>
 
-      <!-- Two Column Layout: Text + Image -->
-      <div class="content-wrapper">
-        <!-- Welcome Box -->
-        <div class="welcome-box">
-          <h2>Welcome to Our Residences</h2>
-          <p>Experience comfort and convenience at Panesar Hotels and Motels. Your perfect home away from home awaits.</p>
-        </div>
-
-        <!-- Buildings Section with Detail Button - MOVED ABOVE IMAGE -->
-        <button class="buildings-button" onclick="window.location.href='{% url 'booking_page' %}'">
-          <div class="buildings-section">
-            <h3>Our Premium Buildings</h3>
-            <div class="buildings-content">
-              <p>Panesar Hotels and Motels offers a variety of premium accommodations across multiple well-appointed buildings. Each property features comfortable rooms, modern amenities, and exceptional service.</p>
-              <p style="margin-top: 15px;">Our buildings provide:</p>
-              <ul style="margin-left: 20px; margin-top: 10px;">
-                <li>✓ Comfortable and spacious rooms</li>
-                <li>✓ Modern facilities and amenities</li>
-                <li>✓ Professional housekeeping services</li>
-                <li>✓ 24/7 guest support</li>
-                <li>✓ Secure and convenient parking</li>
-                <li>✓ Common areas and recreational spaces</li>
-              </ul>
-            </div>
-            <div class="detail-button-text">View Details →</div>
-          </div>
-        </button>
-
-        <!-- Center Section: Apartment Image -->
-        <div class="image-section">
-          <div class="apartment-placeholder">
-            <div class="apartment-icon">🏢</div>
-            <div class="apartment-text">Our Apartments</div>
-            <div class="apartment-subtext">Premium Accommodations Awaiting You</div>
-          </div>
-        </div>
-
-        <!-- Explore Button - Centered -->
-        <div style="text-align: center; width: 100%;">
-          <a href="{% url 'booking_page' %}" class="room-button">Explore Our Rooms</a>
-        </div>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <span class="hero-badge">✨ Premium Student Accommodation</span>
+      <h2 class="hero-title">Your Perfect Home Away From Home</h2>
+      <p class="hero-subtitle">Experience luxury living with world-class amenities, modern facilities, and a vibrant
+        community designed for students who value quality and comfort.</p>
+      <div class="hero-cta">
+        <a href="{% url 'booking_page' %}" class="btn btn-primary">Book Your Room</a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="btn btn-outline">View Dashboard</a>
+        {% endif %}
       </div>
     </div>
-  </div>
+    <div class="hero-visual">
+      <div class="visual-card">
+        <div class="visual-icon">🏠</div>
+        <p class="visual-text">Premium Living Spaces</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features">
+    <div class="section-header">
+      <div class="section-tag">Why Choose Us</div>
+      <h3 class="section-title">Exceptional Living Experience</h3>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🛏️</span>
+        <h4 class="feature-title">Furnished Rooms</h4>
+        <p class="feature-description">Fully equipped rooms with modern furniture, comfortable beds, study desks, and
+          ample storage space.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🍽️</span>
+        <h4 class="feature-title">Healthy Meals</h4>
+        <p class="feature-description">Nutritious home-cooked meals prepared with care, catering to diverse dietary
+          preferences.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📶</span>
+        <h4 class="feature-title">High-Speed WiFi</h4>
+        <p class="feature-description">Complimentary high-speed internet connectivity in all rooms for seamless online
+          learning.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔒</span>
+        <h4 class="feature-title">24x7 Security</h4>
+        <p class="feature-description">Round-the-clock security with CCTV surveillance ensuring your safety and peace of
+          mind.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🧼</span>
+        <h4 class="feature-title">Housekeeping</h4>
+        <p class="feature-description">Regular cleaning and maintenance services to keep your living space spotless.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h4 class="feature-title">Power Backup</h4>
+        <p class="feature-description">Uninterrupted power supply with backup generators for continuous comfort.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="cta-card">
+      <div class="cta-content">
+        <h3 class="cta-title">Ready to Move In?</h3>
+        <p class="cta-subtitle">Join hundreds of students who have made Panesar PG their home. Book your room today and
+          experience premium living.</p>
+        <a href="{% url 'booking_page' %}" class="btn btn-light">Reserve Your Room Now</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <p class="footer-text">© 2024 Panesar PG. All rights reserved. Providing premium accommodation for students.</p>
+    </div>
+  </footer>
 </body>
+
 </html>

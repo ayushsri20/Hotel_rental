@@ -1,5 +1,6 @@
 # Render Blueprint for automatic deployment
 # https://render.com/docs/blueprint-spec
+# This file should be at the ROOT of your repository
 
 databases:
   - name: panesar-pg-db

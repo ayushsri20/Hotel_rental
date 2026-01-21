@@ -1,50 +1,129 @@
-/* Panesar Hotels Theme - Brown, Grey & Tan */
-:root{
-  --bg-gradient-1: linear-gradient(135deg,#D4C5B9,#A39B93);
-  --bg-gradient-2: linear-gradient(135deg,#E8D7C3,#D4C5B9);
-  --bg-gradient-3: linear-gradient(135deg,#D4C5B9,#8B8680);
-  --bg-gradient-4: linear-gradient(135deg,#A39B93,#D4C5B9);
-  --bg-gradient-5: linear-gradient(135deg,#E8D7C3,#A39B93);
-  --bg-gradient-6: linear-gradient(135deg,#D4C5B9,#8B8680);
+/* Panesar PG Imperial Light Theme - High-Visibility Luxury */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-  --primary: #8B6F47;
-  --secondary: #6B5638;
-  --accent: #D4A574;
-  --text: #6B5638;
-  --muted: #8B7B6B;
-  --card-bg: rgba(245,241,237,0.98);
+:root {
+  /* High-Contrast Luxury Palette */
+  --primary: #947a45;
+  /* Deep Bronze Gold for light mode */
+  --primary-hover: #7a6438;
+  --primary-light: rgba(148, 122, 69, 0.1);
+  --secondary: #334155;
+  --accent: #b08d42;
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+
+  /* Readability Optimized Light Backgrounds */
+  --bg-main: #f1f5f9;
+  /* Soft Slate White */
+  --bg-canvas: #ffffff;
+  /* Pure White Desk */
+  --text-main: #0f172a;
+  /* Deep Navy Charcoal */
+  --text-muted: #475569;
+  /* Balanced Slate Gray */
+  --border-subtle: #e2e8f0;
+  /* Crisp Slate Borders */
+
+  /* Refined Premium Depth */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.5);
+
+  /* Gradients - Deepened Metallic */
+  --grad-primary: linear-gradient(135deg, #947a45 0%, #7a6438 100%);
+  --grad-surface: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+
+  --transition-all: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
 }
 
-/* Apply variables */
-body{
-  background: var(--bg, var(--bg-gradient-1));
-  color: var(--text);
-  transition: background 700ms ease, color 400ms ease;
+/* Global Reset & Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  transition: var(--transition-all);
 }
 
-.header, .header-actions, .navbar, .card{
-  background: var(--card-bg);
-  transition: background 400ms ease, box-shadow 300ms ease;
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, system-ui, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
-.btn-primary{
-  background: linear-gradient(90deg,var(--primary),var(--secondary));
+/* Skip link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary);
+  color: white;
+  padding: 8px 16px;
+  z-index: 100;
+  border-radius: 0 0 8px 0;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Card Styles */
+.card {
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 1.5rem;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Button Styles */
+.btn-primary {
+  background: var(--grad-primary);
+  color: white;
+  padding: 0.75rem 1.5rem;
   border: none;
-  color: #F5DEB3;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
 }
 
-.badge-status-paid{ background:#28a745; color:white; }
-.badge-status-pending{ background:#ffc107; color:#333; }
-.badge-status-overdue{ background:#dc3545; color:white; }
-
-/* A subtle overlay to darken bright palettes for legibility */
-.theme-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.23);
 }
 
-/* Smooth transition helpers */
-:root{ --vibe-transition: 600ms cubic-bezier(.22,.78,.28,1); }
-*{ transition: color var(--vibe-transition) ease, background var(--vibe-transition) ease; }
+/* Status Badges */
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.badge-paid {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-pending {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.badge-overdue {
+  background: #fee2e2;
+  color: #991b1b;
+}

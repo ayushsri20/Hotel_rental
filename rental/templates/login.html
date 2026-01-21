@@ -1,13 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 {% load static %}
+
 <head>
   <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
   <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hotel Rental - Login</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <style>
+    :root {
+      --primary: #947a45;
+      --primary-hover: #7a6438;
+      --bg-main: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -15,8 +29,8 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #D4C5B9 0%, #A39B93 100%) !important;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at center, #1c1c1e 0%, #0a0a0b 100%) !important;
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -25,24 +39,23 @@
     }
 
     .login-container {
-      background: #F5F1ED;
+      background: var(--card-bg);
       padding: 50px 40px;
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border-radius: 1.5rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
       width: 100%;
       max-width: 400px;
-      animation: slideIn 0.5s ease-out;
-      visibility: visible;
-      opacity: 1;
-      display: block;
-      border: 2px solid #D4A574;
+      animation: slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
     }
 
     @keyframes slideIn {
       from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(40px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -51,77 +64,83 @@
 
     .logo {
       text-align: center;
-      font-size: 48px;
-      margin-bottom: 20px;
+      margin-bottom: 2rem;
+    }
+
+    .logo img {
+      height: 120px;
+      width: 120px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 15px rgba(197, 160, 89, 0.3));
     }
 
     h2 {
       text-align: center;
-      color: #6B5638;
-      margin-bottom: 10px;
-      font-size: 28px;
-      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      letter-spacing: 0.05em;
     }
 
     .subtitle {
       text-align: center;
-      color: #8B6F47;
-      font-size: 14px;
-      margin-bottom: 30px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 2.5rem;
+      font-weight: 300;
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 1.5rem;
     }
 
     label {
       display: block;
-      color: #6B5638;
-      font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 14px;
+      color: var(--text-main);
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
     }
 
     input[type="text"],
     input[type="password"],
     input[type="email"] {
       width: 100%;
-      padding: 12px 15px;
-      border: 2px solid #D4C5B9;
-      border-radius: 6px;
-      font-size: 14px;
-      transition: border-color 0.3s ease;
-      font-family: inherit;
-      color: #6B5638;
-      background: #FEFDFB;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      color: var(--text-main);
+      font-size: 1rem;
+      transition: all 0.3s ease;
     }
 
-    input[type="text"]:focus,
-    input[type="password"]:focus,
-    input[type="email"]:focus {
+    input:focus {
       outline: none;
-      border-color: #8B6F47;
-      box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .remember-forgot {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      font-size: 14px;
-      color: #6B5638;
+      margin-bottom: 2rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
     }
 
     .remember-forgot a {
-      color: #8B6F47;
+      color: var(--primary);
       text-decoration: none;
-      font-weight: 600;
+      font-weight: 500;
     }
 
     .remember-forgot a:hover {
       text-decoration: underline;
-      color: #6B5638;
+      color: var(--primary-hover);
     }
 
     .checkbox-group {
@@ -130,80 +149,80 @@
     }
 
     input[type="checkbox"] {
-      margin-right: 6px;
+      margin-right: 0.5rem;
       cursor: pointer;
-      accent-color: #8B6F47;
+      accent-color: var(--primary);
     }
 
     .login-btn {
       width: 100%;
-      padding: 12px;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #F5DEB3;
+      padding: 14px;
+      background: var(--grad-primary);
+      color: #000;
       border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: 600;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 20px rgba(197, 160, 89, 0.2);
     }
 
     .login-btn:hover {
-      transform: scale(1.02);
-      box-shadow: 0 5px 15px rgba(139, 111, 71, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(197, 160, 89, 0.3);
+      background: var(--primary-hover);
     }
 
     .login-btn:active {
-      transform: scale(0.98);
+      transform: translateY(0);
     }
 
     .back-link {
       text-align: center;
-      margin-top: 20px;
+      margin-top: 1.5rem;
     }
 
     .back-link a {
-      color: #8B6F47;
+      color: var(--text-muted);
       text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
+      font-weight: 400;
+      font-size: 0.875rem;
     }
 
     .back-link a:hover {
+      color: var(--primary);
       text-decoration: underline;
-      color: #6B5638;
     }
 
     .error-message {
-      background: #f8d7da;
-      color: #721c24;
-      padding: 12px 15px;
-      border-radius: 6px;
-      margin-bottom: 20px;
-      border-left: 4px solid #f5c6cb;
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      padding: 12px 16px;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      font-size: 0.875rem;
       display: none;
     }
 
     @media (max-width: 480px) {
       .login-container {
-        padding: 40px 20px;
+        padding: 30px 20px;
       }
 
       h2 {
-        font-size: 24px;
-      }
-
-      .remember-forgot {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+        font-size: 1.75rem;
       }
     }
   </style>
 </head>
+
 <body>
   <div class="login-container">
-    <div class="logo">🏨</div>
+    <div class="logo">
+      <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar PG Logo">
+    </div>
     <h2>Login</h2>
     <p class="subtitle">Welcome back! Please log in to your account</p>
 
@@ -242,4 +261,5 @@
     </div>
   </div>
 </body>
+
 </html>

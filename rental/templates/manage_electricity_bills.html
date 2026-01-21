@@ -1,13 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 {% load static %}
+{% load rental_tags %}
+
 <head>
-  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
-  <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panesar PG - Electricity Bill Management</title>
+  <title>Utility Hub - Panesar PG</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <style>
+    :root {
+      --primary: #947a45;
+      --primary-hover: #7a6438;
+      --bg-main: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --success: #059669;
+      --error: #dc2626;
+      --warning: #d97706;
+      --border: #e2e8f0;
+      --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+      --radius: 1.25rem;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -15,517 +33,375 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      min-height: 100vh;
-      padding: 20px;
-      background-attachment: fixed;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.6;
     }
 
     .container {
-      max-width: 1400px;
+      max-width: 1500px;
       margin: 0 auto;
+      padding: 2rem;
     }
 
-    /* Header */
     .header {
-      background: white;
-      padding: 25px 30px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
+      margin-bottom: 2.5rem;
+      background: var(--card-bg);
+      padding: 1.5rem 2rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
     }
 
-    .header h1 {
-      color: #6B5638;
-      font-size: 28px;
+    .header-title h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), #7c3aed);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+    .logo-img {
+      height: 32px;
+      width: auto;
+      margin-right: 0.75rem;
     }
 
-    .btn {
-      padding: 10px 20px;
-      border-radius: 6px;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      font-size: 14px;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #6B5638;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(220, 20, 60, 0.4);
-    }
-
-    .btn-secondary {
-      background: #E8D7C3;
-      color: #6B5638;
-    }
-
-    .btn-secondary:hover {
-      background: #D4C5B9;
-    }
-
-    /* Stats Section */
-    .stats-grid {
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 30px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
     }
 
     .stat-card {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      text-align: center;
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
     }
 
-    .stat-icon {
-      font-size: 28px;
-      margin-bottom: 8px;
-    }
-
-    .stat-number {
-      font-size: 24px;
-      font-weight: 700;
-      color: #8B6F47;
-      margin-bottom: 3px;
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
     }
 
     .stat-label {
-      color: #666;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.05em;
     }
 
-    /* Content Section */
-    .content {
-      background: white;
-      border-radius: 10px;
-      padding: 30px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      margin-bottom: 30px;
+    .stat-value {
+      font-size: 2.25rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.025em;
     }
 
-    .section-title {
-      color: #6B5638;
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 25px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #8B6F47;
+    .stat-meta {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 500;
     }
 
-    /* Form Section */
-    .form-section {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-      border: 2px dashed #8B6F47;
+    .section {
+      background: var(--card-bg);
+      padding: 2rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      margin-bottom: 2rem;
     }
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .form-group {
+    .filter-bar {
       display: flex;
-      flex-direction: column;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+      background: #f8fafc;
+      padding: 1.25rem;
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+      align-items: center;
+      flex-wrap: wrap;
     }
 
-    .form-group label {
-      color: #6B5638;
-      font-weight: 600;
-      margin-bottom: 5px;
-      font-size: 13px;
-    }
-
-    .form-group input,
-    .form-group select {
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 13px;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #8B6F47;
-      box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.1);
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-
-    /* Table Section */
     .table-wrapper {
       overflow-x: auto;
     }
 
-    .bills-table {
+    table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0 0.75rem;
     }
 
-    .bills-table thead {
-      background: #f8f9fa;
-    }
-
-    .bills-table th {
-      padding: 15px;
+    th {
+      padding: 1rem 1.5rem;
+      color: var(--text-muted);
+      font-weight: 800;
+      font-size: 0.75rem;
+      text-transform: uppercase;
       text-align: left;
-      color: #8B6F47;
-      font-weight: 700;
-      border-bottom: 2px solid #D4C5B9;
     }
 
-    .bills-table td {
-      padding: 15px;
-      border-bottom: 1px solid #D4C5B9;
+    td {
+      padding: 1.5rem;
+      background: white;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9375rem;
     }
 
-    .bills-table tbody tr:hover {
-      background: #f8f9fa;
+    td:first-child {
+      border-left: 1px solid var(--border);
+      border-radius: 1rem 0 0 1rem;
     }
 
-    .status-badge {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
+    td:last-child {
+      border-right: 1px solid var(--border);
+      border-radius: 0 1rem 1rem 0;
+    }
+
+    .consumption-bar {
+      height: 10px;
+      background: #eef2ff;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 0.75rem;
+      width: 140px;
+    }
+
+    .consumption-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #818cf8);
+    }
+
+    .input {
+      padding: 0.875rem 1.25rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      font-family: inherit;
+      background: white;
+      font-size: 0.875rem;
       font-weight: 600;
     }
 
-    .status-pending {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .status-paid {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-overdue {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .btn-small {
-      padding: 6px 12px;
-      font-size: 12px;
-      border-radius: 4px;
-      border: none;
+    .btn {
+      padding: 0.875rem 1.75rem;
+      border-radius: 0.75rem;
+      font-weight: 800;
       cursor: pointer;
-      font-weight: 600;
-      margin: 0 2px;
-      transition: all 0.3s;
+      border: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.625rem;
     }
 
-    .btn-pay {
-      background: #28a745;
-      color: #6B5638;
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
     }
 
-    .btn-pay:hover {
-      background: #218838;
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--text-main);
     }
 
-    .btn-history {
-      background: #17a2b8;
-      color: #6B5638;
+    .badge {
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
     }
 
-    .btn-history:hover {
-      background: #138496;
+    .badge-paid {
+      background: #dcfce7;
+      color: #166534;
     }
 
-    /* Alert */
-    .alert {
-      padding: 15px 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      display: none;
-      border-left: 4px solid;
+    .badge-pending {
+      background: #fee2e2;
+      color: #991b1b;
     }
 
-    .alert.success {
-      background: #d4edda;
-      color: #155724;
-      border-color: #28a745;
-    }
-
-    .alert.error {
-      background: #f8d7da;
-      color: #721c24;
-      border-color: #dc3545;
-    }
-
-    .alert.show {
-      display: block;
-    }
-
-    /* Modal */
     .modal {
       display: none;
       position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
       z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.6);
-      overflow-y: auto;
-    }
-
-    .modal.show {
-      display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
     }
 
     .modal-content {
       background: white;
-      padding: 30px;
-      border-radius: 15px;
-      width: 90%;
+      width: 100%;
       max-width: 500px;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-      border-bottom: 2px solid #E8D7C3;
-      padding-bottom: 15px;
-    }
-
-    .modal-header h2 {
-      color: #6B5638;
-      font-size: 20px;
-    }
-
-    .close-btn {
-      font-size: 28px;
-      font-weight: bold;
-      color: #aaa;
-      cursor: pointer;
-      background: none;
-      border: none;
-      transition: color 0.3s;
-    }
-
-    .close-btn:hover {
-      color: #000;
-    }
-
-    /* Footer */
-    .footer {
-      background: white;
-      padding: 20px 30px;
-      border-radius: 10px;
-      text-align: center;
-      color: #666;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-
-    .footer a {
-      color: #8B6F47;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    @media (max-width: 768px) {
-      .header {
-        flex-direction: column;
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .bills-table {
-        font-size: 12px;
-      }
-
-      .bills-table th,
-      .bills-table td {
-        padding: 10px;
-      }
+      border-radius: 2rem;
+      padding: 3rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <h1>⚡ Electricity Bill Management</h1>
+    <header class="header">
+      <div class="header-title" style="display: flex; align-items: center; gap: 1rem;">
+        <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar Logo" class="logo-img">
+        <div>
+          <h1 style="letter-spacing: -0.05em;">UTILITY REVENUE HUB</h1>
+          <p style="color: var(--text-muted); font-size: 0.875rem; font-weight: 500;">Electricity consumption and
+            billing analytics</p>
+        </div>
+      </div>
       <div class="header-actions">
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Dashboard</a>
-        <a href="/admin/" class="btn btn-primary">⚙️ Admin</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Dashboard</a>
+      </div>
+    </header>
+
+    <div class="dashboard-grid">
+      <div class="stat-card" style="--primary: var(--error)">
+        <div class="stat-label">Total Outstanding</div>
+        <div class="stat-value" style="color: var(--error);">₹{{ bill_stats.total_pending_amount|floatformat:0 }}</div>
+        <div class="stat-meta">{{ bill_stats.pending }} bills awaiting payment</div>
+      </div>
+      <div class="stat-card" style="--primary: var(--success)">
+        <div class="stat-label">Revenue Collected (Month)</div>
+        <div class="stat-value" style="color: var(--success);">₹{{ total_collected_this_month|default:"0" }}</div>
+        <div class="stat-meta">{{ bill_stats.paid }} settlements completed</div>
+      </div>
+      <div class="stat-card" style="--primary: var(--warning)">
+        <div class="stat-label">Grid Load Coverage</div>
+        <div class="stat-value" style="color: var(--warning);">{{ avg_units|default:"42" }} <span
+            style="font-size: 1rem; font-weight: 600;">avg units</span></div>
+        <div class="stat-meta">Based on current cycle readings</div>
       </div>
     </div>
 
-    <!-- Statistics -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">⏳</div>
-        <div class="stat-number">{{ bill_stats.pending }}</div>
-        <div class="stat-label">Pending</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">✅</div>
-        <div class="stat-number">{{ bill_stats.paid }}</div>
-        <div class="stat-label">Paid</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">⚠️</div>
-        <div class="stat-number">{{ bill_stats.overdue }}</div>
-        <div class="stat-label">Overdue</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">💹</div>
-        <div class="stat-number">₹{{ bill_stats.total_pending_amount|floatformat:0 }}</div>
-        <div class="stat-label">Pending Amount</div>
-      </div>
+    <div class="section">
+      <h3 style="font-weight: 900; margin-bottom: 2rem; letter-spacing: -0.025em;">⚡ Generate Smart Invoices</h3>
+      <form id="readingForm" onsubmit="handleReadingSubmit(event)">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">TARGET ROOM</label>
+            <select name="room_id" class="input" required>
+              <option value="">Select Room...</option>
+              {% for room in rooms %}<option value="{{ room.id }}">Room {{ room.number }}</option>{% endfor %}
+            </select>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">BILLING MONTH</label>
+            <input type="month" name="month" class="input" required id="currMonth">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">RATE (₹/UNIT)</label>
+            <input type="number" name="rate_per_unit" class="input" required step="0.01" value="10.00">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">METER READINGS (S/E)</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <input type="number" name="starting_reading" placeholder="Start" class="input" required step="0.01">
+              <input type="number" name="ending_reading" placeholder="End" class="input" required step="0.01">
+            </div>
+          </div>
+          <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Generate
+              Invoice</button>
+          </div>
+        </div>
+      </form>
     </div>
 
-    <!-- Alerts -->
-    <div id="successAlert" class="alert success"></div>
-    <div id="errorAlert" class="alert error"></div>
-
-    <!-- Content -->
-    <div class="content">
-      <div class="section-title">⚡ Create Electricity Bill</div>
-
-      <div class="form-section">
-        <form id="createBillForm">
-          {% csrf_token %}
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="bill_room_id">Room *</label>
-              <select id="bill_room_id" name="room_id" required>
-                <option value="">Select Room</option>
-                {% for room in rooms %}
-                <option value="{{ room.id }}">{{ room.number }} - ₹{{ room.price }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="bill_month">Month *</label>
-              <!-- Preferred input: native month picker -->
-              <input type="month" id="bill_month" name="month">
-
-              <!-- Fallback: separate month/year dropdowns (used when browser doesn't support type=month) -->
-              <div id="bill_month_fallback" style="margin-top:8px; display:none;">
-                <div style="display:flex; gap:8px;">
-                  <select id="bill_month_select_month" aria-label="Month">
-                    <option value="">Month</option>
-                    <option value="1">Jan</option>
-                    <option value="2">Feb</option>
-                    <option value="3">Mar</option>
-                    <option value="4">Apr</option>
-                    <option value="5">May</option>
-                    <option value="6">Jun</option>
-                    <option value="7">Jul</option>
-                    <option value="8">Aug</option>
-                    <option value="9">Sep</option>
-                    <option value="10">Oct</option>
-                    <option value="11">Nov</option>
-                    <option value="12">Dec</option>
-                  </select>
-                  <select id="bill_month_select_year" aria-label="Year">
-                    <option value="">Year</option>
-                  </select>
-                </div>
-                <small style="color:#6B5638;">If your browser doesn't show a month picker, use the dropdowns above.</small>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="starting_reading">Starting Reading *</label>
-              <input type="number" id="starting_reading" name="starting_reading" step="0.01" required>
-            </div>
-            <div class="form-group">
-              <label for="ending_reading">Ending Reading *</label>
-              <input type="number" id="ending_reading" name="ending_reading" step="0.01" required>
-            </div>
-            <div class="form-group">
-              <label for="rate_per_unit">Rate per Unit (₹) *</label>
-              <input type="number" id="rate_per_unit" name="rate_per_unit" step="0.01" value="8.50" required>
-            </div>
-            <div class="form-group">
-              <label for="bill_due_date">Due Date *</label>
-              <input type="date" id="bill_due_date" name="due_date" required>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="reset" class="btn btn-secondary">Clear</button>
-            <button type="submit" class="btn btn-primary">Create Bill</button>
-          </div>
-        </form>
+    <div class="section">
+      <div class="section-header">
+        <h2 style="font-weight: 900; letter-spacing: -0.025em;">Utility Ledger</h2>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <input type="text" id="billSearch" onkeyup="filterBills()" placeholder="Search room or month..." class="input"
+            style="width: 300px;">
+        </div>
       </div>
 
-      <!-- Bills Table -->
-      <div class="section-title" style="margin-top: 40px;">📊 Electricity Bills</div>
+      <div class="filter-bar">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">VIEW STATUS:</label>
+          <select id="statusFilter" onchange="filterBills()" class="input" style="padding: 0.5rem 1rem;">
+            <option value="all">All Records</option>
+            <option value="pending">Awaiting Payment</option>
+            <option value="paid">Settled Only</option>
+          </select>
+        </div>
+        <div style="margin-left: auto; font-size: 0.8125rem; font-weight: 700; color: var(--text-muted);">
+          Total Visible: <span id="billCount" style="color: var(--primary);">{{ bills|length }}</span>
+        </div>
+      </div>
 
       <div class="table-wrapper">
-        <table class="bills-table">
+        <table id="billTable">
           <thead>
             <tr>
-              <th>Room</th>
-              <th>Month</th>
-              <th>Units</th>
-              <th>Bill Amount</th>
-              <th>Paid Amount</th>
-              <th>Due Date</th>
+              <th>Resource</th>
+              <th>Period</th>
+              <th>Usage Analytics</th>
+              <th>Financials</th>
               <th>Status</th>
-              <th>Actions</th>
+              <th style="text-align: right;">Managed Actions</th>
             </tr>
           </thead>
-          <tbody id="billsTableBody">
+          <tbody>
             {% for bill in bills %}
-            <tr>
-              <td><strong>{{ bill.room.number }}</strong></td>
-              <td>{{ bill.month|date:"F Y" }}</td>
-              <td>{{ bill.units_consumed }}</td>
-              <td>₹{{ bill.bill_amount }}</td>
-              <td>₹{{ bill.paid_amount }}</td>
-              <td>{{ bill.due_date }}</td>
-              <td><span class="status-badge status-{{ bill.bill_status }}">{{ bill.get_bill_status_display }}</span></td>
+            <tr class="bill-row" data-status="{{ bill.bill_status }}">
+              <td style="font-weight: 900; color: var(--primary); font-size: 1.125rem;">Room {{ bill.room.number }}</td>
+              <td style="font-weight: 600;">{{ bill.month|date:"F Y" }}</td>
               <td>
-                <button class="btn-small btn-pay" onclick="openPayModal({{ bill.id }}, '{{ bill.room.number }}')">Record Payment</button>
-                <button class="btn-small btn-history" onclick="showBillHistory({{ bill.room.id }})">History</button>
+                <div style="font-weight: 800; color: var(--text-main);">{{ bill.units_consumed|floatformat:1 }} Units
+                </div>
+                <div class="consumption-bar">
+                  <div class="consumption-fill" style="width: {% widthratio bill.units_consumed 500 100 %}%"></div>
+                </div>
+              </td>
+              <td>
+                <div style="font-weight: 900; color: var(--text-main); font-size: 1rem;">₹{{
+                  bill.bill_amount|floatformat:0 }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">@ ₹{{ bill.rate_per_unit }}/unit</div>
+              </td>
+              <td>
+                <span class="badge {% if bill.bill_status == 'paid' %}badge-paid{% else %}badge-pending{% endif %}">
+                  {{ bill.bill_status }}
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <button onclick="openPaymentModal('{{ bill.id }}', '{{ bill.room.number }}', '{{ bill.bill_amount }}')"
+                  class="btn btn-secondary" style="padding: 0.625rem 1.25rem;">Record Collection</button>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 4rem; color: var(--text-muted);">No records available.
               </td>
             </tr>
             {% endfor %}
@@ -533,240 +409,82 @@
         </table>
       </div>
     </div>
+  </div>
 
-    <!-- Record Payment Modal -->
-    <div id="payModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Record Payment - <span id="payModalRoom"></span></h2>
-          <button class="close-btn" onclick="closePayModal()">&times;</button>
-        </div>
-
-        <form id="recordBillPaymentForm">
-          {% csrf_token %}
-          <input type="hidden" id="bill_id" name="bill_id">
-          
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="paid_amount">Amount Paid *</label>
-              <input type="number" id="paid_amount" name="paid_amount" step="0.01" required>
-            </div>
-            <div class="form-group">
-              <label for="bill_paid_date">Payment Date *</label>
-              <input type="date" id="bill_paid_date" name="paid_date" required>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closePayModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary">Record Payment</button>
-          </div>
-        </form>
+  <div id="paymentModal" class="modal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2 style="font-weight: 900; letter-spacing: -0.025em;">Invoice Settlement</h2>
+        <button onclick="closeModal()"
+          style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
       </div>
-    </div>
+      <p style="margin-bottom: 2rem; color: var(--text-muted); font-weight: 500;">Recording payment for <span
+          id="modalRoom" style="color: var(--primary); font-weight: 800;"></span></p>
 
-    <!-- Bill History Modal -->
-    <div id="billHistoryModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Bill History - <span id="billHistoryRoom"></span></h2>
-          <button class="close-btn" onclick="closeBillHistoryModal()">&times;</button>
+      <form onsubmit="handlePaymentSubmit(event)">
+        {% csrf_token %}
+        <input type="hidden" name="bill_id" id="modalBillId">
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">SETTLEMENT AMOUNT (₹)</label>
+            <input type="number" name="paid_amount" id="modalAmount" class="input" required step="0.01">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">DATE OF RECEIPT</label>
+            <input type="date" name="paid_date" class="input" id="modalDate" required>
+          </div>
+          <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button type="button" onclick="closeModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center;">Confirm
+              Settlement</button>
+          </div>
         </div>
-
-        <div id="billHistoryContent" style="max-height: 400px; overflow-y: auto;">
-          <!-- History will be loaded here -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <p>© 2025 Panesar PG Management System | <a href="{% url 'dashboard' %}">Dashboard</a> | <a href="/admin/">Admin</a></p>
+      </form>
     </div>
   </div>
 
   <script>
-    const csrftoken = '{{ csrf_token }}';
+    document.getElementById('currMonth').value = new Date().toISOString().slice(0, 7);
 
-    function showAlert(message, type) {
-      const alertEl = type === 'success' ? 
-        document.getElementById('successAlert') : 
-        document.getElementById('errorAlert');
-      
-      alertEl.textContent = message;
-      alertEl.classList.add('show');
-      
-      setTimeout(() => {
-        alertEl.classList.remove('show');
-      }, 4000);
+    function filterBills() {
+      const q = document.getElementById('billSearch').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const rows = document.querySelectorAll('.bill-row');
+      let visible = 0;
+
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const stat = row.getAttribute('data-status');
+        const matches = text.includes(q) && (status === 'all' || stat === status);
+        row.style.display = matches ? '' : 'none';
+        if (matches) visible++;
+      });
+      document.getElementById('billCount').innerText = visible;
     }
 
-    // Set default due date to 15 days from now and enforce min date
-    const today = new Date();
-    const defaultDue = new Date();
-    defaultDue.setDate(today.getDate() + 15);
-    const dueEl = document.getElementById('bill_due_date');
-    dueEl.valueAsDate = defaultDue;
-    // set minimum due date to tomorrow
-    const minDue = new Date();
-    minDue.setDate(minDue.getDate() + 1);
-    dueEl.min = minDue.toISOString().split('T')[0];
+    function openPaymentModal(id, room, amount) {
+      document.getElementById('modalBillId').value = id;
+      document.getElementById('modalRoom').innerText = 'Room ' + room;
+      document.getElementById('modalAmount').value = amount;
+      document.getElementById('modalDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('paymentModal').style.display = 'flex';
+    }
+    function closeModal() { document.getElementById('paymentModal').style.display = 'none'; }
 
-    // Payment date default
-    document.getElementById('bill_paid_date').valueAsDate = new Date();
-
-    // Populate fallback year select with current year ±2
-    (function populateYearSelect() {
-      const yearSelect = document.getElementById('bill_month_select_year');
-      const currentYear = (new Date()).getFullYear();
-      for (let y = currentYear - 2; y <= currentYear + 2; y++) {
-        const opt = document.createElement('option');
-        opt.value = String(y);
-        opt.textContent = String(y);
-        yearSelect.appendChild(opt);
-      }
-    })();
-
-    // Detect support for input[type=month], show fallback if unsupported
-    (function toggleMonthFallback(){
-      const el = document.createElement('input');
-      el.setAttribute('type','month');
-      const supported = (el.type === 'month');
-      if (!supported) {
-        document.getElementById('bill_month_fallback').style.display = 'block';
-      }
-    })();
-
-    // Create Bill Form
-    document.getElementById('createBillForm').addEventListener('submit', function(e) {
+    async function handleReadingSubmit(e) {
       e.preventDefault();
+      const res = await fetch("{% url 'create_electricity_bill' %}", { method: 'POST', body: new FormData(e.target) });
+      if ((await res.json()).success) location.reload(); else alert('Error creating bill. Check if bill for this month already exists.');
+    }
 
-      const formData = new FormData(this);
-
-      // Normalize month value: prefer native month input, otherwise combine fallback selects
-      let monthValue = null;
-      const monthEl = document.getElementById('bill_month');
-      if (monthEl && monthEl.value) {
-        monthValue = monthEl.value; // can be YYYY-MM
-      }
-
-      if (!monthValue) {
-        const selM = document.getElementById('bill_month_select_month').value;
-        const selY = document.getElementById('bill_month_select_year').value;
-        if (selM && selY) {
-          monthValue = selY + '-' + String(selM).padStart(2, '0');
-        }
-      }
-
-      if (!monthValue) {
-        showAlert('Please select a month for the bill', 'error');
-        return;
-      }
-
-      // Ensure we send YYYY-MM-DD (1st of month) to server which expects a date-like string
-      if (/^\d{4}-\d{2}$/.test(monthValue)) {
-        monthValue = monthValue + '-01';
-      }
-
-      formData.set('month', monthValue);
-
-      fetch('/api/bill/create/', {
-        method: 'POST',
-        body: formData,
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          showAlert(data.message, 'success');
-          this.reset();
-          setTimeout(() => location.reload(), 1500);
-        } else {
-          showAlert(data.message, 'error');
-        }
-      })
-      .catch(error => showAlert('Error: ' + error.message, 'error'));
-    });
-
-    // Record Bill Payment Form
-    document.getElementById('recordBillPaymentForm').addEventListener('submit', function(e) {
+    async function handlePaymentSubmit(e) {
       e.preventDefault();
-
-      const formData = new FormData(this);
-      formData.append('csrfmiddlewaretoken', csrftoken);
-
-      fetch('/api/bill/record/', {
-        method: 'POST',
-        body: formData,
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          showAlert(data.message, 'success');
-          closePayModal();
-          setTimeout(() => location.reload(), 1500);
-        } else {
-          showAlert(data.message, 'error');
-        }
-      })
-      .catch(error => showAlert('Error: ' + error.message, 'error'));
-    });
-
-    function openPayModal(billId, roomNumber) {
-      document.getElementById('bill_id').value = billId;
-      document.getElementById('payModalRoom').textContent = roomNumber;
-      document.getElementById('payModal').classList.add('show');
+      const res = await fetch("{% url 'record_electricity_payment' %}", { method: 'POST', body: new FormData(e.target) });
+      if ((await res.json()).success) location.reload(); else alert('Error recording payment');
     }
 
-    function closePayModal() {
-      document.getElementById('payModal').classList.remove('show');
-      document.getElementById('recordBillPaymentForm').reset();
-    }
-
-    function showBillHistory(roomId) {
-      fetch(`/api/bill-history/${roomId}/`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          document.getElementById('billHistoryRoom').textContent = data.room;
-          let html = '';
-          
-          data.history.forEach(bill => {
-            html += `
-              <div style="padding: 15px; border: 1px solid #D4C5B9; border-radius: 6px; margin-bottom: 10px;">
-                <div style="font-weight: 700; color: #6B5638; margin-bottom: 10px;">
-                  ${bill.month} - <span class="status-badge status-${bill.status}">${bill.status.toUpperCase()}</span>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px; margin-bottom: 5px;">
-                  <div><strong>Units:</strong> ${bill.units} @ ₹${bill.rate}</div>
-                  <div><strong>Amount:</strong> ₹${bill.bill_amount}</div>
-                  <div><strong>Paid:</strong> ₹${bill.paid_amount}</div>
-                  <div><strong>Remaining:</strong> ₹${bill.remaining}</div>
-                  <div><strong>Due:</strong> ${bill.due_date}</div>
-                  <div><strong>Paid On:</strong> ${bill.paid_date || 'Not paid'}</div>
-                </div>
-              </div>
-            `;
-          });
-
-          document.getElementById('billHistoryContent').innerHTML = html;
-          document.getElementById('billHistoryModal').classList.add('show');
-        }
-      })
-      .catch(error => console.error('Error:', error));
-    }
-
-    function closeBillHistoryModal() {
-      document.getElementById('billHistoryModal').classList.remove('show');
-    }
-
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-      let modal = document.getElementById('payModal');
-      if (event.target == modal) modal.classList.remove('show');
-      
-      modal = document.getElementById('billHistoryModal');
-      if (event.target == modal) modal.classList.remove('show');
-    }
+    window.onclick = e => { if (e.target.classList.contains('modal')) closeModal(); }
   </script>
 </body>
+
 </html>

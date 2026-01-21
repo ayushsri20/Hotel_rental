@@ -10,6 +10,7 @@ class Room(models.Model):
     number = models.CharField(max_length=10, unique=True)
     room_type = models.CharField(max_length=10, choices=ROOM_TYPES)
     price = models.DecimalField(max_digits=8, decimal_places=2)
+    agreed_rent = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Per-room negotiated rent (overrides price when set)")
     is_available = models.BooleanField(default=True)
     
     class Meta:
@@ -53,9 +54,10 @@ class Guest(models.Model):
     zip_code = models.CharField(max_length=20, blank=True)
     id_type = models.CharField(max_length=50, blank=True, help_text="Passport, Aadhar, License, etc.")
     id_number = models.CharField(max_length=50, blank=True)
-    id_proof_image = models.ImageField(upload_to='id_proofs/', blank=True, null=True, help_text="Photo of ID document")
-    lpu_id = models.CharField(max_length=100, blank=True, help_text="LPU ID or Student ID")
-    lpu_id_photo = models.ImageField(upload_to='lpu_ids/', blank=True, null=True, help_text="Photo of LPU ID")
+    govt_id_photo = models.ImageField(upload_to='govt_ids/', blank=True, null=True, help_text="Photo of Government ID document")
+    college_id = models.CharField(max_length=100, blank=True, help_text="College ID or Student ID")
+    college_id_photo = models.ImageField(upload_to='college_ids/', blank=True, null=True, help_text="Photo of College ID")
+    student_college = models.CharField(max_length=100, blank=True, help_text="Name of the college/university")
     document_verification_image = models.ImageField(upload_to='document_verification/', blank=True, null=True, help_text="Document verification image")
     check_in_date = models.DateField(null=True, blank=True)
     check_out_date = models.DateField(null=True, blank=True)
@@ -165,3 +167,32 @@ class ElectricityBill(models.Model):
     
     def remaining_amount(self):
         return self.bill_amount - self.paid_amount
+
+class MaintenanceExpense(models.Model):
+    """Track maintenance and other expenses for buildings"""
+    EXPENSE_CATEGORIES = [
+        ('plumbing', 'Plumbing'),
+        ('electrical', 'Electrical'),
+        ('painting', 'Painting'),
+        ('carpentry', 'Carpentry'),
+        ('cleaning', 'Cleaning'),
+        ('repairs', 'General Repairs'),
+        ('security', 'Security'),
+        ('internet', 'Internet/WiFi'),
+        ('other', 'Other'),
+    ]
+    
+    building_name = models.CharField(max_length=50, help_text="e.g., M1, 1, 2, etc.")
+    category = models.CharField(max_length=20, choices=EXPENSE_CATEGORIES, default='other')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    date = models.DateField()
+    description = models.TextField()
+    is_paid = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-date']
+    
+    def __str__(self):
+        return f"{self.building_name} - {self.get_category_display()} - ₹{self.amount}"

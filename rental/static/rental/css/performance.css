@@ -1,0 +1,234 @@
+/**
+ * Performance-optimized CSS
+ * - Minimal animations for better CLS
+ * - Optimized font-loading
+ * - Better responsive design
+ */
+
+/* Critical rendering path optimizations */
+:root {
+  /* Cache these values to reduce repaints */
+  --color-primary: #8B6F47;
+  --color-secondary: #6B5638;
+  --color-accent: #D4A574;
+  --color-text: #2C1810;
+  --color-light: #F5DEB3;
+  --color-background: #D4C5B9;
+  --transition-speed: 0.2s;
+  --shadow-sm: 0 5px 15px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 12px 25px rgba(0, 0, 0, 0.15);
+  --border-radius: 6px;
+}
+
+/* Remove animations that cause layout shifts */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto; /* Avoid smooth scroll performance impact */
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, var(--color-background) 0%, #A39B93 100%);
+  min-height: 100vh;
+  color: var(--color-text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reduce layout shifts */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Minimize layout shift for buttons */
+button, a.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color var(--transition-speed) ease, 
+              transform var(--transition-speed) ease;
+  outline-offset: 2px;
+}
+
+button:hover, a.btn:hover {
+  /* No transform to avoid CLS - just color change */
+  background-color: var(--color-secondary);
+}
+
+button:focus, a.btn:focus {
+  outline: 3px solid #4A90E2;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Forms */
+input, textarea, select {
+  font-size: 16px; /* Prevent iOS zoom on input focus */
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--border-radius);
+  font-family: inherit;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+}
+
+/* Cards */
+.card, [role="region"] {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  border: 2px solid #E8D7C3;
+}
+
+/* Reduced animations */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Optimize large lists */
+.list-item, .card {
+  contain: layout style paint;
+}
+
+/* Loading state */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Ensure proper font sizes for accessibility */
+h1, .page-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+h2, .section-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Improve text contrast */
+p, label, span {
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+/* Links */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-speed) ease;
+}
+
+a:hover {
+  color: var(--color-secondary);
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: 3px solid #4A90E2;
+  outline-offset: 2px;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Container queries for better responsive design */
+@supports (container-type: inline-size) {
+  .card-container {
+    container-type: inline-size;
+  }
+
+  @container (min-width: 400px) {
+    .card {
+      padding: 20px;
+    }
+  }
+}
+
+/* Optimize grid layouts */
+.grid {
+  display: grid;
+  gap: 20px;
+  grid-auto-flow: dense;
+}
+
+.grid-auto {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* Print styles for reduced ink */
+@media print {
+  body {
+    background: white;
+  }
+  
+  .header, .footer, .no-print {
+    display: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #2C2420;
+    color: #E8D7C3;
+  }
+  
+  .card, [role="region"] {
+    background: #3C3430;
+    border-color: #5D4E37;
+  }
+  
+  input, textarea, select {
+    background: #3C3430;
+    color: #E8D7C3;
+    border-color: #5D4E37;
+  }
+}

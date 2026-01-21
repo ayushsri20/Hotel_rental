@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+{% load rental_tags %}
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Performance Hub - Panesar PG</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --primary: #947a45;
+      --primary-hover: #7a6438;
+      --bg-main: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --success: #059669;
+      --error: #dc2626;
+      --warning: #d97706;
+      --border: #e2e8f0;
+      --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+      --radius: 1.25rem;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      background: var(--card-bg);
+      padding: 1.5rem 2rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .header-title h1 {
+      font-size: 1.75rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary), #7c3aed);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.05em;
+    }
+
+    .logo-img {
+      height: 48px;
+      width: auto;
+      margin-right: 1rem;
+    }
+
+    .tab-nav {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      background: #f1f5f9;
+      padding: 0.5rem;
+      border-radius: 1rem;
+      width: fit-content;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1.75rem;
+      border-radius: 0.75rem;
+      border: none;
+      font-weight: 800;
+      cursor: pointer;
+      color: var(--text-muted);
+      background: transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: var(--shadow);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      padding: 2.25rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+    }
+
+    .stat-success::before {
+      background: var(--success);
+    }
+
+    .stat-danger::before {
+      background: var(--error);
+    }
+
+    .stat-label {
+      font-size: 0.8125rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.05em;
+    }
+
+    .stat-meta {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .section {
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      margin-bottom: 2.5rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--text-main);
+      letter-spacing: -0.025em;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      margin: -2.5rem;
+      margin-top: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
+    }
+
+    th {
+      padding: 1.25rem 2.5rem;
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 800;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      text-align: left;
+    }
+
+    td {
+      padding: 1.5rem 2.5rem;
+      background: white;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9375rem;
+      transition: background 0.2s;
+    }
+
+    td:first-child {
+      border-left: 1px solid var(--border);
+      border-radius: 1rem 0 0 1rem;
+    }
+
+    td:last-child {
+      border-right: 1px solid var(--border);
+      border-radius: 0 1rem 1rem 0;
+    }
+
+    tr:hover td {
+      background: #f8fafc;
+    }
+
+    .badge {
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .badge-paid {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-pending {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge-partial {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    .btn {
+      padding: 0.875rem 1.75rem;
+      border-radius: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
+      border: none;
+      font-size: 0.875rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.625rem;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--text-main);
+    }
+
+    .input {
+      padding: 0.875rem 1.25rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      font-family: inherit;
+      background: white;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(10px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-content {
+      background: white;
+      width: 100%;
+      max-width: 550px;
+      border-radius: 2.5rem;
+      padding: 3.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 1.25rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #818cf8);
+      border-radius: 4px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-title" style="display: flex; align-items: center; gap: 1.25rem;">
+        <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar Logo" class="logo-img">
+        <div>
+          <h1>PERFORMANCE HUB</h1>
+          <p style="color: var(--text-muted); font-weight: 500; font-size: 0.875rem;">Structured Revenue Tracking &
+            Financial Control</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 1rem;">
+        <button onclick="openModal('maintenanceModal')" class="btn btn-secondary">+ Record Expense</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-primary">Back to Console</a>
+      </div>
+    </header>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('analytics')">Collection Insights</button>
+      <button class="tab-btn" onclick="switchTab('maintenance')">Operational Spendings</button>
+    </div>
+
+    <!-- Analytics Tab -->
+    <div id="analyticsTab">
+      <div class="dashboard-grid">
+        <div class="stat-card stat-success">
+          <div class="stat-label">Net Operating Income</div>
+          <div class="stat-value" style="color: var(--success);">₹{{ kpis.net_operating_income|floatformat:0 }}</div>
+          <div class="stat-meta">Cash Collected - Maintenance (This Month)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Liquidity Position</div>
+          <div class="stat-value">₹{{ kpis.total_collection|floatformat:0 }}</div>
+          <div class="stat-meta">Total physical cash received this month</div>
+        </div>
+        <div class="stat-card stat-danger">
+          <div class="stat-label">Uncollected Utility</div>
+          <div class="stat-value" style="color: var(--error);">₹{{ kpis.total_bills|floatformat:0 }}</div>
+          <div class="stat-meta">Pending electricity receivables</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Allocation Efficiency</div>
+          <div class="stat-value">{{ kpis.collection_efficiency }}%</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ kpis.collection_efficiency }}%"></div>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem; font-weight: 700;">₹{{
+            kpis.allocated_collection|floatformat:0 }} of ₹{{ summary.expected_monthly_collection|floatformat:0 }}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Revenue Ledger</h2>
+          <div style="display: flex; gap: 1.25rem;">
+            <select id="buildingFilter" onchange="runFilters()" class="input" style="width: 200px;">
+              <option value="all">All Buildings</option>
+              {% for b, rooms in buildings %}<option value="{{ b }}">Building {{ b }}</option>{% endfor %}
+            </select>
+            <input type="text" id="globalSearch" onkeyup="runFilters()" placeholder="Search resident or room..."
+              class="input" style="width: 320px;">
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Space Identifier</th>
+                <th>Occupancy Status</th>
+                <th>Agreed Rent</th>
+                <th>Collected</th>
+                <th style="text-align: center;">Net Status</th>
+                <th style="text-align: right;">Managed Action</th>
+              </tr>
+            </thead>
+            <tbody id="collectionBody">
+              {% for room in rooms %}
+              <tr class="data-row" data-building="{{ room.room_number|slice:':1' }}">
+                <td style=" font-weight: 900; color: var(--primary); font-size: 1.125rem;">Room {{ room.room_number }}
+                </td>
+                <td>
+                  <div style="font-weight: 800;">{{ room.guest_name }}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Active Resident</div>
+                </td>
+                <td style="font-weight: 900;">₹{{ room.monthly_rent|floatformat:0 }}</td>
+                <td style="color: var(--success); font-weight: 900;">₹{{ room.collected|floatformat:0 }}</td>
+                <td style="text-align: center;">
+                  <span
+                    class="badge {% if room.payment_status == 'paid' %}badge-paid{% elif room.payment_status == 'partial' %}badge-partial{% else %}badge-pending{% endif %}">
+                    {{ room.payment_status|default:'pending'|upper }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  {% if room.monthly_payment_id %}
+                  <button
+                    onclick="openPaymentModal('{{ room.monthly_payment_id }}', '{{ room.room_number }}', '{{ room.pending }}')"
+                    class="btn btn-secondary" style="padding: 0.625rem 1.25rem;">Record Payout</button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maintenance Tab -->
+    <div id="maintenanceTab" hidden>
+      <div class="dashboard-grid">
+        <div class="stat-card stat-danger">
+          <div class="stat-label">Total Operational Cost</div>
+          <div class="stat-value" style="color: var(--error);">₹{{ summary.total_maintenance|floatformat:0 }}</div>
+          <div class="stat-meta">Maintenance burn rate this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Maintenance / Unit</div>
+          <div class="stat-value">₹{{ summary.total_maintenance|divide:kpis.total_rooms|floatformat:0 }}</div>
+          <div class="stat-meta">Average overhead per room</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 style="font-weight: 900; margin-bottom: 2rem; letter-spacing: -0.025em;">Building Clusters Analysis</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+          {% for bm in building_maintenance %}
+          <div style="background: #f8fafc; padding: 2rem; border-radius: 1.5rem; border: 1px solid var(--border);">
+            <div
+              style="font-size: 0.75rem; font-weight: 900; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">
+              Building {{ bm.building_name }}</div>
+            <div style="font-size: 2rem; font-weight: 900; color: var(--text-main);">₹{{ bm.total|floatformat:0 }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 style="font-weight: 900; margin-bottom: 2rem; letter-spacing: -0.025em;">Recent Operational Logs</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Cluster</th>
+                <th>Category</th>
+                <th>Log Description</th>
+                <th style="text-align: right;">Cost Incurred</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for exp in maintenance %}
+              <tr>
+                <td style="font-weight: 700;">{{ exp.date|date:"d M Y" }}</td>
+                <td style="font-weight: 900; color: var(--primary);">{{ exp.building_name }}</td>
+                <td><span class="badge" style="background: #eef2ff; color: var(--primary);">{{ exp.category|title
+                    }}</span></td>
+                <td style="color: var(--text-muted); font-weight: 500;">{{ exp.description }}</td>
+                <td style="text-align: right; font-weight: 900; color: var(--error); font-size: 1.125rem;">₹{{
+                  exp.amount|floatformat:0 }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 4rem; color: var(--text-muted);">Operationally
+                  clean! No expenses recorded.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="paymentModal" class="modal">
+      <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+          <h2 style="font-weight: 900; letter-spacing: -0.05em;">Rent Collection Vault</h2>
+          <button onclick="closeModal('paymentModal')"
+            style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <form onsubmit="handlePaymentSubmit(event)">
+          {% csrf_token %}
+          <input type="hidden" name="monthly_payment_id" id="paymentId">
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">TRANSACTION AMOUNT
+                (₹)</label>
+              <input type="number" name="payment_amount" id="modalAmount" class="input" required step="0.01">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">PAYMENT CHANNEL</label>
+              <select name="payment_method" class="input">
+                <option value="upi">Digital UPI</option>
+                <option value="cash" selected>Physical Cash</option>
+                <option value="bank">Bank Transfer</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">LOG DATE</label>
+              <input type="date" name="payment_date" id="paymentDateInput" class="input" required>
+            </div>
+            <div style="display: flex; gap: 1.25rem; margin-top: 1rem;">
+              <button type="button" onclick="closeModal('paymentModal')" class="btn btn-secondary"
+                style="flex: 1;">Cancel</button>
+              <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center;">Authorize
+                Entry</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="maintenanceModal" class="modal">
+      <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+          <h2 style="font-weight: 900; letter-spacing: -0.05em;">Operational Cost Entry</h2>
+          <button onclick="closeModal('maintenanceModal')"
+            style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <form onsubmit="handleMaintenanceSubmit(event)">
+          {% csrf_token %}
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">BUILDING CLUSTER</label>
+              <select name="building_name" class="input" required>
+                <option value="">Select Cluster...</option>
+                {% for b, rooms in buildings %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
+              </select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">AMOUNT (₹)</label>
+                <input type="number" name="amount" class="input" required step="0.01">
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">SERVICE DATE</label>
+                <input type="date" name="date" id="expDateInput" class="input" required>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">DESCRIPTION & NOTES</label>
+              <textarea name="description" class="input" style="height: 120px; resize: none;"
+                placeholder="Brief details of repairs or costs..."></textarea>
+            </div>
+            <div style="display: flex; gap: 1.25rem;">
+              <button type="button" onclick="closeModal('maintenanceModal')" class="btn btn-secondary"
+                style="flex: 1;">Discard</button>
+              <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center;">Audit &
+                Log</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.getElementById('analyticsTab').hidden = tab !== 'analytics';
+      document.getElementById('maintenanceTab').hidden = tab !== 'maintenance';
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.toLowerCase().includes(tab));
+      });
+    }
+
+    function runFilters() {
+      const bFilter = document.getElementById('buildingFilter').value;
+      const sFilter = document.getElementById('globalSearch').value.toLowerCase();
+      document.querySelectorAll('.data-row').forEach(row => {
+        const building = row.getAttribute('data-building');
+        const text = row.innerText.toLowerCase();
+        const bMatch = bFilter === 'all' || building === bFilter;
+        const sMatch = text.includes(sFilter);
+        row.style.display = (bMatch && sMatch) ? '' : 'none';
+      });
+    }
+
+    function openPaymentModal(pid, room, amount) {
+      document.getElementById('paymentId').value = pid;
+      document.getElementById('modalAmount').value = amount;
+      document.getElementById('paymentDateInput').value = new Date().toISOString().split('T')[0];
+      document.getElementById('paymentModal').style.display = 'flex';
+    }
+
+    function openModal(mid) {
+      if (mid === 'maintenanceModal') {
+        document.getElementById('expDateInput').value = new Date().toISOString().split('T')[0];
+      }
+      document.getElementById(mid).style.display = 'flex';
+    }
+    function closeModal(mid) { document.getElementById(mid).style.display = 'none'; }
+
+    async function handlePaymentSubmit(e) {
+      e.preventDefault();
+      const res = await fetch("{% url 'record_payment_dashboard' %}", { method: 'POST', body: new FormData(e.target) });
+      if ((await res.json()).success) location.reload(); else alert('Error recording collection');
+    }
+
+    async function handleMaintenanceSubmit(e) {
+      e.preventDefault();
+      const res = await fetch("{% url 'record_maintenance' %}", { method: 'POST', body: new FormData(e.target) });
+      if ((await res.json()).success) location.reload(); else alert('Error logging expense');
+    }
+
+    window.onclick = e => { if (e.target.classList.contains('modal')) closeModal(e.target.id); }
+  </script>
+</body>
+
+</html>

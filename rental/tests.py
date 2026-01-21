@@ -73,7 +73,7 @@ class GuestFileUploadTests(TestCase):
         self.admin = User.objects.create_superuser(username='admin', email='admin@test.com', password='password')
         self.room = Room.objects.create(number='B-201', price=3000.0, is_available=True)
     
-    def test_add_guest_with_id_proof_image(self):
+    def test_add_guest_with_govt_id_photo(self):
         """Test adding guest with ID proof image"""
         self.client.login(username='admin', password='password')
         
@@ -93,7 +93,7 @@ class GuestFileUploadTests(TestCase):
             'id_type': 'Aadhar',
             'id_number': '12345678',
             'check_in_date': '2025-11-01',
-            'id_proof_image': test_image,
+            'govt_id_photo': test_image,
         }
         
         response = self.client.post(reverse('add_guest'), data)
@@ -103,14 +103,14 @@ class GuestFileUploadTests(TestCase):
         
         # Verify guest was created with image
         guest = Guest.objects.get(email='john@test.com')
-        self.assertTrue(guest.id_proof_image)
+        self.assertTrue(guest.govt_id_photo)
     
-    def test_add_guest_with_lpu_id_photo(self):
+    def test_add_guest_with_college_id_photo(self):
         """Test adding guest with LPU ID photo"""
         self.client.login(username='admin', password='password')
         
         test_image = SimpleUploadedFile(
-            "lpu_id.png",
+            "college_id.png",
             b'fake png content',
             content_type="image/png"
         )
@@ -120,9 +120,9 @@ class GuestFileUploadTests(TestCase):
             'last_name': 'Smith',
             'email': 'jane@test.com',
             'phone': '9876543211',
-            'lpu_id': 'LP00123456',
+            'college_id': 'LP00123456',
             'check_in_date': '2025-11-01',
-            'lpu_id_photo': test_image,
+            'college_id_photo': test_image,
         }
         
         response = self.client.post(reverse('add_guest'), data)
@@ -131,8 +131,8 @@ class GuestFileUploadTests(TestCase):
         self.assertTrue(resp.get('success'))
         
         guest = Guest.objects.get(email='jane@test.com')
-        self.assertEqual(guest.lpu_id, 'LP00123456')
-        self.assertTrue(guest.lpu_id_photo)
+        self.assertEqual(guest.college_id, 'LP00123456')
+        self.assertTrue(guest.college_id_photo)
     
     def test_add_guest_with_document_verification(self):
         """Test adding guest with document verification image"""
@@ -176,10 +176,10 @@ class GuestFileUploadTests(TestCase):
             'phone': '9876543213',
             'id_type': 'Passport',
             'id_number': 'PASS123456',
-            'lpu_id': 'LP00654321',
+            'college_id': 'LP00654321',
             'check_in_date': '2025-11-01',
-            'id_proof_image': id_image,
-            'lpu_id_photo': lpu_image,
+            'govt_id_photo': id_image,
+            'college_id_photo': lpu_image,
             'document_verification_image': doc_image,
         }
         
@@ -189,8 +189,8 @@ class GuestFileUploadTests(TestCase):
         self.assertTrue(resp.get('success'), f"Error: {resp.get('message')}")
         
         guest = Guest.objects.get(email='alice@test.com')
-        self.assertTrue(guest.id_proof_image)
-        self.assertTrue(guest.lpu_id_photo)
+        self.assertTrue(guest.govt_id_photo)
+        self.assertTrue(guest.college_id_photo)
         self.assertTrue(guest.document_verification_image)
     
     def test_add_guest_with_invalid_file_extension(self):
@@ -210,7 +210,7 @@ class GuestFileUploadTests(TestCase):
             'email': 'badfile@test.com',
             'phone': '9876543214',
             'check_in_date': '2025-11-01',
-            'id_proof_image': bad_file,
+            'govt_id_photo': bad_file,
         }
         
         response = self.client.post(reverse('add_guest'), data)
@@ -242,7 +242,7 @@ class GuestFileUploadTests(TestCase):
             'first_name': 'Updated',
             'last_name': 'Guest',
             'phone': '9876543215',
-            'id_proof_image': new_image,
+            'govt_id_photo': new_image,
         }
         
         response = self.client.post(reverse('update_guest', args=[guest.id]), data)
@@ -253,4 +253,4 @@ class GuestFileUploadTests(TestCase):
         # Verify update
         guest.refresh_from_db()
         self.assertEqual(guest.first_name, 'Updated')
-        self.assertTrue(guest.id_proof_image)
+        self.assertTrue(guest.govt_id_photo)

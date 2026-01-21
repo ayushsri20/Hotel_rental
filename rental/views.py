@@ -3,11 +3,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+from django.db import transaction
 from .models import Room, Booking, Guest, MonthlyPayment, PaymentRecord, ElectricityBill
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
+
+# Framework imports
+from data_consistency_framework import DataConsistencyValidator, DataSyncManager, AuditLogger
 
 def is_admin(user):
     return user.is_staff or user.is_superuser
@@ -41,6 +45,32 @@ def dashboard(request):
     bookings = Booking.objects.all()
     guests = Guest.objects.filter(is_active=True)
     
+    # Fetch all active guests and map them to rooms
+    active_guests = Guest.objects.filter(is_active=True).select_related('room')
+    room_tenants = defaultdict(list)
+    for guest in active_guests:
+        if guest.room:
+            room_tenants[guest.room.id].append(guest)
+            
+    
+    # Enrich rooms with tenant data and calculate status
+    for room in rooms:
+        tenants = room_tenants.get(room.id, [])
+        room.current_tenants = tenants
+        
+        # Determine Capacity
+        capacity_map = {'single': 1, 'double': 2, 'suite': 4}
+        capacity = capacity_map.get(room.room_type.lower(), 2) # Default to 2
+        room.capacity = capacity
+        
+        count = len(tenants)
+        if count == 0:
+            room.occupancy_status = 'empty'
+        elif count < capacity:
+            room.occupancy_status = 'partial'
+        else:
+            room.occupancy_status = 'full'
+            
     # Group rooms by building
     buildings = defaultdict(list)
     for room in rooms:
@@ -54,17 +84,29 @@ def dashboard(request):
     def map_building_name(original_name):
         if original_name == 'A':
             return 'M1'
+        elif original_name == 'M1': # Handle direct naming if changed in db
+            return 'M1'
         else:
-            # Convert B->1, C->2, D->3, etc.
-            return str(ord(original_name) - ord('B') + 1)
+            try:
+                # Convert B->1, C->2, D->3, etc.
+                val = ord(original_name) - ord('B') + 1
+                return str(val) if val > 0 else original_name
+            except:
+                return original_name
     
     # Apply mapping to building names
     mapped_buildings = [(map_building_name(name), rooms) for name, rooms in sorted_buildings]
     
+    # Calculate active stats
+    active_rooms_count = rooms.filter(is_available=False).count()
+    occupancy_rate = (active_rooms_count / rooms.count() * 100) if rooms.count() > 0 else 0
+    
     context = {
         'total_rooms': rooms.count(),
         'available_rooms': rooms.filter(is_available=True).count(),
-        'booked_rooms': rooms.filter(is_available=False).count(),
+        'booked_rooms': active_rooms_count,
+        'active_rooms_count': active_rooms_count,
+        'occupancy_rate': round(occupancy_rate, 1),
         'active_bookings': bookings.filter(is_active=True).count(),
         'total_bookings': bookings.count(),
         'all_bookings': bookings[:5],
@@ -109,12 +151,23 @@ def manage_buildings(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def manage_guests(request):
-    guests = Guest.objects.all()
-    rooms = Room.objects.all()
+    """Manage guest information with structured data"""
+    guests = Guest.objects.all().order_by('-created_at')
+    rooms = Room.objects.all().order_by('number')
+    
+    # Get guest statistics
+    guest_stats = {
+        'total': guests.count(),
+        'active': guests.filter(is_active=True).count(),
+        'inactive': guests.filter(is_active=False).count(),
+        'with_room': guests.filter(room__isnull=False).count(),
+        'without_room': guests.filter(room__isnull=True).count(),
+    }
     
     context = {
         'guests': guests,
         'rooms': rooms,
+        'guest_stats': guest_stats,
     }
     
     return render(request, 'manage_guests.html', context)
@@ -126,19 +179,35 @@ def update_room(request, room_id):
     try:
         room = get_object_or_404(Room, id=room_id)
         
+        # Allow updating room number (unique), room type, price and agreed_rent
+        new_number = request.POST.get('number', None)
+        if new_number and new_number != room.number:
+            # Validate uniqueness
+            if Room.objects.filter(number=new_number).exclude(id=room.id).exists():
+                return JsonResponse({'success': False, 'message': f'Room number {new_number} already exists'}, status=400)
+            room.number = new_number
+
         room.room_type = request.POST.get('room_type', room.room_type)
+        # Support per-room negotiated rent (agreed_rent). If provided, persist it.
         room.price = float(request.POST.get('price', room.price))
+        agreed_val = request.POST.get('agreed_rent', None)
+        if agreed_val is not None and agreed_val != '':
+            try:
+                room.agreed_rent = float(agreed_val)
+            except ValueError:
+                pass
         room.is_available = request.POST.get('is_available') == 'true'
         room.save()
         
         return JsonResponse({
             'success': True,
             'message': f'Room {room.number} updated successfully',
-            'room': {
+                'room': {
                 'id': room.id,
                 'number': room.number,
                 'room_type': room.room_type,
                 'price': str(room.price),
+                'agreed_rent': str(room.agreed_rent) if room.agreed_rent is not None else None,
                 'is_available': room.is_available,
             }
         })
@@ -156,6 +225,13 @@ def add_room(request):
         room_number = request.POST.get('room_number')
         room_type = request.POST.get('room_type')
         price = float(request.POST.get('price', 0))
+        agreed_val = request.POST.get('agreed_rent', None)
+        agreed_rent = None
+        if agreed_val is not None and agreed_val != '':
+            try:
+                agreed_rent = float(agreed_val)
+            except ValueError:
+                agreed_rent = None
         
         if Room.objects.filter(number=room_number).exists():
             return JsonResponse({
@@ -167,6 +243,7 @@ def add_room(request):
             number=room_number,
             room_type=room_type,
             price=price,
+            agreed_rent=agreed_rent,
             is_available=True
         )
         
@@ -177,7 +254,8 @@ def add_room(request):
                 'id': room.id,
                 'number': room.number,
                 'room_type': room.room_type,
-                'price': str(room.price),
+                    'price': str(room.price),
+                    'agreed_rent': str(room.agreed_rent) if room.agreed_rent is not None else None,
                 'is_available': room.is_available,
             }
         })
@@ -228,17 +306,27 @@ def add_guest(request):
             return True
         
         # Validate all image files
-        for file_field in ['id_proof_image', 'lpu_id_photo', 'document_verification_image']:
+        for file_field in ['govt_id_photo', 'college_id_photo', 'document_verification_image']:
             if file_field in request.FILES:
                 validate_image_file(request.FILES[file_field])
         
+        check_in = request.POST.get('check_in_date')
+        check_out = request.POST.get('check_out_date')
+        dob = request.POST.get('date_of_birth')
+        
+        # Parse dates if provided
+        def parse_date(d):
+            if not d: return None
+            try: return datetime.strptime(d, '%Y-%m-%d').date()
+            except: return None
+
         guest = Guest.objects.create(
             first_name=request.POST.get('first_name'),
             last_name=request.POST.get('last_name'),
             email=request.POST.get('email'),
             phone=request.POST.get('phone'),
             gender=request.POST.get('gender', 'M'),
-            date_of_birth=request.POST.get('date_of_birth') or None,
+            date_of_birth=parse_date(dob),
             address=request.POST.get('address', ''),
             city=request.POST.get('city', ''),
             state=request.POST.get('state', ''),
@@ -246,15 +334,26 @@ def add_guest(request):
             zip_code=request.POST.get('zip_code', ''),
             id_type=request.POST.get('id_type', ''),
             id_number=request.POST.get('id_number', ''),
-            lpu_id=request.POST.get('lpu_id', ''),
-            check_in_date=request.POST.get('check_in_date') or None,
-            check_out_date=request.POST.get('check_out_date') or None,
+            college_id=request.POST.get('college_id', ''),
+            student_college=request.POST.get('student_college', ''),
+            check_in_date=parse_date(check_in),
+            check_out_date=parse_date(check_out),
             room_id=request.POST.get('room_id') or None,
             notes=request.POST.get('notes', ''),
-            id_proof_image=request.FILES.get('id_proof_image'),
-            lpu_id_photo=request.FILES.get('lpu_id_photo'),
-            document_verification_image=request.FILES.get('document_verification_image'),
         )
+        
+        # Room status update
+        if guest.room:
+            guest.room.is_available = False
+            guest.room.save()
+
+        if 'govt_id_photo' in request.FILES:
+            guest.govt_id_photo = request.FILES['govt_id_photo']
+        if 'college_id_photo' in request.FILES:
+            guest.college_id_photo = request.FILES['college_id_photo']
+        if 'document_verification_image' in request.FILES:
+            guest.document_verification_image = request.FILES['document_verification_image']
+        guest.save()
         
         return JsonResponse({
             'success': True,
@@ -285,10 +384,7 @@ def update_guest(request, guest_id):
     """
     Update guest/tenant details with comprehensive validation.
     Ensures all updates propagate correctly throughout the system.
-    Clears caches and invalidates derived data.
     """
-    from data_consistency_framework import DataConsistencyValidator, DataSyncManager, AuditLogger
-    from django.db import transaction
     
     try:
         guest = get_object_or_404(Guest, id=guest_id)
@@ -302,7 +398,8 @@ def update_guest(request, guest_id):
             'gender': guest.gender,
             'id_type': guest.id_type,
             'id_number': guest.id_number,
-            'lpu_id': guest.lpu_id,
+            'college_id': guest.college_id,
+            'student_college': guest.student_college,
             'address': guest.address,
             'city': guest.city,
             'state': guest.state,
@@ -327,7 +424,7 @@ def update_guest(request, guest_id):
                 raise ValueError(f'File size exceeds 5MB limit (File size: {file_obj.size / 1024 / 1024:.2f}MB)')
             return True
         
-        for file_field in ['id_proof_image', 'lpu_id_photo', 'document_verification_image']:
+        for file_field in ['govt_id_photo', 'college_id_photo', 'document_verification_image']:
             if file_field in request.FILES:
                 try:
                     validate_image_file(request.FILES[file_field])
@@ -339,23 +436,34 @@ def update_guest(request, guest_id):
                     }, status=400)
         
         # Prepare updates
+        def parse_date(d):
+            if not d: return None
+            try: return datetime.strptime(d, '%Y-%m-%d').date()
+            except: return d # Fallback to original if can't parse
+
+        new_room_id = request.POST.get('room_id') or None
+        if new_room_id: new_room_id = int(new_room_id)
+
         updates = {
             'first_name': request.POST.get('first_name', '').strip(),
             'last_name': request.POST.get('last_name', '').strip(),
             'email': request.POST.get('email', guest.email).strip(),
             'phone': request.POST.get('phone', '').strip(),
             'gender': request.POST.get('gender', guest.gender),
+            'date_of_birth': parse_date(request.POST.get('date_of_birth')),
             'id_type': request.POST.get('id_type', guest.id_type),
             'id_number': request.POST.get('id_number', '').strip(),
-            'lpu_id': request.POST.get('lpu_id', '').strip(),
+            'college_id': request.POST.get('college_id', '').strip(),
+            'student_college': request.POST.get('student_college', '').strip(),
             'address': request.POST.get('address', guest.address),
             'city': request.POST.get('city', guest.city),
             'state': request.POST.get('state', guest.state),
             'country': request.POST.get('country', guest.country),
             'zip_code': request.POST.get('zip_code', guest.zip_code),
-            'check_in_date': request.POST.get('check_in_date', None),
-            'check_out_date': request.POST.get('check_out_date', None),
+            'check_in_date': parse_date(request.POST.get('check_in_date')),
+            'check_out_date': parse_date(request.POST.get('check_out_date')),
             'notes': request.POST.get('notes', guest.notes),
+            'room_id': new_room_id
         }
         
         # Validate updates
@@ -369,29 +477,44 @@ def update_guest(request, guest_id):
         
         # Use transaction to ensure atomicity
         with transaction.atomic():
+            # Handle Room Change
+            if guest.room_id != new_room_id:
+                # Free old room
+                if guest.room:
+                    guest.room.is_available = True
+                    guest.room.save()
+                # Occy new room
+                if new_room_id:
+                    new_room = Room.objects.get(id=new_room_id)
+                    new_room.is_available = False
+                    new_room.save()
+            
             # Apply updates
             guest.first_name = updates['first_name'] or guest.first_name
             guest.last_name = updates['last_name'] or guest.last_name
             guest.email = updates['email']
             guest.phone = updates['phone'] or guest.phone
             guest.gender = updates['gender']
+            guest.date_of_birth = updates['date_of_birth']
             guest.id_type = updates['id_type']
             guest.id_number = updates['id_number']
-            guest.lpu_id = updates['lpu_id']
+            guest.college_id = updates['college_id']
+            guest.student_college = updates['student_college']
             guest.address = updates['address']
             guest.city = updates['city']
             guest.state = updates['state']
             guest.country = updates['country']
             guest.zip_code = updates['zip_code']
-            guest.check_in_date = updates['check_in_date'] or None
-            guest.check_out_date = updates['check_out_date'] or None
+            guest.check_in_date = updates['check_in_date']
+            guest.check_out_date = updates['check_out_date']
+            guest.room_id = new_room_id
             guest.notes = updates['notes']
             
             # Update images only if provided
-            if 'id_proof_image' in request.FILES:
-                guest.id_proof_image = request.FILES['id_proof_image']
-            if 'lpu_id_photo' in request.FILES:
-                guest.lpu_id_photo = request.FILES['lpu_id_photo']
+            if 'govt_id_photo' in request.FILES:
+                guest.govt_id_photo = request.FILES['govt_id_photo']
+            if 'college_id_photo' in request.FILES:
+                guest.college_id_photo = request.FILES['college_id_photo']
             if 'document_verification_image' in request.FILES:
                 guest.document_verification_image = request.FILES['document_verification_image']
             
@@ -413,7 +536,7 @@ def update_guest(request, guest_id):
                 'name': guest.full_name,
                 'email': guest.email,
                 'phone': guest.phone,
-                'lpu_id': guest.lpu_id,
+                'college_id': guest.college_id,
                 'check_in': guest.check_in_date.strftime('%Y-%m-%d') if guest.check_in_date else None,
                 'check_out': guest.check_out_date.strftime('%Y-%m-%d') if guest.check_out_date else None,
             }
@@ -438,11 +561,19 @@ def delete_guest(request, guest_id):
     try:
         guest = get_object_or_404(Guest, id=guest_id)
         name = guest.full_name
-        guest.delete()
+        
+        # Free room and archive
+        if guest.room:
+            guest.room.is_available = True
+            guest.room.save()
+            guest.room = None # Remove room assignment
+            
+        guest.is_active = False
+        guest.save()
         
         return JsonResponse({
             'success': True,
-            'message': f'Guest {name} deleted successfully'
+            'message': f'Guest {name} archived successfully'
         })
     except Exception as e:
         return JsonResponse({
@@ -455,55 +586,133 @@ def delete_guest(request, guest_id):
 @require_http_methods(["GET"])
 def get_guests(request):
     try:
-        guests = Guest.objects.all().select_related('room').order_by('-created_at')
+        # Default to showing active guests unless specified
+        show_archived = request.GET.get('archived') == 'true'
+        if show_archived:
+            guests = Guest.objects.all().select_related('room').order_by('-created_at')
+        else:
+            guests = Guest.objects.filter(is_active=True).select_related('room').order_by('-created_at')
+            
         guests_data = []
         
-        for guest in guests:
+        for g in guests:
             guests_data.append({
-                'id': guest.id,
-                'first_name': guest.first_name,
-                'last_name': guest.last_name,
-                'full_name': guest.full_name,
-                'email': guest.email,
-                'phone': guest.phone,
-                'gender': guest.gender,
-                'date_of_birth': guest.date_of_birth,
-                'address': guest.address,
-                'city': guest.city,
-                'state': guest.state,
-                'country': guest.country,
-                'zip_code': guest.zip_code,
-                'id_type': guest.id_type,
-                'id_number': guest.id_number,
-                'check_in_date': guest.check_in_date,
-                'check_out_date': guest.check_out_date,
+                'id': g.id,
+                'first_name': g.first_name,
+                'last_name': g.last_name,
+                'full_name': g.full_name,
+                'email': g.email,
+                'phone': g.phone,
+                'gender': g.gender,
+                'date_of_birth': g.date_of_birth.strftime('%Y-%m-%d') if g.date_of_birth else None,
+                'address': g.address,
+                'city': g.city,
+                'state': g.state,
+                'country': g.country,
+                'zip_code': g.zip_code,
+                'id_type': g.id_type,
+                'id_number': g.id_number,
+                'college_id': g.college_id,
+                'student_college': g.student_college,
+                'check_in_date': g.check_in_date.strftime('%Y-%m-%d') if g.check_in_date else '',
+                'check_out_date': g.check_out_date.strftime('%Y-%m-%d') if g.check_out_date else '',
+                'notes': g.notes,
+                'is_active': g.is_active,
+                'created_at': g.created_at.isoformat() if g.created_at else None,
                 'room': {
-                    'id': guest.room.id,
-                    'number': guest.room.number,
-                    'price': str(guest.room.price)
-                } if guest.room else None,
-                'notes': guest.notes,
-                'is_active': guest.is_active,
-                'created_at': guest.created_at.isoformat() if guest.created_at else None,
+                    'id': g.room.id,
+                    'number': g.room.number,
+                    'price': str(g.room.price),
+                    'agreed_rent': str(g.room.agreed_rent) if g.room.agreed_rent is not None else None
+                } if g.room else None,
+                'govt_id_photo': g.govt_id_photo.url if g.govt_id_photo else None,
+                'college_id_photo': g.college_id_photo.url if g.college_id_photo else None,
             })
         
         return JsonResponse({
             'success': True,
-            'guests': guests_data
+            'guests': guests_data,
+            'guest_list': guests_data # For compatibility
         })
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': str(e)
-        }, status=400)
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
-# Payment Management Views
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def manage_users(request):
+    """View to manage motel staff/employees ONLY - Tenants are managed separately"""
+    # Filter to only show people who are actually meant to be working (staff/admins)
+    managed_users = User.objects.filter(is_staff=True).order_by('-date_joined')
+    return render(request, 'manage_users.html', {'managed_users': managed_users})
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def add_user(request):
+    """API to create a new staff user"""
+    try:
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        first_name = request.POST.get('first_name', '')
+        last_name = request.POST.get('last_name', '')
+        is_staff = request.POST.get('is_staff') == 'true'
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'success': False, 'message': 'Username already exists'}, status=400)
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
+        user.is_staff = is_staff
+        user.save()
+        return JsonResponse({'success': True, 'message': '✓ Staff member added successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def update_user(request, user_id):
+    """API to update staff user details"""
+    try:
+        managed_user = get_object_or_404(User, id=user_id)
+        managed_user.first_name = request.POST.get('first_name', managed_user.first_name)
+        managed_user.last_name = request.POST.get('last_name', managed_user.last_name)
+        managed_user.email = request.POST.get('email', managed_user.email)
+        managed_user.is_staff = request.POST.get('is_staff') == 'true'
+        managed_user.save()
+        return JsonResponse({'success': True, 'message': '✓ User updated successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def delete_user(request, user_id):
+    """API to delete staff user"""
+    try:
+        if request.user.id == user_id:
+            return JsonResponse({'success': False, 'message': 'You cannot delete yourself'}, status=400)
+        managed_user = get_object_or_404(User, id=user_id)
+        managed_user.delete()
+        return JsonResponse({'success': True, 'message': '✓ User deleted successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def manage_payments(request):
     """Monthly payment tracking and management"""
     rooms = Room.objects.all().order_by('number')
     payments = MonthlyPayment.objects.select_related('room', 'guest').order_by('-month')
+    monthly_payments = MonthlyPayment.objects.select_related('room', 'guest').filter(
+        payment_status__in=['pending', 'partial']
+    ).order_by('-month')
     
     # Get payment status summary
     payment_stats = {
@@ -517,6 +726,7 @@ def manage_payments(request):
     context = {
         'rooms': rooms,
         'payments': payments[:100],
+        'monthly_payments': monthly_payments,
         'payment_stats': payment_stats,
     }
     
@@ -559,18 +769,28 @@ def create_monthly_payment(request):
         if not month_str or not month_str.strip():
             return JsonResponse({'success': False, 'message': 'Month is required'}, status=400)
         
-        try:
-            rent_amount = float(request.POST.get('rent_amount', 0))
-            if rent_amount <= 0:
-                return JsonResponse({'success': False, 'message': 'Rent amount must be greater than 0'}, status=400)
-        except ValueError:
-            return JsonResponse({'success': False, 'message': 'Invalid rent amount'}, status=400)
+        # Determine rent amount: prefer explicit POSTed value, otherwise use room.agreed_rent, then fallback to room.price
+        rent_amount_raw = request.POST.get('rent_amount', None)
+        rent_amount = None
+        if rent_amount_raw is not None and rent_amount_raw != '':
+            try:
+                rent_amount = float(rent_amount_raw)
+            except ValueError:
+                return JsonResponse({'success': False, 'message': 'Invalid rent amount'}, status=400)
+
         
         try:
             room = Room.objects.get(id=room_id)
         except Room.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Room not found'}, status=404)
         
+        # If rent_amount not provided, use agreed_rent if set, otherwise room.price
+        if not rent_amount or rent_amount <= 0:
+            if getattr(room, 'agreed_rent', None) is not None:
+                rent_amount = float(room.agreed_rent)
+            else:
+                rent_amount = float(room.price)
+
         # Parse month - handle both YYYY-MM-DD and YYYY-MM formats
         try:
             if len(month_str) == 10 and month_str[4] == '-' and month_str[7] == '-':
@@ -747,10 +967,14 @@ def create_electricity_bill(request):
         units_consumed = ending_reading - starting_reading
         bill_amount = units_consumed * rate_per_unit
 
+        # Get current active guest for the room
+        guest = Guest.objects.filter(room=room, is_active=True).first()
+
         bill, created = ElectricityBill.objects.get_or_create(
             room=room,
             month=month,
             defaults={
+                'guest': guest,
                 'starting_reading': starting_reading,
                 'ending_reading': ending_reading,
                 'units_consumed': units_consumed,
@@ -761,6 +985,7 @@ def create_electricity_bill(request):
         )
 
         if not created:
+            bill.guest = guest
             bill.starting_reading = starting_reading
             bill.ending_reading = ending_reading
             bill.units_consumed = units_consumed
@@ -870,8 +1095,8 @@ def get_payment_history(request, room_id):
 @user_passes_test(is_admin)
 @require_http_methods(["GET"])
 def booking_page(request):
-    """Display booking form page"""
-    return render(request, 'book_rooom.html')
+    """Display booking form page for creating new guest bookings"""
+    return render(request, 'book_room.html')
 
 
 @login_required(login_url='login')
@@ -887,7 +1112,8 @@ def get_available_rooms(request):
             'id': room.id,
             'number': room.number,
             'room_type': room.get_room_type_display(),
-            'price': str(room.price)
+            'price': str(room.price),
+            'agreed_rent': str(room.agreed_rent) if room.agreed_rent is not None else None
         } for room in available_rooms]
         
         return JsonResponse({
@@ -1015,13 +1241,14 @@ def submit_booking(request):
         
         # Create monthly payment record if needed
         current = check_in.replace(day=1)
+        # When creating monthly payments for the booking range prefer agreed_rent if set
         while current < check_out:
             monthly_payment, created = MonthlyPayment.objects.get_or_create(
                 room=room,
                 month=current,
                 defaults={
                     'guest': guest,
-                    'rent_amount': room.price,
+                    'rent_amount': (room.agreed_rent if getattr(room, 'agreed_rent', None) is not None else room.price),
                     'paid_amount': 0,
                     'payment_status': 'pending',
                 }
@@ -1103,6 +1330,26 @@ def get_room_tenants(request, room_id):
             'success': False,
             'message': str(e)
         }, status=400)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["GET"])
+def get_room_details(request, room_id):
+    """Return basic room details for booking UI (price, agreed_rent, description)"""
+    try:
+        room = get_object_or_404(Room, id=room_id)
+        room_data = {
+            'id': room.id,
+            'number': room.number,
+            'room_type': room.get_room_type_display(),
+            'price_per_month': str(room.price),
+            'agreed_rent': str(room.agreed_rent) if getattr(room, 'agreed_rent', None) is not None else '',
+            'description': getattr(room, 'description', '') if hasattr(room, 'description') else '',
+        }
+        return JsonResponse({'success': True, 'room': room_data})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)

@@ -3,10 +3,10 @@ from .models import Room, Booking, Guest, MonthlyPayment, PaymentRecord, Electri
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ('number', 'room_type', 'price', 'is_available')
+    list_display = ('number', 'room_type', 'price', 'agreed_rent', 'is_available')
     list_filter = ('room_type', 'is_available')
     search_fields = ('number',)
-    fields = ('number', 'room_type', 'price', 'is_available')
+    fields = ('number', 'room_type', 'price', 'agreed_rent', 'is_available')
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):

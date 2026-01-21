@@ -54,3 +54,9 @@ urlpatterns = [
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Include app-level URL patterns (ensures names like 'performance_dashboard' are resolvable)
+from django.urls import include
+urlpatterns += [
+    path('', include('rental.urls')),
+]

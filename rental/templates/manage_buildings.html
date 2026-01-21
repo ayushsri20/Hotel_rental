@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 {% load static %}
+
 <head>
   <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
   <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
@@ -41,7 +42,15 @@
 
     .header h1 {
       color: #6B5638;
-      font-size: 28px;
+      font-size: 24px;
+      /* Reduced to fit with logo */
+      font-weight: 800;
+    }
+
+    .logo-img {
+      height: 48px;
+      width: auto;
+      margin-right: 1rem;
     }
 
     .header-actions {
@@ -369,11 +378,15 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1>🏢 Manage Buildings & Rooms</h1>
+      <div style="display: flex; align-items: center;">
+        <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar Logo" class="logo-img">
+        <h1>Manage Buildings & Rooms</h1>
+      </div>
       <div class="header-actions">
         <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
         <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
@@ -397,6 +410,7 @@
           <option value="suite">Suite ($150)</option>
         </select>
         <input type="number" id="newRoomPrice" placeholder="Price" step="0.01" required>
+        <input type="number" id="newRoomAgreedRent" placeholder="Agreed Rent (optional)" step="0.01">
         <button type="submit" class="btn btn-success">+ Add Room</button>
       </form>
     </div>
@@ -423,24 +437,30 @@
           <tbody>
             {% for room in rooms %}
             <tr data-room-id="{{ room.id }}">
-              <td><strong>{{ room.number }}</strong></td>
+              <td>
+                <input type="text" class="room-input room-number" data-room-id="{{ room.id }}" value="{{ room.number }}" style="width:90px;">
+              </td>
               <td>
                 <select class="room-input room-type" data-room-id="{{ room.id }}">
-                  <option value="single" {% if room.room_type == 'single' %}selected{% endif %}>Single</option>
-                  <option value="double" {% if room.room_type == 'double' %}selected{% endif %}>Double</option>
-                  <option value="suite" {% if room.room_type == 'suite' %}selected{% endif %}>Suite</option>
+                  <option value="single" {% if room.room_type=='single' %}selected{% endif %}>Single</option>
+                  <option value="double" {% if room.room_type=='double' %}selected{% endif %}>Double</option>
+                  <option value="suite" {% if room.room_type=='suite' %}selected{% endif %}>Suite</option>
                 </select>
               </td>
               <td>
-                <input type="number" class="room-input room-price" data-room-id="{{ room.id }}" value="{{ room.price }}" step="0.01">
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <input type="number" class="room-input room-price" data-room-id="{{ room.id }}" value="{{ room.price }}" step="0.01" style="width:120px;">
+                  <input type="number" class="room-input room-agreed-rent" data-room-id="{{ room.id }}" value="{{ room.agreed_rent|default_if_none:'' }}" placeholder="Agreed" step="0.01" style="width:120px;">
+                </div>
               </td>
               <td>
                 <label style="margin: 0;">
-                  <input type="checkbox" class="room-status" data-room-id="{{ room.id }}" {% if room.is_available %}checked{% endif %}>
+                  <input type="checkbox" class="room-status" data-room-id="{{ room.id }}" {% if room.is_available
+                    %}checked{% endif %}>
                   {% if room.is_available %}
-                    <span class="status-badge status-available">Available</span>
+                  <span class="status-badge status-available">Available</span>
                   {% else %}
-                    <span class="status-badge status-booked">Booked</span>
+                  <span class="status-badge status-booked">Booked</span>
                   {% endif %}
                 </label>
               </td>
@@ -468,13 +488,13 @@
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     function showAlert(message, type) {
-      const alertEl = type === 'success' ? 
-        document.getElementById('successAlert') : 
+      const alertEl = type === 'success' ?
+        document.getElementById('successAlert') :
         document.getElementById('errorAlert');
-      
+
       alertEl.textContent = message;
       alertEl.classList.add('show');
-      
+
       setTimeout(() => {
         alertEl.classList.remove('show');
       }, 4000);
@@ -483,21 +503,22 @@
     // Add Room
     document.getElementById('addRoomForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
+
       const formData = new FormData();
       formData.append('room_number', document.getElementById('newRoomNumber').value);
       formData.append('room_type', document.getElementById('newRoomType').value);
       formData.append('price', document.getElementById('newRoomPrice').value);
+      formData.append('agreed_rent', document.getElementById('newRoomAgreedRent').value);
       formData.append('csrfmiddlewaretoken', csrftoken);
-      
+
       try {
         const response = await fetch('{% url "add_room" %}', {
           method: 'POST',
           body: formData,
         });
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           showAlert(data.message, 'success');
           document.getElementById('addRoomForm').reset();
@@ -510,26 +531,29 @@
       }
     });
 
-    // Save Room Changes
+        // Save Room Changes
     document.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const roomId = btn.dataset.roomId;
         const row = document.querySelector(`tr[data-room-id="${roomId}"]`);
-        
+
         const formData = new FormData();
+        formData.append('number', row.querySelector('.room-number').value);
         formData.append('room_type', row.querySelector('.room-type').value);
         formData.append('price', row.querySelector('.room-price').value);
+        const agreedInput = row.querySelector('.room-agreed-rent');
+        formData.append('agreed_rent', agreedInput ? agreedInput.value : '');
         formData.append('is_available', row.querySelector('.room-status').checked);
         formData.append('csrfmiddlewaretoken', csrftoken);
-        
+
         try {
           const response = await fetch(`/api/room/${roomId}/update/`, {
             method: 'POST',
             body: formData,
           });
-          
+
           const data = await response.json();
-          
+
           if (data.success) {
             showAlert(data.message, 'success');
             // Update the status badge
@@ -556,9 +580,9 @@
     document.querySelectorAll('.btn-delete').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         if (!confirm('Are you sure you want to delete this room?')) return;
-        
+
         const roomId = btn.dataset.roomId;
-        
+
         try {
           const response = await fetch(`/api/room/${roomId}/delete/`, {
             method: 'POST',
@@ -566,9 +590,9 @@
               'X-CSRFToken': csrftoken,
             },
           });
-          
+
           const data = await response.json();
-          
+
           if (data.success) {
             showAlert(data.message, 'success');
             document.querySelector(`tr[data-room-id="${roomId}"]`).remove();
@@ -583,4 +607,5 @@
     });
   </script>
 </body>
+
 </html>
