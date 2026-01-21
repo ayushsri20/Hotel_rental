@@ -8,9 +8,22 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 """
 
 import os
+import sys
+from pathlib import Path
 
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hotel_project.settings')
+
+# Ensure staticfiles directory exists before starting the application
+# This is important for ephemeral filesystems like Railway
+BASE_DIR = Path(__file__).resolve().parent.parent
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+if not STATIC_ROOT.exists():
+    try:
+        STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+        print(f"Created staticfiles directory: {STATIC_ROOT}", file=sys.stderr)
+    except Exception as e:
+        print(f"Warning: Could not create staticfiles directory: {e}", file=sys.stderr)
 
 application = get_wsgi_application()
