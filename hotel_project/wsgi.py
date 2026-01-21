@@ -40,4 +40,22 @@ except Exception as e:
     print(f"✗ Database connection failed: {e}", file=sys.stderr)
     raise
 
+# Verify auth_user table exists - if not, try to run migrations
+try:
+    from django.db import connection
+    from django.db.utils import ProgrammingError
+    
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1 FROM auth_user LIMIT 1")
+    print("✓ auth_user table exists", file=sys.stderr)
+except (ProgrammingError, Exception) as e:
+    print(f"⚠ auth_user table missing, attempting migrations...", file=sys.stderr)
+    try:
+        from django.core.management import call_command
+        call_command('migrate', verbosity=2, interactive=False)
+        print("✓ Migrations completed successfully", file=sys.stderr)
+    except Exception as migrate_err:
+        print(f"✗ Migration failed: {migrate_err}", file=sys.stderr)
+        raise
+
 application = get_wsgi_application()

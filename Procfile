@@ -1,2 +1,2 @@
-web: cd hotel_project && python manage.py migrate --noinput --verbosity 2 && python manage.py collectstatic --noinput --clear --verbosity 2 && gunicorn -w 4 -b 0.0.0.0:${PORT} hotel_project.wsgi:application
-release: echo "Migrations and collectstatic run in web process - no release phase needed"
+web: cd hotel_project && echo "Starting migrations..." && python manage.py migrate --noinput --verbosity 2 && echo "✓ Migrations complete" && echo "Collecting static files..." && python manage.py collectstatic --noinput --clear --verbosity 2 && echo "✓ Static files collected" && echo "Starting gunicorn..." && gunicorn -w 4 -b 0.0.0.0:${PORT} hotel_project.wsgi:application
+release: cd hotel_project && python manage.py migrate --noinput --verbosity 2

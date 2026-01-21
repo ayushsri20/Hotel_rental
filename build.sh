@@ -39,11 +39,15 @@ python manage.py collectstatic --noinput --clear --verbosity 2
 
 echo
 echo "=== Running database migrations ==="
-python manage.py migrate --noinput
+python manage.py migrate --noinput --verbosity 2 || { echo "ERROR: Migrations failed"; exit 1; }
+
+echo
+echo "=== Verifying database migrations ==="
+python manage.py showmigrations --plan 2>&1 | head -20
 
 echo
 echo "=== Verifying WSGI module ==="
-python -c "from hotel_project.wsgi import application; print('WSGI application loaded successfully')"
+python -c "from hotel_project.wsgi import application; print('✓ WSGI application loaded successfully')"
 
 echo
 echo "=== Build completed successfully ==="
