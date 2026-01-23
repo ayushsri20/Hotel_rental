@@ -1,4 +1,4 @@
-from whitenoise.storage import CompressedManifestStaticFilesStorage
+from whitenoise.storage import CompressedStaticFilesStorage
 
-class MyStorage(CompressedManifestStaticFilesStorage):
-    manifest_strict = False
+class MyStorage(CompressedStaticFilesStorage):
+    pass
