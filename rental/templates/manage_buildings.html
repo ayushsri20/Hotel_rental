@@ -442,9 +442,9 @@
               </td>
               <td>
                 <select class="room-input room-type" data-room-id="{{ room.id }}">
-                  <option value="single" {% if room.room_type=='single' %}selected{% endif %}>Single</option>
-                  <option value="double" {% if room.room_type=='double' %}selected{% endif %}>Double</option>
-                  <option value="suite" {% if room.room_type=='suite' %}selected{% endif %}>Suite</option>
+                  <option value="single" {% if room.room_type == 'single' %}selected{% endif %}>Single</option>
+                  <option value="double" {% if room.room_type == 'double' %}selected{% endif %}>Double</option>
+                  <option value="suite" {% if room.room_type == 'suite' %}selected{% endif %}>Suite</option>
                 </select>
               </td>
               <td>
@@ -458,8 +458,7 @@
               </td>
               <td>
                 <label style="margin: 0;">
-                  <input type="checkbox" class="room-status" data-room-id="{{ room.id }}" {% if room.is_available
-                    %}checked{% endif %}>
+                  <input type="checkbox" class="room-status" data-room-id="{{ room.id }}" {% if room.is_available %}checked{% endif %}>
                   {% if room.is_available %}
                   <span class="status-badge status-available">Available</span>
                   {% else %}
