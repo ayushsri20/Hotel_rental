@@ -49,7 +49,15 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
         except Exception as db_err:
             logger.error(f"DB AUTH ERROR: {db_err}")
-            diag_str = f"Error: {db_err}. Path: {db_path}, Exists: {exists}, Size: {size}, CWD: {cwd}, Tables: {tables[:5] if 'tables' in locals() else 'N/A'}"
+            migrate_log = "N/A"
+            if os.path.exists("migrate_log.txt"):
+                try:
+                    with open("migrate_log.txt", "r") as f:
+                        migrate_log = f.read()
+                except:
+                    migrate_log = "Error reading log"
+            
+            diag_str = f"Error: {db_err}. Path: {db_path}, Exists: {exists}, Size: {size}, CWD: {cwd}, Tables: {tables[:5] if 'tables' in locals() else 'N/A'}, Migrate: {migrate_log[-200:] if migrate_log else 'Empty'}"
             return render(request, 'login.html', {'error': f'Database connection error: {diag_str}'})
         
         if user is not None:
