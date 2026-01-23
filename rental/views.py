@@ -29,7 +29,19 @@ def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        
+        try:
+            from django.db import connection
+            try:
+                tables = connection.introspection.table_names()
+                logger.info(f"DB LOGIN DIAGNOSTIC: Engine: {connection.vendor}, Tables: {tables}")
+            except Exception as diag_err:
+                logger.warning(f"DB DIAGNOSTIC FAILED: {diag_err}")
+            
+            user = authenticate(request, username=username, password=password)
+        except Exception as db_err:
+            logger.error(f"DB AUTH ERROR: {db_err}")
+            return render(request, 'login.html', {'error': f'Database connection error: {db_err}'})
         
         if user is not None:
             login(request, user)
