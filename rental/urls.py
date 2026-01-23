@@ -10,6 +10,7 @@ from .performance_views import (
 urlpatterns = [
     path('', views.home, name='home'),
     path('login/', views.login_view, name='login'),
+    path('health/', views.health_check, name='health_check'),
     path('logout/', views.logout_view, name='logout'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('booking/', views.booking_page, name='booking_page'),

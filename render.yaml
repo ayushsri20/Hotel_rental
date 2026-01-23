@@ -1,6 +1,5 @@
 # Render Blueprint for automatic deployment
 # https://render.com/docs/blueprint-spec
-# This file should be at the ROOT of your repository
 
 databases:
   - name: panesar-pg-db
@@ -13,8 +12,8 @@ services:
     name: panesar-pg
     runtime: python
     plan: free
-    buildCommand: "cd hotel_project && pip install --upgrade pip && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput"
-    startCommand: "cd hotel_project && gunicorn -w 4 -b 0.0.0.0:${PORT} hotel_project.wsgi:application"
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn -w 4 -b 0.0.0.0:${PORT:-10000} hotel_project.wsgi:application"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -25,10 +24,8 @@ services:
       - key: DEBUG
         value: "false"
       - key: ALLOWED_HOSTS
-        value: "*.onrender.com,panesar-pg.onrender.com"
+        value: "*.onrender.com,*.up.railway.app,panesar-pg.onrender.com"
       - key: DJANGO_SETTINGS_MODULE
         value: "hotel_project.settings"
       - key: PYTHONUNBUFFERED
         value: "1"
-      - key: PORT
-        value: "10000"

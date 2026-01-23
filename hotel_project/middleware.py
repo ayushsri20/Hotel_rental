@@ -1,5 +1,6 @@
 from django.shortcuts import redirect
 from django.conf import settings
+from django.utils.deprecation import MiddlewareMixin
 
 class LoginRequiredMiddleware:
     """Middleware that redirects anonymous users to login for most pages.
@@ -14,7 +15,7 @@ class LoginRequiredMiddleware:
         # Allow safe paths without login
         media_prefix = settings.MEDIA_URL if settings.MEDIA_URL.startswith('/') else '/' + settings.MEDIA_URL
         allowed_prefixes = [
-            '/login/', '/logout/', '/admin/', '/static/', media_prefix,
+            '/login/', '/logout/', '/admin/', '/static/', '/health/', media_prefix,
             '/',
         ]
 
@@ -26,14 +27,6 @@ class LoginRequiredMiddleware:
             return redirect(settings.LOGIN_URL)
 
         return self.get_response(request)
-"""
-Content Security Policy Middleware
-Implements CSP to prevent inline script injection and improve security
-"""
-
-from django.utils.deprecation import MiddlewareMixin
-from django.conf import settings
-
 
 class SecurityHeadersMiddleware(MiddlewareMixin):
     """

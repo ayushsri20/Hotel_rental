@@ -19,6 +19,9 @@ def is_admin(user):
 def home(request):
     return render(request, 'home.html')
 
+def health_check(request):
+    return JsonResponse({'status': 'ok', 'timestamp': datetime.now().isoformat()})
+
 @require_http_methods(["GET", "POST"])
 def login_view(request):
     if request.method == 'POST':

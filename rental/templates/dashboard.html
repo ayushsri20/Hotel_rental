@@ -637,7 +637,7 @@
 
       // Manage Button
       document.getElementById('btnManageRoom').onclick = function () {
-        window.location.href = `/manage_guests/?room_id=${room.id}`;
+        window.location.href = `/manage-guests/?room_id=${room.id}`;
       };
 
       document.getElementById('roomDetailModal').style.display = 'flex';
@@ -651,8 +651,8 @@
       id: '{{ room.id }}',
         number: '{{ room.number|escapejs }}',
           price: '{{ room.price }}',
-          agreed_rent: '{{ room.agreed_rent|default_if_none:"" }}',
-            available: {{ room.is_available|yesno:"true,false" }},
+            agreed_rent: '{{ room.agreed_rent|default_if_none:"" }}',
+              available: { { room.is_available | yesno: "true,false" } },
       type: '{{ room.get_room_type_display|escapejs }}',
         tenants: [
           {% for t in room.current_tenants %}
@@ -705,7 +705,7 @@
              <div style="font-size: 0.75rem; color: #64748b;">${room.type} Bed</div>
           </td>
             <td style="padding: 1rem;">
-            <div style="font-weight: 600;">₹${(room.agreed_rent && room.agreed_rent.length>0) ? room.agreed_rent : room.price}</div>
+            <div style="font-weight: 600;">₹${(room.agreed_rent && room.agreed_rent.length > 0) ? room.agreed_rent : room.price}</div>
           </td>
           <td style="padding: 1rem;">
              <div style="margin-bottom: 0.25rem;">
@@ -737,7 +737,7 @@
 
     function viewTenants(id) {
       // Direct to guest management with filter or show another modal
-      window.location.href = `/manage_guests/?room_id=${id}`;
+      window.location.href = `/manage-guests/?room_id=${id}`;
     }
   </script>
 </body>
