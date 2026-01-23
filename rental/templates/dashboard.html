@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 {% load static %}
-{% load rental_tags %}
+{% load static %}
 
 <head>
   <meta charset="UTF-8">
@@ -143,6 +143,12 @@
 
   <main class="container-premium">
     <header class="card-premium dashboard-header glass-panel">
+      {% if error %}
+      <div
+        style="background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem;">
+        <strong>Warning:</strong> {{ error }}
+      </div>
+      {% endif %}
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">The Imperial Outlook</h1>

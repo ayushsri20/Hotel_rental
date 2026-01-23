@@ -37,10 +37,10 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         """Add security headers to response"""
         
-        # Content Security Policy - strict to prevent eval() and inline scripts
+        # Content Security Policy - allowed unsafe-inline for template scripts
         csp = (
             "default-src 'self'; "
-            "script-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
             "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com; "

@@ -101,24 +101,26 @@ WSGI_APPLICATION = 'hotel_project.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # Default to SQLite for local development, but prioritize Postgres if DATABASE_URL is set
-DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
-
-# Ensure SSL mode for production Postgres
-if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
-    DATABASES['default'].setdefault('OPTIONS', {})
-    DATABASES['default']['OPTIONS']['sslmode'] = 'require'
-
-# Diagnostic logging for Database engine
-db_engine = DATABASES['default'].get('ENGINE', 'unknown')
-print(f"DATABASE_ENGINE: {db_engine}")
-if 'sqlite' in db_engine and not DEBUG:
-    print("WARNING: Using SQLite in production (FILESYSTEM PERSISTENCE NOT GUARANTEED)")
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+    # Ensure SSL mode for production Postgres
+    if 'postgresql' in DATABASES['default'].get('ENGINE', ''):
+        DATABASES['default'].setdefault('OPTIONS', {})
+        DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

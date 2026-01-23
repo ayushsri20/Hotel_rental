@@ -1,2 +1,1 @@
-web: ./scripts/railway_init.sh && gunicorn -w 4 -b 0.0.0.0:${PORT:-8000} hotel_project.wsgi:application
-release: python manage.py migrate --noinput
+web: python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py shell -c "try: from django.contrib.auth.models import User; User.objects.filter(username='ayush').exists() or User.objects.create_superuser('ayush', 'admin@example.com', 'admin123'); print('Superuser check done') except Exception as e: print(f'Superuser error: {e}')" && gunicorn -w 4 -b 0.0.0.0:${PORT:-8000} hotel_project.wsgi:application

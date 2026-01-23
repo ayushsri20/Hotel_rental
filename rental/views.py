@@ -10,8 +10,10 @@ from collections import defaultdict
 from datetime import datetime
 import json
 
-# Framework imports
-from data_consistency_framework import DataConsistencyValidator, DataSyncManager, AuditLogger
+import logging
+import re
+
+logger = logging.getLogger(__name__)
 
 def is_admin(user):
     return user.is_staff or user.is_superuser
@@ -44,81 +46,85 @@ def logout_view(request):
 
 @login_required(login_url='login')
 def dashboard(request):
-    rooms = Room.objects.all()
-    bookings = Booking.objects.all()
-    guests = Guest.objects.filter(is_active=True)
-    
-    # Fetch all active guests and map them to rooms
-    active_guests = Guest.objects.filter(is_active=True).select_related('room')
-    room_tenants = defaultdict(list)
-    for guest in active_guests:
-        if guest.room:
-            room_tenants[guest.room.id].append(guest)
-            
-    
-    # Enrich rooms with tenant data and calculate status
-    for room in rooms:
-        tenants = room_tenants.get(room.id, [])
-        room.current_tenants = tenants
+    try:
+        rooms = Room.objects.all()
+        bookings = Booking.objects.all()
+        guests = Guest.objects.filter(is_active=True)
         
-        # Determine Capacity
-        capacity_map = {'single': 1, 'double': 2, 'suite': 4}
-        capacity = capacity_map.get(room.room_type.lower(), 2) # Default to 2
-        room.capacity = capacity
+        # Fetch all active guests and map them to rooms
+        active_guests = Guest.objects.filter(is_active=True).select_related('room')
+        room_tenants = defaultdict(list)
+        for guest in active_guests:
+            if guest.room:
+                room_tenants[guest.room.id].append(guest)
+                
         
-        count = len(tenants)
-        if count == 0:
-            room.occupancy_status = 'empty'
-        elif count < capacity:
-            room.occupancy_status = 'partial'
-        else:
-            room.occupancy_status = 'full'
+        # Enrich rooms with tenant data and calculate status
+        for room in rooms:
+            tenants = room_tenants.get(room.id, [])
+            room.current_tenants = tenants
             
-    # Group rooms by building
-    buildings = defaultdict(list)
-    for room in rooms:
-        building_name = room.number.split('-')[0]
-        buildings[building_name].append(room)
-    
-    # Sort buildings
-    sorted_buildings = sorted(buildings.items())
-    
-    # Map building names: A -> M1, B -> 1, C -> 2, D -> 3, etc.
-    def map_building_name(original_name):
-        if original_name == 'A':
-            return 'M1'
-        elif original_name == 'M1': # Handle direct naming if changed in db
-            return 'M1'
-        else:
-            try:
-                # Convert B->1, C->2, D->3, etc.
-                val = ord(original_name) - ord('B') + 1
-                return str(val) if val > 0 else original_name
-            except:
-                return original_name
-    
-    # Apply mapping to building names
-    mapped_buildings = [(map_building_name(name), rooms) for name, rooms in sorted_buildings]
-    
-    # Calculate active stats
-    active_rooms_count = rooms.filter(is_available=False).count()
-    occupancy_rate = (active_rooms_count / rooms.count() * 100) if rooms.count() > 0 else 0
-    
-    context = {
-        'total_rooms': rooms.count(),
-        'available_rooms': rooms.filter(is_available=True).count(),
-        'booked_rooms': active_rooms_count,
-        'active_rooms_count': active_rooms_count,
-        'occupancy_rate': round(occupancy_rate, 1),
-        'active_bookings': bookings.filter(is_active=True).count(),
-        'total_bookings': bookings.count(),
-        'all_bookings': bookings[:5],
-        'total_guests': guests.count(),
-        'buildings': mapped_buildings,
-        'is_admin': request.user.is_staff or request.user.is_superuser,
-    }
-    
-    return render(request, 'dashboard.html', context)
+            # Determine Capacity
+            capacity_map = {'single': 1, 'double': 2, 'suite': 4}
+            capacity = capacity_map.get(room.room_type.lower(), 2) # Default to 2
+            room.capacity = capacity
+            
+            count = len(tenants)
+            if count == 0:
+                room.occupancy_status = 'empty'
+            elif count < capacity:
+                room.occupancy_status = 'partial'
+            else:
+                room.occupancy_status = 'full'
+                
+        # Group rooms by building
+        buildings = defaultdict(list)
+        for room in rooms:
+            building_name = room.number.split('-')[0]
+            buildings[building_name].append(room)
+        
+        # Sort buildings
+        sorted_buildings = sorted(buildings.items())
+        
+        # Map building names: A -> M1, B -> 1, C -> 2, D -> 3, etc.
+        def map_building_name(original_name):
+            if original_name == 'A':
+                return 'M1'
+            elif original_name == 'M1': # Handle direct naming if changed in db
+                return 'M1'
+            else:
+                try:
+                    # Convert B->1, C->2, D->3, etc.
+                    val = ord(original_name) - ord('B') + 1
+                    return str(val) if val > 0 else original_name
+                except:
+                    return original_name
+        
+        # Apply mapping to building names
+        mapped_buildings = [(map_building_name(name), rooms) for name, rooms in sorted_buildings]
+        
+        # Calculate active stats
+        active_rooms_count = rooms.filter(is_available=False).count()
+        occupancy_rate = (active_rooms_count / rooms.count() * 100) if rooms.count() > 0 else 0
+        
+        context = {
+            'total_rooms': rooms.count(),
+            'available_rooms': rooms.filter(is_available=True).count(),
+            'booked_rooms': active_rooms_count,
+            'active_rooms_count': active_rooms_count,
+            'occupancy_rate': round(occupancy_rate, 1),
+            'active_bookings': bookings.filter(is_active=True).count(),
+            'total_bookings': bookings.count(),
+            'all_bookings': bookings[:5],
+            'total_guests': guests.count(),
+            'buildings': mapped_buildings,
+            'is_admin': request.user.is_staff or request.user.is_superuser,
+        }
+        
+        return render(request, 'dashboard.html', context)
+    except Exception as e:
+        logger.error(f"Error in dashboard: {e}", exc_info=True)
+        return render(request, 'dashboard.html', {'error': str(e), 'total_rooms': 0, 'active_rooms_count': 0})
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
@@ -470,13 +476,14 @@ def update_guest(request, guest_id):
         }
         
         # Validate updates
-        is_valid, errors = DataConsistencyValidator.validate_guest_data(guest, updates)
-        if not is_valid:
-            return JsonResponse({
-                'success': False,
-                'message': 'Validation failed',
-                'errors': errors
-            }, status=400)
+        errors = {}
+        if not updates['first_name']: errors['first_name'] = 'First name is required'
+        if not updates['last_name']: errors['last_name'] = 'Last name is required'
+        if updates['email'] and not re.match(r"[^@]+@[^@]+\.[^@]+", updates['email']):
+            errors['email'] = 'Invalid email format'
+        
+        if errors:
+            return JsonResponse({'success': False, 'message': 'Validation failed', 'errors': errors}, status=400)
         
         # Use transaction to ensure atomicity
         with transaction.atomic():
@@ -525,11 +532,8 @@ def update_guest(request, guest_id):
             guest.updated_at = datetime.now()
             guest.save()
             
-            # Log audit trail
-            AuditLogger.log_guest_update(guest, old_data, updates, request.user)
-            
-            # Invalidate related caches
-            DataSyncManager.invalidate_guest_cache(guest.id, guest.room_id)
+            # Audit logging
+            logger.info(f"AUDIT - User: {request.user.username} - Updated Guest: {guest.id} ({guest.full_name})")
         
         return JsonResponse({
             'success': True,
