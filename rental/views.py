@@ -32,9 +32,17 @@ def login_view(request):
         
         try:
             from django.db import connection
+            import os
+            from django.conf import settings
+            
+            db_path = settings.DATABASES['default'].get('NAME', 'N/A')
+            exists = os.path.exists(db_path) if isinstance(db_path, str) else False
+            size = os.path.getsize(db_path) if exists else 0
+            cwd = os.getcwd()
+            
             try:
                 tables = connection.introspection.table_names()
-                logger.info(f"DB LOGIN DIAGNOSTIC: Engine: {connection.vendor}, Tables: {tables}")
+                logger.info(f"DB LOGIN DIAGNOSTIC: Path: {db_path}, Exists: {exists}, Size: {size}, CWD: {cwd}, Tables: {tables}")
             except Exception as diag_err:
                 logger.warning(f"DB DIAGNOSTIC FAILED: {diag_err}")
             
