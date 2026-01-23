@@ -153,6 +153,9 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS if ori
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Ensure the staticfiles directory exists (helps with WhiteNoise initialization)
+os.makedirs(STATIC_ROOT, exist_ok=True)
+
 # Extra places for collectstatic to look for static files.
 STATICFILES_DIRS = []
 
@@ -162,7 +165,7 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "hotel_project.storage.MyStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "rental.storage.MyStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
