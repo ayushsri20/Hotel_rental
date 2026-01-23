@@ -102,7 +102,11 @@ WSGI_APPLICATION = 'hotel_project.wsgi.application'
 
 # Default to SQLite for local development, but prioritize Postgres if DATABASE_URL is set
 DATABASE_URL = os.environ.get('DATABASE_URL')
+print(f"[SETTINGS] DATABASE_URL detected: {'YES' if DATABASE_URL else 'NO'}")
+print(f"[SETTINGS] DATABASE_URL (first 30 chars): {DATABASE_URL[:30] if DATABASE_URL else 'None'}")
+
 if DATABASE_URL:
+    print("[SETTINGS] Using PostgreSQL from DATABASE_URL")
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
@@ -114,14 +118,17 @@ if DATABASE_URL:
     if 'postgresql' in DATABASES['default'].get('ENGINE', ''):
         DATABASES['default'].setdefault('OPTIONS', {})
         DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+    print(f"[SETTINGS] Database ENGINE: {DATABASES['default'].get('ENGINE', 'unknown')}")
+    print(f"[SETTINGS] Database NAME: {DATABASES['default'].get('NAME', 'unknown')}")
 else:
+    print("[SETTINGS] WARNING: No DATABASE_URL found, falling back to SQLite")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         }
     }
-    print(f"SQLITE DB PATH: {DATABASES['default']['NAME']}")
+    print(f"[SETTINGS] SQLITE DB PATH: {DATABASES['default']['NAME']}")
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
