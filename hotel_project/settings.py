@@ -45,6 +45,13 @@ ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
 if not ALLOWED_HOSTS:
     ALLOWED_HOSTS = ['*']
 
+# Security-enhanced ALLOWED_HOSTS in production
+if not DEBUG:
+    # Safely extract base domain if available
+    railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+    if railway_domain:
+        ALLOWED_HOSTS.append(railway_domain)
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -106,6 +113,12 @@ DATABASES = {
 if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
     DATABASES['default'].setdefault('OPTIONS', {})
     DATABASES['default']['OPTIONS']['sslmode'] = 'require'
+
+# Diagnostic logging for Database engine
+db_engine = DATABASES['default'].get('ENGINE', 'unknown')
+print(f"DATABASE_ENGINE: {db_engine}")
+if 'sqlite' in db_engine and not DEBUG:
+    print("WARNING: Using SQLite in production (FILESYSTEM PERSISTENCE NOT GUARANTEED)")
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -206,6 +219,11 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     # Other recommended headers
     SECURE_REFERRER_POLICY = 'no-referrer-when-downgrade'
+    
+    # Extra Security Headers
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 else:
     # Development settings
     CSRF_COOKIE_HTTPONLY = False
