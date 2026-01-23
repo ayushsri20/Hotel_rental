@@ -6,490 +6,218 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Panesar PG</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
+  <title>Imperial Dashboard - Panesar PG</title>
+  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
   <style>
-    :root {
-      --primary: #947a45;
-      /* High-Contrast Bronze Gold */
-      --primary-hover: #7a6438;
-      --bg-main: #f1f5f9;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #475569;
-      --success: #059669;
-      --error: #dc2626;
-      --border: #e2e8f0;
-      --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
-      --radius: 1.25rem;
+    /* Dashboard Specific Enhancements */
+    .dashboard-header {
+      margin-bottom: 3rem;
+      padding: 2.5rem;
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      line-height: 1.5;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2.5rem;
-      background: var(--card-bg);
-      padding: 1.5rem 2rem;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-    }
-
-    .header-title h1 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--primary), #7c3aed);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .logo-img {
-      height: 32px;
-      width: auto;
-      margin-right: 0.75rem;
-    }
-
-    /* Management Hub */
     .mgmt-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 1.5rem;
-      margin-bottom: 3rem;
+      margin-bottom: 3.5rem;
     }
 
     .mgmt-card {
-      background: var(--card-bg);
-      padding: 2rem;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      text-decoration: none;
-      transition: all 0.2s ease;
       text-align: center;
-    }
-
-    .mgmt-card:hover {
-      border-color: var(--primary);
-      transform: translateY(-4px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      padding: 2.5rem;
+      text-decoration: none;
     }
 
     .mgmt-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
       display: block;
     }
 
-    .mgmt-title {
-      font-weight: 800;
-      color: var(--text-main);
-    }
-
-    .mgmt-text {
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      margin-top: 0.5rem;
-    }
-
-    /* Stats Grid */
-    .stats-grid {
+    .stat-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 3rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 4rem;
     }
 
     .stat-card {
-      background: var(--card-bg);
-      padding: 1.5rem;
-      border-radius: 1rem;
-      border: 1px solid var(--border);
+      padding: 2rem;
       text-align: center;
+      border-top: 4px solid var(--primary);
     }
 
-    .stat-val {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: var(--primary);
-    }
-
-    .stat-lab {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-    }
-
-    /* Building & Room Grid */
-    .building-group {
-      margin-bottom: 3rem;
-    }
-
-    .building-group-title {
-      font-size: 1.25rem;
-      font-weight: 800;
-      margin-bottom: 1.5rem;
-      color: var(--text-main);
-    }
-
-    .tiles-grid {
+    .building-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 2rem;
     }
 
-    .tile {
-      background: var(--card-bg);
-      border-radius: 1rem;
+    .building-card {
+      padding: 0;
       overflow: hidden;
-      border: 1px solid var(--border);
-      transition: border-color 0.2s;
-      cursor: pointer;
     }
 
-    .tile:hover {
-      border-color: var(--primary);
-    }
-
-    .tile-header {
-      background: var(--primary);
+    .building-header {
+      background: var(--grad-primary);
       color: white;
-      padding: 1rem;
+      padding: 1.5rem;
       text-align: center;
     }
 
-    .tile-body {
-      padding: 1rem;
+    .room-matrix {
+      padding: 1.5rem;
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.5rem;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
     }
 
-    .room-dot {
-      padding: 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 700;
+    .room-tile {
+      padding: 0.75rem 0.5rem;
       text-align: center;
-      border-radius: 0.25rem;
-      border-left: 3px solid transparent;
+      font-weight: 800;
+      font-size: 0.8125rem;
+      border-radius: var(--radius-md);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: var(--transition-all);
+      border: 1px solid var(--border-subtle);
     }
 
-    .room-dot:hover {
-      transform: scale(1.1);
-      z-index: 2;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    .room-tile:hover {
+      transform: scale(1.05);
     }
 
-    .room-dot.empty {
+    .room-tile.empty {
       background: #f0fdf4;
       color: #166534;
-      border-left-color: var(--success);
+      border-color: #bbf7d0;
     }
 
-    .room-dot.partial {
+    .room-tile.partial {
       background: #fef9c3;
       color: #854d0e;
-      border-left-color: #d97706;
-      /* Amber */
+      border-color: #fef08a;
     }
 
-    .room-dot.full {
+    .room-tile.full {
       background: #fef2f2;
       color: #991b1b;
-      border-left-color: var(--error);
+      border-color: #fecaca;
     }
 
-    /* Modals */
-    .modal {
+    /* Modal Overlay */
+    .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.5);
-      backdrop-filter: blur(4px);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
       z-index: 1000;
-      align-items: center;
       justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
     }
 
-    .modal-content {
-      background: white;
-      width: 90%;
+    .modal-content-luxury {
+      width: 100%;
       max-width: 600px;
-      border-radius: 1.5rem;
-      padding: 2.5rem;
-      position: relative;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    }
-
-    .room-detail-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid var(--border);
-    }
-
-    .room-stat-group {
-      display: flex;
-      gap: 2rem;
-      margin-bottom: 2rem;
-    }
-
-    .room-stat {
-      flex: 1;
-      background: #f8fafc;
-      padding: 1rem;
-      border-radius: 1rem;
-      text-align: center;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 1.5rem;
-      right: 1.5rem;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--text-muted);
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      transition: background 0.2s;
-    }
-
-    .close-btn:hover {
-      background: #f1f5f9;
-      color: var(--error);
-    }
-
-    .tenant-list-item {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      margin-bottom: 0.75rem;
-      transition: border-color 0.2s;
-    }
-
-    .tenant-list-item:hover {
-      border-color: var(--primary);
-    }
-
-    .btn {
-      padding: 0.625rem 1.25rem;
-      border-radius: 0.5rem;
-      font-weight: 700;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-    }
-
-    .btn-secondary {
-      background: #f1f5f9;
-      color: var(--text-main);
-    }
-
-    /* Room Cards Redesign */
-    .room-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 2.5rem;
-    }
-
-    .room-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.25rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .room-card:hover {
-      border-color: var(--primary);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      transform: translateY(-2px);
-    }
-
-    .room-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1rem;
-    }
-
-    .room-number {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: var(--text-main);
-      line-height: 1.2;
-    }
-
-    .room-type-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-weight: 600;
-    }
-
-    .status-badge {
-      font-size: 0.65rem;
-      font-weight: 800;
-      padding: 0.25rem 0.6rem;
-      border-radius: 99px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .status-badge.empty {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .status-badge.partial {
-      background: #fef9c3;
-      color: #854d0e;
-    }
-
-    .status-badge.full {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .occupancy-info {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 0.75rem;
-    }
-
-    .room-price-tag {
-      margin-top: auto;
-      padding-top: 0.75rem;
-      border-top: 1px dashed var(--border);
-      font-weight: 800;
-      color: var(--primary);
-      font-size: 1.125rem;
+      padding: 3rem;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <header class="header">
-      <div class="header-title" style="display: flex; align-items: center;">
-        <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar Logo" class="logo-img">
-        <h1>PANESAR PG</h1>
-      </div>
-      <div class="header-actions" style="display: flex; gap: 1rem;">
-        {% if is_admin %}
-        <a href="{% url 'manage_users' %}" class="btn btn-secondary"
-          style="border: 2px solid var(--primary); color: var(--primary);">👤 Manage Motel Staff</a>
-        {% endif %}
-        <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+  <!-- Global Navigation -->
+  <nav class="navigation-bar">
+    <a href="/" class="brand-logo">
+      <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Logo">
+      <span>IMPERIAL PORTAL</span>
+    </a>
+    <div class="nav-actions">
+      {% if is_admin %}
+      <a href="{% url 'manage_users' %}" class="btn-premium btn-premium-secondary">Staff Access</a>
+      {% endif %}
+      <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="margin-left: 1rem;">End Session</a>
+    </div>
+  </nav>
+
+  <main class="container-premium">
+    <header class="card-premium dashboard-header glass-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">The Imperial Outlook</h1>
+          <p style="color: var(--text-muted); font-weight: 500;">Live overview of student accommodations and complex
+            operations.</p>
+        </div>
+        <div style="text-align: right;">
+          <div class="badge-premium badge-success">System Online</div>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Managed by Hotel/Motel Staff</p>
+        </div>
       </div>
     </header>
 
-    <div class="mgmt-grid">
+    <section class="mgmt-grid">
       {% if is_admin %}
-      <a href="{% url 'performance_dashboard' %}" class="mgmt-card">
-        <span class="mgmt-icon">📈</span>
-        <div class="mgmt-title">Analytics</div>
-        <div class="mgmt-text">Collection tracking & metrics</div>
+      <a href="{% url 'performance_dashboard' %}" class="card-premium mgmt-card">
+        <span class="mgmt-icon">📊</span>
+        <h3 class="font-luxury">Analytics Hub</h3>
+        <p style="font-size: 0.8125rem; color: var(--text-muted);">Occupancy trends & collection metrics.</p>
       </a>
       {% endif %}
-      <a href="{% url 'manage_guests' %}" class="mgmt-card">
-        <span class="mgmt-icon">👥</span>
-        <div class="mgmt-title">Tenants</div>
-        <div class="mgmt-text">Guest profiles & documents</div>
+      <a href="{% url 'manage_guests' %}" class="card-premium mgmt-card">
+        <span class="mgmt-icon">🏠</span>
+        <h3 class="font-luxury">Tenancy Register</h3>
+        <p style="font-size: 0.8125rem; color: var(--text-muted);">Resident profiles & documentation.</p>
       </a>
-      <a href="{% url 'manage_payments' %}" class="mgmt-card">
-        <span class="mgmt-icon">💰</span>
-        <div class="mgmt-title">Payments</div>
-        <div class="mgmt-text">Rental billing history</div>
+      <a href="{% url 'manage_payments' %}" class="card-premium mgmt-card">
+        <span class="mgmt-icon">💍</span>
+        <h3 class="font-luxury">Rental Ledger</h3>
+        <p style="font-size: 0.8125rem; color: var(--text-muted);">High-precision collection tracking.</p>
       </a>
-      <a href="{% url 'manage_electricity_bills' %}" class="mgmt-card">
+      <a href="{% url 'manage_electricity_bills' %}" class="card-premium mgmt-card">
         <span class="mgmt-icon">⚡</span>
-        <div class="mgmt-title">Electricity</div>
-        <div class="mgmt-text">Utility bill management</div>
+        <h3 class="font-luxury">Utility Matrix</h3>
+        <p style="font-size: 0.8125rem; color: var(--text-muted);">Smart electricity & resource billing.</p>
       </a>
+    </section>
+
+    <div class="stat-row">
+      <div class="card-premium stat-card">
+        <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);">{{ total_rooms }}</div>
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Total
+          Inventory</div>
+      </div>
+      <div class="card-premium stat-card" style="border-top-color: var(--success);">
+        <div style="font-size: 2.5rem; font-weight: 800; color: var(--success);">{{ active_rooms_count }}</div>
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Active
+          Occupancy</div>
+      </div>
+      <div class="card-premium stat-card">
+        <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);">{{ occupancy_rate }}%</div>
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Yield
+          Percentage</div>
+      </div>
+      <div class="card-premium stat-card" style="border-top-color: var(--danger);">
+        <div style="font-size: 2.5rem; font-weight: 800; color: var(--danger);">{{ total_guests }}</div>
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Resident
+          Base</div>
+      </div>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card" style="border-top: 4px solid var(--primary);">
-        <div class="stat-val">{{ total_rooms }}</div>
-        <div class="stat-lab">Total Inventory</div>
-      </div>
-      <div class="stat-card" style="border-top: 4px solid var(--success);">
-        <div class="stat-val" style="color: var(--success)">{{ active_rooms_count }}</div>
-        <div class="stat-lab">Active Rooms</div>
-      </div>
-      <div class="stat-card" style="border-top: 4px solid var(--primary);">
-        <div class="stat-val" style="color: var(--primary)">{{ occupancy_rate }}%</div>
-        <div class="stat-lab">Occupancy Rate</div>
-      </div>
-      <div class="stat-card" style="border-top: 4px solid var(--error);">
-        <div class="stat-val" style="color: var(--error)">{{ total_guests }}</div>
-        <div class="stat-lab">Total Residents</div>
-      </div>
-    </div>
-
-    <div class="building-group">
-      <div class="building-group-title">Building Units & Occupancy</div>
-      <div class="tiles-grid">
+    <section>
+      <h2 class="font-luxury"
+        style="font-size: 2rem; margin-bottom: 2rem; padding-left: 0.5rem; border-left: 4px solid var(--primary);">
+        Building Units</h2>
+      <div class="building-grid">
         {% for building_name, rooms in buildings %}
-        <div class="tile" onclick="openBuilding('{{ building_name }}')">
-          <div class="tile-header">
-            <div style="font-size: 1.5rem; font-weight: 900;">{{ building_name }}</div>
-            <div style="font-size: 0.75rem;">{{ rooms|length }} Rooms</div>
+        <div class="card-premium building-card">
+          <div class="building-header font-luxury">
+            <h3 style="font-size: 1.25rem;">Building {{ building_name }}</h3>
+            <span style="font-size: 0.75rem; opacity: 0.9;">{{ rooms|length }} Units Inspected</span>
           </div>
-          <div class="tile-body">
+          <div class="room-matrix">
             {% for room in rooms %}
-            <div class="room-dot {{ room.occupancy_status }}" onclick="openRoomDetails(event, '{{ room.id }}')"
-              title="Room {{ room.number }}: {{ room.occupancy_status|title }}">
+            <div class="room-tile {{ room.occupancy_status }}" onclick="openRoomDetails(event, '{{ room.id }}')">
               {{ room.number }}
             </div>
             {% endfor %}
@@ -497,87 +225,74 @@
         </div>
         {% endfor %}
       </div>
-    </div>
-
-    <!-- Building Modal -->
-    <div id="buildingModal" class="modal">
-      <div class="modal-content">
-        <span class="close-btn" onclick="closeModal('buildingModal')">&times;</span>
-        <h2 id="modalTitle" style="margin-bottom: 1.5rem;">Building View</h2>
-        <div class="table-container">
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="text-align: left; border-bottom: 1px solid var(--border);">
-                <th style="padding: 1rem;">Room</th>
-                <th style="padding: 1rem;">Price</th>
-                <th style="padding: 1rem;">Status</th>
-                <th style="padding: 1rem;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="modalTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <!-- Room Detail Modal -->
-  <div id="roomDetailModal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeModal('roomDetailModal')">&times;</span>
-
-      <div class="room-detail-header">
+  <div id="roomDetailModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="card-premium modal-content-luxury glass-panel" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem;">
         <div>
-          <h2 id="detailRoomNumber" style="font-size: 2rem; font-weight: 900; color: var(--text-main); line-height: 1;">
-            Room 101</h2>
-          <div id="detailBuilding" style="color: var(--text-muted); font-weight: 600; margin-top: 0.25rem;">Building M1
-          </div>
+          <h2 id="detailRoomNumber" class="font-luxury text-luxury" style="font-size: 2.5rem;">Room ---</h2>
+          <p id="detailBuilding" style="color: var(--text-muted); font-weight: 700;">Building ---</p>
         </div>
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <div id="detailRoomStatus"></div>
-          <div id="detailRoomType"
-            style="background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 99px; font-weight: 700; font-size: 0.875rem;">
-            Double Bed</div>
-        </div>
+        <div id="detailRoomStatus"></div>
       </div>
 
-      <div class="room-stat-group">
-        <div class="room-stat">
-          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-            Monthly Rent</div>
-          <div id="detailPrice"
-            style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin-top: 0.25rem;">₹5000</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="card-premium"
+          style="background: var(--bg-main); text-align: center; border-radius: var(--radius-md);">
+          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Agreed
+            Rent</div>
+          <div id="detailPrice" style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">₹0</div>
         </div>
-        <div class="room-stat">
+        <div class="card-premium"
+          style="background: var(--bg-main); text-align: center; border-radius: var(--radius-md);">
           <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
             Occupancy</div>
-          <div style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin-top: 0.25rem;">
-            <span id="detailOccupancy">1 / 2</span>
-          </div>
+          <div id="detailOccupancy" style="font-size: 1.5rem; font-weight: 900; color: var(--text-main);">0 / 0</div>
         </div>
       </div>
 
-      <h3 style="font-weight: 800; margin-bottom: 1rem;">Current Residents</h3>
-      <div id="detailTenantList" style="margin-bottom: 2rem; max-height: 200px; overflow-y: auto;">
-        <!-- Tenants go here -->
+      <h4 class="font-luxury" style="margin-bottom: 1rem; color: var(--secondary);">Resident Directory</h4>
+      <div id="detailTenantList" style="margin-bottom: 3rem; max-height: 250px; overflow-y: auto;">
+        <!-- Tenants -->
       </div>
 
       <div style="display: flex; gap: 1rem;">
-        <button id="btnManageRoom" class="btn btn-primary" style="flex: 1; justify-content: center;">Manage
-          Residents</button>
-        <button onclick="closeModal('roomDetailModal')" class="btn btn-secondary" style="flex: 1;">Close</button>
+        <button id="btnManageRoom" class="btn-premium btn-premium-primary" style="flex: 2;">Manage Tenancy</button>
+        <button onclick="document.getElementById('roomDetailModal').style.display='none'"
+          class="btn-premium btn-premium-secondary" style="flex: 1;">Dismiss</button>
       </div>
     </div>
   </div>
-  </div>
 
   <script>
+    const buildingsData = {
+      {% for building_name, rooms in buildings %}
+    '{{ building_name|escapejs }}': [
+      {% for room in rooms %}
+    {
+      id: '{{ room.id }}',
+        number: '{{ room.number|escapejs }}',
+          price: '{{ room.price }}',
+            agreed_rent: '{{ room.agreed_rent|default_if_none:"" }}',
+              type: '{{ room.get_room_type_display|escapejs }}',
+                tenants: [
+                  {% for t in room.current_tenants %}
+    { name: '{{ t.full_name|escapejs }}', id: '{{ t.id }}' },
+    {% endfor %}
+          ]
+        },
+    {% endfor %}
+      ],
+    {% endfor %}
+    };
+
     function openRoomDetails(e, id) {
-      e.stopPropagation();
       let room = null;
       let buildingName = '';
 
-      // Find room in data
       for (const [bName, rooms] of Object.entries(buildingsData)) {
         const r = rooms.find(r => r.id === id);
         if (r) {
@@ -589,155 +304,58 @@
 
       if (!room) return;
 
-      // Populate Modal
       document.getElementById('detailRoomNumber').textContent = `Room ${room.number}`;
-      document.getElementById('detailRoomType').textContent = `${room.type} Bed`;
-      document.getElementById('detailBuilding').textContent = `Building ${buildingName}`;
-      const displayPrice = (room.agreed_rent && room.agreed_rent.length > 0) ? room.agreed_rent : room.price;
-      document.getElementById('detailPrice').textContent = `₹${displayPrice}`;
+      document.getElementById('detailBuilding').textContent = `Building ${buildingName} • ${room.type} Bed Unit`;
 
-      // Status Logic
+      const priceVal = (room.agreed_rent && room.agreed_rent.length > 0) ? room.agreed_rent : room.price;
+      document.getElementById('detailPrice').textContent = `₹${priceVal}`;
+
       const capacityMap = { 'Single': 1, 'Double': 2, 'Suite': 4 };
       const max = capacityMap[room.type] || 2;
-      const current = room.tenants ? room.tenants.length : 0;
-
-      // Status Badge Update
-      const statusEl = document.getElementById('detailRoomStatus');
-      if (current >= max) {
-        statusEl.innerHTML = '<span style="background: #fee2e2; color: #991b1b; padding: 0.5rem 1rem; border-radius: 99px; font-weight: 700; font-size: 0.875rem;">FULL</span>';
-      } else if (current > 0) {
-        statusEl.innerHTML = '<span style="background: #fef9c3; color: #854d0e; padding: 0.5rem 1rem; border-radius: 99px; font-weight: 700; font-size: 0.875rem;">PARTIAL</span>';
-      } else {
-        statusEl.innerHTML = '<span style="background: #dcfce7; color: #166534; padding: 0.5rem 1rem; border-radius: 99px; font-weight: 700; font-size: 0.875rem;">AVAILABLE</span>';
-      }
-
+      const current = room.tenants.length;
       document.getElementById('detailOccupancy').textContent = `${current} / ${max}`;
 
-      // Tenants
+      const statusEl = document.getElementById('detailRoomStatus');
+      if (current >= max) {
+        statusEl.innerHTML = '<span class="badge-premium badge-danger">Max Capacity</span>';
+      } else if (current > 0) {
+        statusEl.innerHTML = '<span class="badge-premium badge-warning">Partial Occupancy</span>';
+      } else {
+        statusEl.innerHTML = '<span class="badge-premium badge-success">Fully Available</span>';
+      }
+
       const tList = document.getElementById('detailTenantList');
       tList.innerHTML = '';
-      if (room.tenants && room.tenants.length > 0) {
+      if (room.tenants.length > 0) {
         room.tenants.forEach(t => {
           const div = document.createElement('div');
-          div.className = 'tenant-list-item';
+          div.className = 'card-premium';
+          div.style.marginBottom = '0.75rem';
+          div.style.padding = '1rem';
+          div.style.display = 'flex';
+          div.style.alignItems = 'center';
+          div.style.gap = '1rem';
           div.innerHTML = `
-                <div style="width: 32px; height: 32px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #64748b;">
-                    ${t.name.charAt(0)}
-                </div>
-                <div>
-                    <div style="font-weight: 700;">${t.name}</div>
-                    <div style="font-size: 0.75rem; color: #64748b;">ID: ${t.id}</div>
-                </div>
-              `;
+            <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800;">
+              ${t.name.charAt(0)}
+            </div>
+            <div>
+              <div style="font-weight: 800; font-size: 1rem;">${t.name}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Tenant UID: ${t.id}</div>
+            </div>
+          `;
           tList.appendChild(div);
         });
       } else {
-        tList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #94a3b8; font-style: italic;">No current residents</div>';
+        tList.innerHTML = '<div style="text-align: center; padding: 2.5rem; color: var(--text-muted); font-style: italic;">No active residents in this unit.</div>';
       }
 
-      // Manage Button
-      document.getElementById('btnManageRoom').onclick = function () {
-        window.location.href = `/manage-guests/?room_id=${room.id}`;
-      };
-
+      document.getElementById('btnManageRoom').onclick = () => window.location.href = `/manage-guests/?room_id=${room.id}`;
       document.getElementById('roomDetailModal').style.display = 'flex';
     }
 
-    const buildingsData = {
-      {% for building_name, rooms in buildings %}
-    '{{ building_name|escapejs }}': [
-      {% for room in rooms %}
-    {
-      id: '{{ room.id }}',
-        number: '{{ room.number|escapejs }}',
-          price: '{{ room.price }}',
-            agreed_rent: '{{ room.agreed_rent|default_if_none:"" }}',
-              available: { { room.is_available | yesno: "true,false" } },
-      type: '{{ room.get_room_type_display|escapejs }}',
-        tenants: [
-          {% for t in room.current_tenants %}
-    { name: '{{ t.full_name|escapejs }}', id: '{{ t.id }}' },
-    {% endfor %}
-          ]
-        },
-    {% endfor %}
-      ],
-    {% endfor %}
-    };
-
-    function openBuilding(name) {
-      document.getElementById('modalTitle').textContent = 'Building ' + name;
-      const tbody = document.getElementById('modalTableBody');
-      tbody.innerHTML = '';
-
-      buildingsData[name].forEach(room => {
-        // Calculate Occupancy
-        const capacityMap = { 'Single': 1, 'Double': 2, 'Suite': 4 }; // Default assumption
-        const max = capacityMap[room.type] || 2; // Default to 2 if unknown
-        const current = room.tenants.length;
-
-        let statusColor = '#dcfce7'; // Green
-        let statusText = 'AVAILABLE';
-        let statusTextColor = '#166534';
-
-        if (current >= max) {
-          statusColor = '#fee2e2'; // Red
-          statusText = 'FULL';
-          statusTextColor = '#991b1b';
-        } else if (current > 0) {
-          statusColor = '#fef9c3'; // Yellow/Orange
-          statusText = 'PARTIAL';
-          statusTextColor = '#854d0e';
-        }
-
-        const row = document.createElement('tr');
-        row.style.borderBottom = '1px solid #f1f5f9';
-
-        // Tenant List HTML
-        let tenantHtml = '<div style="font-size: 0.75rem; color: #64748b;">Empty</div>';
-        if (room.tenants.length > 0) {
-          tenantHtml = room.tenants.map(t => `<div style="font-size: 0.8rem; font-weight: 500;">👤 ${t.name}</div>`).join('');
-        }
-
-        row.innerHTML = `
-          <td style="padding: 1rem;">
-             <div style="font-weight: 700; font-size: 1rem;">Room ${room.number}</div>
-             <div style="font-size: 0.75rem; color: #64748b;">${room.type} Bed</div>
-          </td>
-            <td style="padding: 1rem;">
-            <div style="font-weight: 600;">₹${(room.agreed_rent && room.agreed_rent.length > 0) ? room.agreed_rent : room.price}</div>
-          </td>
-          <td style="padding: 1rem;">
-             <div style="margin-bottom: 0.25rem;">
-                <span style="font-size: 0.7rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 99px; background: ${statusColor}; color: ${statusTextColor};">
-                  ${statusText} (${current}/${max})
-                </span>
-             </div>
-             ${tenantHtml}
-          </td>
-          <td style="padding: 1rem;">
-            <button class="btn btn-secondary btn-small" onclick="viewTenants('${room.id}')" title="Manage Tenants">
-                Details 
-            </button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-
-      document.getElementById('buildingModal').style.display = 'flex';
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    window.onclick = e => {
-      if (e.target.classList.contains('modal')) closeModal(e.target.id);
-    }
-
-    function viewTenants(id) {
-      // Direct to guest management with filter or show another modal
-      window.location.href = `/manage-guests/?room_id=${id}`;
+    function closeModal(e) {
+      if (e.target.id === 'roomDetailModal') e.target.style.display = 'none';
     }
   </script>
 </body>

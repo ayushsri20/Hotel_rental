@@ -1,522 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 {% load static %}
+
 <head>
-  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
-  <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panesar Hotels and Motels - Welcome</title>
+  <title>Panesar PG - Premium Student Accommodation</title>
+  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Georgia', 'Garamond', serif;
-      background: #F5F1ED;
-      min-height: 100vh;
+    /* Page Specific Refinements */
+    .hero-section {
+      min-height: 80vh;
       display: flex;
       flex-direction: column;
-      background-attachment: fixed;
-    }
-
-    /* Header with Wooden Theme */
-    .header {
-      background: linear-gradient(180deg, #8B6F47 0%, #6B5638 100%);
-      padding: 15px 30px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 3px solid #5D4E37;
-    }
-
-    .header-logo {
-      font-size: 24px;
-      font-weight: 700;
-      color: #F5DEB3;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-      letter-spacing: 2px;
-    }
-
-    .logout-btn {
-      padding: 8px 20px;
-      background: #D4A574;
-      color: #2C1810;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      font-family: 'Segoe UI', Arial, sans-serif;
-    }
-
-    .logout-btn:hover {
-      background: #E8B88A;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Main Content */
-    .main-content {
-      flex: 1;
-      display: flex;
       justify-content: center;
       align-items: center;
-      padding: 40px 20px;
-    }
-
-    .container {
-      background: white;
-      padding: 50px 40px;
-      border-radius: 12px;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-      <div>
-        {% if user.is_authenticated %}
-          <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
-        {% else %}
-          <a href="{% url 'login' %}" class="logout-btn">Login</a>
-        {% endif %}
-      </div>
-      max-width: 900px;
-      width: 100%;
-      animation: slideIn 0.6s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .container-header {
       text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .logo {
-      font-size: 56px;
-      margin-bottom: 15px;
-    }
-
-    .brand-title {
-      color: #2C1810;
-      font-size: 42px;
-      margin-bottom: 10px;
-      font-weight: 700;
-      text-shadow: none;
-    }
-
-    .subtitle {
-      color: #6B5638;
-      font-size: 18px;
-      margin-bottom: 20px;
-      line-height: 1.6;
-      font-weight: 300;
-      text-shadow: none;
-    }
-
-    /* Content Grid */
-    .content-wrapper {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 40px;
-      align-items: center;
-    }
-
-    /* Center Section - Welcome Box */
-    .welcome-box {
-      background: #FFF8DC;
-      border: 3px solid #D4A574;
-      border-radius: 12px;
-      padding: 30px;
-      text-align: center;
-      margin-bottom: 30px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .welcome-box h2 {
-      color: #2C1810;
-      font-size: 32px;
-      margin-bottom: 20px;
-      font-weight: 700;
-    }
-
-    .welcome-box p {
-      color: #6B5638;
-      font-size: 16px;
-      line-height: 1.8;
-    }
-
-    /* Left Section - Text */
-    .text-section {
-      padding-right: 20px;
-    }
-
-    .section-title {
-      color: #2C1810;
-      font-size: 28px;
-      margin-bottom: 20px;
-      border-bottom: 3px solid #D4A574;
-      padding-bottom: 10px;
-      text-shadow: none;
-    }
-
-    .description-text {
-      color: #6B5638;
-      font-size: 16px;
-      line-height: 1.8;
-      margin-bottom: 25px;
-      text-shadow: none;
-    }
-
-    .features-list {
-      list-style: none;
-      margin-bottom: 30px;
-    }
-
-    .features-list li {
-      color: #2C1810;
-      font-size: 15px;
-      margin-bottom: 12px;
-      padding-left: 30px;
-      position: relative;
-      line-height: 1.6;
-      text-shadow: none;
-    }
-
-    .features-list li:before {
-      content: "✓";
-      position: absolute;
-      left: 0;
-      color: #8B6F47;
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    .room-button {
-      display: inline-block;
-      padding: 14px 32px;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #F5DEB3;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 2px solid #5D4E37;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 15px;
-      margin-top: 20px;
-    }
-
-    .room-button:hover {
-      background: linear-gradient(135deg, #A08860 0%, #7A6B5D 100%);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-    }
-
-    .room-button:active {
-      transform: translateY(-1px);
-    }
-
-    /* Center Section - Apartment Image */
-    .image-section {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #E8D7C3 0%, #D4C5B9 100%);
-      padding: 40px;
-      border-radius: 10px;
-      border: 3px solid #D4A574;
-      min-height: 300px;
+      padding: 4rem 2rem;
+      background: var(--grad-surface);
       position: relative;
       overflow: hidden;
-      margin: 30px 0;
     }
 
-    .apartment-placeholder {
-      text-align: center;
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at center, var(--primary-light) 0%, transparent 70%);
+      z-index: 0;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 99px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      margin-bottom: 1.5rem;
+      line-height: 1.1;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 3vw, 1.25rem);
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 4rem;
       width: 100%;
+      max-width: 1200px;
     }
 
-    .apartment-icon {
-      font-size: 140px;
-      margin-bottom: 20px;
-      animation: float 3s ease-in-out infinite;
+    .feature-card {
+      text-align: left;
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      display: block;
+    }
+
+    .apartment-showcase {
+      font-size: 10rem;
+      margin: 3rem 0;
+      animation: float 6s ease-in-out infinite;
     }
 
     @keyframes float {
-      0%, 100% {
+
+      0%,
+      100% {
         transform: translateY(0px);
       }
+
       50% {
         transform: translateY(-20px);
       }
     }
-
-    .apartment-text {
-      display: none;
-    }
-
-    .apartment-subtext {
-      display: none;
-    }
-
-    /* Buildings Section */
-    .buildings-button {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      width: 100%;
-      text-align: left;
-      transition: all 0.3s ease;
-    }
-
-    .buildings-button:hover .buildings-section {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 25px rgba(139, 111, 71, 0.25);
-    }
-
-    .buildings-section {
-      background: #FFFAF0;
-      border: 2px solid #D4A574;
-      border-radius: 10px;
-      padding: 30px;
-      margin-top: 40px;
-      transition: all 0.3s ease;
-    }
-
-    .buildings-section h3 {
-      color: #2C1810;
-      font-size: 24px;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #D4A574;
-      padding-bottom: 10px;
-    }
-
-    .buildings-content {
-      color: #6B5638;
-      font-size: 15px;
-      line-height: 1.8;
-      margin-bottom: 20px;
-    }
-
-    .detail-button-text {
-      display: inline-block;
-      padding: 12px 28px;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #F5DEB3;
-      border-radius: 6px;
-      font-weight: 600;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 14px;
-      transition: all 0.3s ease;
-    }
-
-    .buildings-button:hover .detail-button-text {
-      background: linear-gradient(135deg, #A08860 0%, #7A6B5D 100%);
-    }
-
-    .detail-button {
-      display: inline-block;
-      padding: 12px 28px;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #F5DEB3;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 2px solid #5D4E37;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      font-size: 14px;
-    }
-
-    .detail-button:hover {
-      background: linear-gradient(135deg, #A08860 0%, #7A6B5D 100%);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .content-wrapper {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
-
-      .text-section {
-        padding-right: 0;
-      }
-
-      .container {
-        padding: 30px 20px;
-      }
-
-      .brand-title {
-        font-size: 32px;
-      }
-
-      .section-title {
-        font-size: 24px;
-      }
-
-      .welcome-box {
-        padding: 20px;
-      }
-
-      .welcome-box h2 {
-        font-size: 24px;
-      }
-
-      .image-section {
-        min-height: 250px;
-        padding: 30px;
-      }
-
-      .apartment-icon {
-        font-size: 100px;
-      }
-
-      .header {
-        flex-wrap: wrap;
-        gap: 15px;
-      }
-    }
-
-    @media (max-width: 600px) {
-      body {
-        min-height: 100vh;
-      }
-
-      .header {
-        padding: 12px 15px;
-      }
-
-      .header-logo {
-        font-size: 18px;
-      }
-
-      .logout-btn {
-        padding: 6px 15px;
-        font-size: 13px;
-      }
-
-      .container {
-        margin: 10px;
-      }
-
-      .brand-title {
-        font-size: 26px;
-      }
-
-      .subtitle {
-        font-size: 14px;
-      }
-
-      .section-title {
-        font-size: 20px;
-      }
-
-      .welcome-box {
-        padding: 15px;
-      }
-
-      .welcome-box h2 {
-        font-size: 20px;
-      }
-
-      .room-button {
-        padding: 12px 24px;
-        font-size: 14px;
-      }
-
-      .apartment-icon {
-        font-size: 80px;
-      }
-    }
   </style>
 </head>
+
 <body>
-  <!-- Header -->
-  <div class="header">
-    <div class="header-logo">
-      <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar PG Logo" style="height: 40px; width: 40px; object-fit: contain; margin-right: 10px;">
+  <!-- Global Navigation -->
+  <nav class="navigation-bar">
+    <a href="/" class="brand-logo">
+      <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar Logo">
       <span>PANESAR PG</span>
+    </a>
+    <div class="nav-actions">
+      {% if user.is_authenticated %}
+      <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">Go to Dashboard</a>
+      <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="margin-left: 1rem;">Logout</a>
+      {% else %}
+      <a href="{% url 'login' %}" class="btn-premium btn-premium-primary">Staff Login</a>
+      {% endif %}
     </div>
-  </div>
+  </nav>
 
-  <!-- Main Content -->
-  <div class="main-content">
-    <div class="container">
-      <div class="container-header">
-        <div class="logo">🏨</div>
-        <h1 class="brand-title">PANESAR HOTELS AND MOTELS</h1>
-        <p class="subtitle">Premium Accommodations & Property Management</p>
-      </div>
+  <main>
+    <section class="hero-section">
+      <div class="hero-content">
+        <span class="hero-badge">Luxury Student Housing</span>
+        <h1 class="hero-title font-luxury text-luxury">PANESAR HOTELS AND MOTELS</h1>
+        <p class="hero-subtitle">Premium student accommodations designed for success. Modern living across multiple
+          units in convenient locations.</p>
 
-      <!-- Two Column Layout: Text + Image -->
-      <div class="content-wrapper">
-        <!-- Welcome Box -->
-        <div class="welcome-box">
-          <h2>Welcome to Our Residences</h2>
-          <p>Experience comfort and convenience at Panesar Hotels and Motels. Your perfect home away from home awaits.</p>
-        </div>
+        <div class="apartment-showcase">🏢</div>
 
-        <!-- Buildings Section with Detail Button - MOVED ABOVE IMAGE -->
-        {% if user.is_authenticated %}
-        <button class="buildings-button" onclick="window.location.href='{% url 'booking_page' %}'">
-        {% else %}
-        <button class="buildings-button" onclick="window.location.href='{% url 'login' %}'">
-        {% endif %}
-          <div class="buildings-section">
-            <h3>Our Premium Buildings</h3>
-            <div class="buildings-content">
-              <p>Panesar Hotels and Motels offers a variety of premium accommodations across multiple well-appointed buildings. Each property features comfortable rooms, modern amenities, and exceptional service.</p>
-              <p style="margin-top: 15px;">Our buildings provide:</p>
-              <ul style="margin-left: 20px; margin-top: 10px;">
-                <li>✓ Comfortable and spacious rooms</li>
-                <li>✓ Modern facilities and amenities</li>
-                <li>✓ Professional housekeeping services</li>
-                <li>✓ 24/7 guest support</li>
-                <li>✓ Secure and convenient parking</li>
-                <li>✓ Common areas and recreational spaces</li>
-              </ul>
-            </div>
-            <div class="detail-button-text">View Details →</div>
-          </div>
-        </button>
-
-        <!-- Center Section: Apartment Image -->
-        <div class="image-section">
-          <div class="apartment-placeholder">
-            <div class="apartment-icon">🏢</div>
-            <div class="apartment-text">Our Apartments</div>
-            <div class="apartment-subtext">Premium Accommodations Awaiting You</div>
-          </div>
-        </div>
-
-        <!-- Explore / Login Button - Centered -->
-        <div style="text-align: center; width: 100%;">
+        <div class="cta-group">
           {% if user.is_authenticated %}
-            <a href="{% url 'booking_page' %}" class="room-button">Explore Our Rooms</a>
+          <a href="{% url 'booking_page' %}" class="btn-premium btn-premium-primary"
+            style="padding: 1rem 2.5rem; font-size: 1.125rem;">Explore Our Rooms</a>
           {% else %}
-            <a href="{% url 'login' %}" class="room-button">Login to Explore Rooms</a>
+          <a href="{% url 'login' %}" class="btn-premium btn-premium-primary"
+            style="padding: 1rem 2.5rem; font-size: 1.125rem;">Login to Book Now</a>
           {% endif %}
         </div>
+
+        <div class="feature-grid">
+          <div class="card-premium feature-card">
+            <span class="feature-icon">✨</span>
+            <h3 class="font-luxury" style="margin-bottom: 0.5rem; color: var(--primary);">Premium Facilities</h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted);">Spacious, fully furnished rooms with modern
+              amenities and high-speed internet connectivity.</p>
+          </div>
+          <div class="card-premium feature-card">
+            <span class="feature-icon">🛡️</span>
+            <h3 class="font-luxury" style="margin-bottom: 0.5rem; color: var(--primary);">Secure Living</h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted);">24/7 CCTV surveillance, secure entry points, and
+              professional management on-site.</p>
+          </div>
+          <div class="card-premium feature-card">
+            <span class="feature-icon">🧼</span>
+            <h3 class="font-luxury" style="margin-bottom: 0.5rem; color: var(--primary);">Clean Environment</h3>
+            <p style="font-size: 0.875rem; color: var(--text-muted);">Regular housekeeping services and well-maintained
+              common areas for a hygienic life.</p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
+
+  <footer style="padding: 4rem 2rem; background: var(--grad-dark); color: white; text-align: center;">
+    <div class="font-luxury" style="font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary);">PANESAR PG</div>
+    <p style="color: rgba(255,255,255,0.6); font-size: 0.875rem;">© 2026 Panesar Hotels and Motels. All rights reserved.
+    </p>
+  </footer>
 </body>
+
 </html>

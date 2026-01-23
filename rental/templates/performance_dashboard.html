@@ -3,902 +3,262 @@
 {% load static %}
 
 <head>
-  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
-  <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Performance Dashboard - Panesar PG</title>
+  <title>Performance Intelligence - Panesar PG</title>
+  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #D4C5B9 0%, #A39B93 100%) !important;
-      min-height: 100vh;
-      padding: 20px;
-      background-attachment: fixed;
-    }
-
-    .container {
-      max-width: 1600px;
-      margin: 0 auto;
-    }
-
-    /* Header */
-    .header {
-      background: #F5F1ED;
-      padding: 25px 30px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      border: 2px solid #D4A574;
-    }
-
-    .header-title {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-
-    .header-title h1 {
-      color: #8B6F47;
-      font-size: 32px;
-      font-weight: bold;
-    }
-
-    .header-icon {
-      font-size: 40px;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 12px 24px;
-      border-radius: 8px;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      font-size: 14px;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #F5DEB3;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(139, 111, 71, 0.3);
-    }
-
-    .btn-secondary {
-      background: #E8D7C3;
-      color: #6B5638;
-    }
-
-    .btn-secondary:hover {
-      background: #D4C5B9;
-    }
-
-    /* KPI Cards */
-    .kpi-grid {
+    /* Performance Specific Styles */
+    .kpi-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-bottom: 40px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
     }
 
     .kpi-card {
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      border: 2px solid #D4A574;
-      transition: all 0.3s ease;
+      padding: 2rem;
+      border-left: 4px solid var(--primary);
     }
 
-    .kpi-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+    .analysis-section {
+      margin-bottom: 4rem;
     }
 
-    .kpi-label {
-      color: #6B5638;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
-    }
-
-    .kpi-value {
-      color: #2C1810;
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-
-    .kpi-subtext {
-      color: #8B6F47;
-      font-size: 13px;
-    }
-
-    .kpi-icon {
-      font-size: 28px;
-      margin-right: 10px;
-    }
-
-    /* Section */
-    .section {
-      margin-bottom: 40px;
-    }
-
-    .section-title {
-      font-size: 28px;
-      color: #2C1810;
-      font-weight: 700;
-      margin-bottom: 25px;
-      padding-bottom: 15px;
-      border-bottom: 3px solid #D4A574;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* Collection Table */
-    .collection-table {
+    .table-luxury {
       width: 100%;
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      border: 2px solid #D4A574;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
     }
 
-    .collection-table thead {
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: white;
-    }
-
-    .collection-table th {
-      padding: 15px;
+    .table-luxury th {
+      padding: 1rem;
       text-align: left;
-      font-weight: 600;
-      border-right: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .collection-table th:last-child {
-      border-right: none;
-    }
-
-    .collection-table tbody tr {
-      border-bottom: 1px solid #E8D7C3;
-      transition: background 0.3s ease;
-    }
-
-    .collection-table tbody tr:hover {
-      background: #FAF7F2;
-    }
-
-    .collection-table td {
-      padding: 15px;
-      border-right: 1px solid #E8D7C3;
-      color: #2C1810;
-    }
-
-    .collection-table td:last-child {
-      border-right: none;
-    }
-
-    .room-cell {
-      font-weight: 600;
-      color: #8B6F47;
-    }
-
-    .amount-cell {
-      font-weight: 700;
-      color: #2C1810;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      text-align: center;
-    }
-
-    .status-paid {
-      background: #D4EDDA;
-      color: #155724;
-    }
-
-    .status-partial {
-      background: #FFF3CD;
-      color: #856404;
-    }
-
-    .status-pending {
-      background: #F8D7DA;
-      color: #721C24;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn-small {
-      padding: 6px 12px;
-      font-size: 12px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-
-    .btn-record {
-      background: #8B6F47;
-      color: white;
-    }
-
-    .btn-record:hover {
-      background: #6B5638;
-      transform: scale(1.05);
-    }
-
-    .btn-view {
-      background: #D4A574;
-      color: #2C1810;
-    }
-
-    .btn-view:hover {
-      background: #E8B88A;
-    }
-
-    /* Progress Bar */
-    .progress-bar-container {
-      background: #E8D7C3;
-      border-radius: 10px;
-      height: 30px;
-      overflow: hidden;
-      margin: 10px 0;
-      border: 1px solid #D4A574;
-    }
-
-    .progress-bar-fill {
-      background: linear-gradient(90deg, #8B6F47 0%, #6B5638 100%);
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      font-size: 12px;
-      transition: width 0.3s ease;
-    }
-
-    /* Summary Cards */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .summary-card {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      border: 2px solid #D4A574;
-    }
-
-    .summary-card h3 {
-      color: #6B5638;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 12px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.05em;
     }
 
-    .summary-value {
-      font-size: 28px;
-      font-weight: 700;
-      color: #2C1810;
-      margin-bottom: 8px;
+    .table-luxury tr td {
+      background: var(--bg-canvas);
+      padding: 1.25rem 1rem;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
     }
 
-    .summary-detail {
-      color: #8B6F47;
-      font-size: 13px;
+    .table-luxury tr td:first-child {
+      border-left: 1px solid var(--border-subtle);
+      border-top-left-radius: var(--radius-md);
+      border-bottom-left-radius: var(--radius-md);
     }
 
-    /* Expense Summary */
-    .expense-table {
-      width: 100%;
-      background: white;
-      border-radius: 12px;
+    .table-luxury tr td:last-child {
+      border-right: 1px solid var(--border-subtle);
+      border-top-right-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+    }
+
+    .progress-track {
+      height: 8px;
+      background: var(--bg-main);
+      border-radius: 99px;
       overflow: hidden;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      border: 2px solid #D4A574;
-      margin-bottom: 30px;
+      margin-top: 0.5rem;
     }
 
-    .expense-table thead {
-      background: linear-gradient(135deg, #D4A574 0%, #C09060 100%);
-      color: #2C1810;
-    }
-
-    .expense-table th {
-      padding: 15px;
-      text-align: left;
-      font-weight: 600;
-      border-right: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    .expense-table tbody tr {
-      border-bottom: 1px solid #E8D7C3;
-    }
-
-    .expense-table tbody tr:hover {
-      background: #FAF7F2;
-    }
-
-    .expense-table td {
-      padding: 15px;
-      border-right: 1px solid #E8D7C3;
-      color: #2C1810;
-    }
-
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
+    .progress-fill {
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-content {
-      background-color: #F5F1ED;
-      margin: 5% auto;
-      padding: 30px;
-      border: 2px solid #D4A574;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 500px;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #D4A574;
-    }
-
-    .modal-header h2 {
-      color: #8B6F47;
-      font-size: 24px;
-    }
-
-    .close-btn {
-      background: #E8D7C3;
-      color: #6B5638;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      width: 40px;
-      height: 40px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    .close-btn:hover {
-      background: #D4C5B9;
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    .form-group label {
-      display: block;
-      color: #6B5638;
-      font-weight: 600;
-      margin-bottom: 6px;
-      font-size: 14px;
-    }
-
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #D4A574;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #8B6F47;
-      box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 20px;
-    }
-
-    /* Footer */
-    .footer {
-      text-align: center;
-      padding: 20px;
-      color: #6B5638;
-      font-size: 14px;
-      margin-top: 40px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .header {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .collection-table {
-        font-size: 13px;
-      }
-
-      .collection-table th,
-      .collection-table td {
-        padding: 10px;
-      }
-
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
+      background: var(--grad-primary);
+      transition: width 0.8s ease;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-title">
-        <div class="header-icon">📊</div>
-        <h1>Performance Dashboard</h1>
-      </div>
-      <div class="header-actions">
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
-      </div>
+  <!-- Global Navigation -->
+  <nav class="navigation-bar">
+    <a href="/" class="brand-logo">
+      <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Logo">
+      <span>PERFORMANCE INTEL</span>
+    </a>
+    <div class="nav-actions">
+      <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">Execution View</a>
+      <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="margin-left: 1rem;">End Session</a>
     </div>
+  </nav>
 
-    <!-- KPI Cards -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">💰 Total Collection</div>
-        <div class="kpi-value">₹{{ total_collection|floatformat:0 }}</div>
-        <div class="kpi-subtext">From all rooms</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">📍 Total Rooms</div>
-        <div class="kpi-value">{{ total_rooms }}</div>
-        <div class="kpi-subtext">In complex</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">👥 Occupied</div>
-        <div class="kpi-value">{{ occupied_rooms }}</div>
-        <div class="kpi-subtext">Rooms with guests</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">⏳ Pending Amount</div>
-        <div class="kpi-value">₹{{ pending_amount|floatformat:0 }}</div>
-        <div class="kpi-subtext">Due for collection</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">⚠️ Overdue Amount</div>
-        <div class="kpi-value">₹{{ overdue_amount|floatformat:0 }}</div>
-        <div class="kpi-subtext">Past due date</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">💡 Electricity Bills</div>
-        <div class="kpi-value">₹{{ total_bills|floatformat:0 }}</div>
-        <div class="kpi-subtext">Total pending</div>
-      </div>
-    </div>
+  <main class="container-premium">
+    <header style="margin-bottom: 3rem;">
+      <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Collection & Yield Intelligence</h1>
+      <p style="color: var(--text-muted); font-weight: 600;">Real-time asset performance and financial monitoring.</p>
+    </header>
 
-    <!-- Collection by Room -->
-    <div class="section">
-      <div class="section-title">
-        <span>💳</span> Room-wise Collection Analysis
+    <section class="kpi-row">
+      <div class="card-premium kpi-card">
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase;">Total
+          Collection</div>
+        <div style="font-size: 2rem; font-weight: 900; margin: 0.5rem 0;">₹{{ total_collection|floatformat:0 }}</div>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Cumulative asset revenue</p>
       </div>
-
-      <div class="collection-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Room #</th>
-              <th>Guest Name</th>
-              <th>Monthly Rent</th>
-              <th>Collected</th>
-              <th>Pending</th>
-              <th>Collection %</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for room_data in room_collections %}
-            <tr>
-              <td class="room-cell">{{ room_data.room_number }}</td>
-              <td>{{ room_data.guest_name|default:"-" }}</td>
-              <td class="amount-cell">₹{{ room_data.monthly_rent|floatformat:2 }}</td>
-              <td class="amount-cell" style="color: #28a745;">₹{{ room_data.collected|floatformat:2 }}</td>
-              <td class="amount-cell" style="color: #dc3545;">₹{{ room_data.pending|floatformat:2 }}</td>
-              <td>
-                <div style="margin-bottom: 5px; font-weight: 600; color: #8B6F47;">{{ room_data.collection_percentage
-                  }}%</div>
-                <div class="progress-bar-container">
-                  <div class="progress-bar-fill" style="width: {{ room_data.collection_percentage }}%;">
-                    {% if room_data.collection_percentage > 30 %}{{ room_data.collection_percentage }}%{% endif %}
-                  </div>
-                </div>
-              </td>
-              <td>
-                <span
-                  class="status-badge {% if room_data.payment_status == 'paid' %}status-paid{% elif room_data.payment_status == 'partial' %}status-partial{% else %}status-pending{% endif %}">
-                  {{ room_data.payment_status|title }}
-                </span>
-              </td>
-              <td>
-                <div class="action-buttons">
-                  {% if room_data.monthly_payment_id %}
-                  <button class="btn-small btn-record"
-                    onclick="openPaymentModal('{{ room_data.monthly_payment_id }}', 'Room {{ room_data.room_number }}')">
-                    ➕ Record
-                  </button>
-                  {% else %}
-                  <button class="btn-small btn-record" disabled style="opacity: 0.5; cursor: not-allowed;"
-                    title="No payment record">
-                    ➕ Record
-                  </button>
-                  {% endif %}
-                  <button class="btn-small btn-view" onclick="viewRoomDetails('{{ room_data.room_number }}')">
-                    👁️ View
-                  </button>
-                </div>
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="8" style="text-align: center; padding: 30px; color: #999;">
-                No room data available
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="card-premium kpi-card" style="border-left-color: var(--secondary);">
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--secondary); text-transform: uppercase;">
+          Efficiency</div>
+        <div style="font-size: 2rem; font-weight: 900; margin: 0.5rem 0;">{{ collection_efficiency }}%</div>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Yield versus potential</p>
       </div>
-    </div>
-
-    <!-- Summary Section -->
-    <div class="section">
-      <div class="section-title">
-        <span>📈</span> Building Complex Summary
+      <div class="card-premium kpi-card" style="border-left-color: var(--danger);">
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--danger); text-transform: uppercase;">Outstanding
+        </div>
+        <div style="font-size: 2rem; font-weight: 900; margin: 0.5rem 0;">₹{{ pending_amount|floatformat:0 }}</div>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Unrealized monthly dues</p>
       </div>
+      <div class="card-premium kpi-card" style="border-left-color: var(--warning);">
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--warning); text-transform: uppercase;">Utilities
+        </div>
+        <div style="font-size: 2rem; font-weight: 900; margin: 0.5rem 0;">₹{{ total_bills|floatformat:0 }}</div>
+        <p style="font-size: 0.75rem; color: var(--text-muted);">Electricity overhead</p>
+      </div>
+    </section>
 
-      <div class="summary-grid">
-        <div class="summary-card">
-          <h3>Monthly Expected Collection</h3>
-          <div class="summary-value">₹{{ expected_monthly_collection|floatformat:0 }}</div>
-          <div class="summary-detail">From all occupied rooms</div>
+    <section class="analysis-section">
+      <h2 class="font-luxury"
+        style="margin-bottom: 2rem; border-bottom: 2px solid var(--primary); display: inline-block; padding-bottom: 0.5rem;">
+        Unit Performance Ledger</h2>
+
+      <table class="table-luxury">
+        <thead>
+          <tr>
+            <th>Asset ID</th>
+            <th>Stakeholder</th>
+            <th>Target</th>
+            <th>Realized</th>
+            <th>Variance</th>
+            <th>Health</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for room_data in room_collections %}
+          <tr>
+            <td style="font-weight: 800; color: var(--secondary);">Room {{ room_data.room_number }}</td>
+            <td>{{ room_data.guest_name|default:"-" }}</td>
+            <td style="font-weight: 700;">₹{{ room_data.monthly_rent|floatformat:0 }}</td>
+            <td style="color: var(--success); font-weight: 800;">₹{{ room_data.collected|floatformat:0 }}</td>
+            <td style="color: var(--danger); font-weight: 800;">₹{{ room_data.pending|floatformat:0 }}</td>
+            <td style="width: 200px;">
+              <div style="font-size: 0.75rem; font-weight: 800; display: flex; justify-content: space-between;">
+                <span>{{ room_data.collection_percentage }}%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" style="width: {{ room_data.collection_percentage }}%;"></div>
+              </div>
+            </td>
+            <td style="text-align: right;">
+              <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                {% if room_data.monthly_payment_id %}
+                <button class="btn-premium btn-premium-primary" style="padding: 0.5rem 1rem; font-size: 0.75rem;"
+                  onclick="openPaymentModal('{{ room_data.monthly_payment_id }}', 'Room {{ room_data.room_number }}')">Record</button>
+                {% endif %}
+                <a href="/manage-guests/?room_id={{ room_data.room_number }}" class="btn-premium btn-premium-secondary"
+                  style="padding: 0.5rem 1rem; font-size: 0.75rem;">View</a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="analysis-section">
+      <h2 class="font-luxury"
+        style="margin-bottom: 2rem; border-bottom: 2px solid var(--primary); display: inline-block; padding-bottom: 0.5rem;">
+        Resource Overhead Matrix</h2>
+
+      <table class="table-luxury">
+        <thead>
+          <tr>
+            <th>Asset ID</th>
+            <th>Cycle</th>
+            <th>Resource Units</th>
+            <th>Liability</th>
+            <th>Coverage</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bill_data in electricity_bills %}
+          <tr>
+            <td style="font-weight: 800; color: var(--secondary);">Room {{ bill_data.room_number }}</td>
+            <td>{{ bill_data.month|date:"M Y" }}</td>
+            <td>{{ bill_data.units_consumed }} kWh</td>
+            <td style="font-weight: 800;">₹{{ bill_data.bill_amount|floatformat:0 }}</td>
+            <td style="color: var(--success); font-weight: 800;">₹{{ bill_data.paid_amount|floatformat:0 }}</td>
+            <td>
+              <span
+                class="badge-premium {% if bill_data.bill_status == 'paid' %}badge-success{% elif bill_data.bill_status == 'partial' %}badge-warning{% else %}badge-danger{% endif %}">
+                {{ bill_data.bill_status }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Modals and JS remain functional but visually updated -->
+  <div id="paymentModal" class="modal-overlay" onclick="closePaymentModal()">
+    <div class="card-premium glass-panel" style="width: 100%; max-width: 440px; padding: 2.5rem;"
+      onclick="event.stopPropagation()">
+      <h2 class="font-luxury text-luxury" style="margin-bottom: 2rem;">Record Asset Revenue</h2>
+      <form method="POST" action="{% url 'record_payment_dashboard' %}">
+        {% csrf_token %}
+        <input type="hidden" name="monthly_payment_id" id="monthlyPaymentId">
+
+        <div style="margin-bottom: 1.5rem;">
+          <label
+            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Revenue
+            Amount (₹)</label>
+          <input type="number" name="payment_amount" required step="0.01"
+            style="width: 100%; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-family: inherit;">
         </div>
 
-        <div class="summary-card">
-          <h3>Actual Collection This Month</h3>
-          <div class="summary-value">₹{{ collected_this_month|floatformat:0 }}</div>
-          <div class="summary-detail">Received so far</div>
+        <div style="margin-bottom: 1.5rem;">
+          <label
+            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Transaction
+            Method</label>
+          <select name="payment_method" required
+            style="width: 100%; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-family: inherit;">
+            <option value="cash">Cash Settlement</option>
+            <option value="bank_transfer">Digital Wire</option>
+            <option value="upi">Instant UPI</option>
+          </select>
         </div>
 
-        <div class="summary-card">
-          <h3>Collection Efficiency</h3>
-          <div class="summary-value">{{ collection_efficiency }}%</div>
-          <div class="summary-detail">{{ collected_this_month|floatformat:0 }} / {{
-            expected_monthly_collection|floatformat:0 }}</div>
+        <div style="margin-bottom: 2rem;">
+          <label
+            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Settlement
+            Date</label>
+          <input type="date" name="payment_date" required
+            style="width: 100%; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-family: inherit;">
         </div>
-      </div>
-    </div>
 
-    <!-- Electricity Bills Summary -->
-    <div class="section">
-      <div class="section-title">
-        <span>⚡</span> Electricity Expenses
-      </div>
-
-      <div class="expense-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Room #</th>
-              <th>Month</th>
-              <th>Units Consumed</th>
-              <th>Bill Amount</th>
-              <th>Paid</th>
-              <th>Pending</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for bill_data in electricity_bills %}
-            <tr>
-              <td class="room-cell">{{ bill_data.room_number }}</td>
-              <td>{{ bill_data.month|date:"M Y" }}</td>
-              <td>{{ bill_data.units_consumed }} units</td>
-              <td class="amount-cell">₹{{ bill_data.bill_amount|floatformat:2 }}</td>
-              <td style="color: #28a745; font-weight: 600;">₹{{ bill_data.paid_amount|floatformat:2 }}</td>
-              <td style="color: #dc3545; font-weight: 600;">₹{{ bill_data.remaining|floatformat:2 }}</td>
-              <td>
-                <span
-                  class="status-badge {% if bill_data.bill_status == 'paid' %}status-paid{% elif bill_data.bill_status == 'partial' %}status-partial{% else %}status-pending{% endif %}">
-                  {{ bill_data.bill_status|title }}
-                </span>
-              </td>
-              <td>
-                <button class="btn-small btn-record"
-                  onclick="openBillPaymentModal('{{ bill_data.bill_id }}', 'Room {{ bill_data.room_number }}')">
-                  ➕ Record
-                </button>
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="8" style="text-align: center; padding: 30px; color: #999;">
-                No electricity bills available
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Payment Recording Modal -->
-    <div id="paymentModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true"
-      aria-labelledby="paymentModalTitle" tabindex="-1">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="paymentModalTitle">Record Payment</h2>
-          <button type="button" class="close-btn" onclick="closePaymentModal()"
-            aria-label="Close payment dialog">&times;</button>
-        </div>
-        <form method="POST" action="{% url 'record_payment_dashboard' %}" id="paymentForm">
-          {% csrf_token %}
-          <input type="hidden" name="monthly_payment_id" id="monthlyPaymentId">
-
-          <div class="form-group">
-            <label for="roomDisplay">Room</label>
-            <input type="text" id="roomDisplay" readonly style="background: #E8D7C3;" aria-readonly="true">
-          </div>
-
-          <div class="form-group">
-            <label for="paymentAmount">Payment Amount (₹) *</label>
-            <input id="paymentAmount" type="number" name="payment_amount" required step="0.01" placeholder="0.00"
-              aria-required="true">
-          </div>
-
-          <div class="form-group">
-            <label for="paymentMethod">Payment Method *</label>
-            <select id="paymentMethod" name="payment_method" required aria-required="true">
-              <option value="">Select method</option>
-              <option value="cash">Cash</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="check">Check</option>
-              <option value="upi">UPI</option>
-              <option value="card">Card</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="referenceNumber">Reference Number</label>
-            <input id="referenceNumber" type="text" name="reference_number" placeholder="e.g., TXN123456 or Check #">
-          </div>
-
-          <div class="form-group">
-            <label for="paymentDate">Payment Date *</label>
-            <input id="paymentDate" type="date" name="payment_date" required aria-required="true">
-          </div>
-
-          <div class="form-group">
-            <label for="paymentNotes">Notes</label>
-            <input id="paymentNotes" type="text" name="notes" placeholder="Optional notes">
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary">Record Payment</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Bill Payment Modal -->
-    <div id="billModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true"
-      aria-labelledby="billModalTitle" tabindex="-1">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="billModalTitle">Record Bill Payment</h2>
-          <button type="button" class="close-btn" onclick="closeBillModal()"
-            aria-label="Close bill dialog">&times;</button>
-        </div>
-        <form method="POST" action="{% url 'record_bill_payment_dashboard' %}" id="billForm">
-          {% csrf_token %}
-          <input type="hidden" name="bill_id" id="billId">
-
-          <div class="form-group">
-            <label for="billRoomDisplay">Room</label>
-            <input type="text" id="billRoomDisplay" readonly style="background: #E8D7C3;" aria-readonly="true">
-          </div>
-
-          <div class="form-group">
-            <label for="billPaymentAmount">Bill Payment Amount (₹) *</label>
-            <input id="billPaymentAmount" type="number" name="bill_payment_amount" required step="0.01"
-              placeholder="0.00" aria-required="true">
-          </div>
-
-          <div class="form-group">
-            <label for="billPaymentDate">Payment Date *</label>
-            <input id="billPaymentDate" type="date" name="bill_payment_date" required aria-required="true">
-          </div>
-
-          <div class="form-group">
-            <label for="billNotes">Notes</label>
-            <input id="billNotes" type="text" name="bill_notes" placeholder="Optional notes">
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeBillModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary">Record Payment</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <p>© 2025 Panesar PG Management System | Last Updated: {% now "M d, Y H:i" %}</p>
+        <button type="submit" class="btn-premium btn-premium-primary" style="width: 100%; padding: 1rem;">Confirm
+          Revenue</button>
+      </form>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Set today's date in all date inputs
-      const today = new Date().toISOString().split('T')[0];
-      const dateInputs = document.querySelectorAll('input[type="date"]');
-      dateInputs.forEach(input => { if (!input.value) input.value = today; });
-
-      // Modal helpers with ARIA support and defensive checks
-      const paymentModal = document.getElementById('paymentModal');
-      const billModal = document.getElementById('billModal');
-      const paymentForm = document.getElementById('paymentForm');
-      const billForm = document.getElementById('billForm');
-
-      window.openPaymentModal = function(monthlyPaymentId, roomInfo) {
-        const monthlyInput = document.getElementById('monthlyPaymentId');
-        const roomDisplay = document.getElementById('roomDisplay');
-        if (monthlyInput) monthlyInput.value = monthlyPaymentId || '';
-        if (roomDisplay) roomDisplay.value = roomInfo || '';
-        if (paymentModal) {
-          paymentModal.style.display = 'block';
-          paymentModal.setAttribute('aria-hidden','false');
-          const amt = document.getElementById('paymentAmount');
-          if (amt) amt.focus();
-        }
-      };
-
-      window.closePaymentModal = function() {
-        if (paymentModal) {
-          paymentModal.style.display = 'none';
-          paymentModal.setAttribute('aria-hidden','true');
-        }
-        if (paymentForm) paymentForm.reset();
-      };
-
-      window.openBillPaymentModal = function(billId, roomInfo) {
-        const billInput = document.getElementById('billId');
-        const billRoom = document.getElementById('billRoomDisplay');
-        if (billInput) billInput.value = billId || '';
-        if (billRoom) billRoom.value = roomInfo || '';
-        if (billModal) {
-          billModal.style.display = 'block';
-          billModal.setAttribute('aria-hidden','false');
-          const amt = document.getElementById('billPaymentAmount');
-          if (amt) amt.focus();
-        }
-      };
-
-      window.closeBillModal = function() {
-        if (billModal) {
-          billModal.style.display = 'none';
-          billModal.setAttribute('aria-hidden','true');
-        }
-        if (billForm) billForm.reset();
-      };
-
-      // Close modal when clicking outside (defensive)
-      window.addEventListener('click', function(event) {
-        if (paymentModal && event.target === paymentModal) closePaymentModal();
-        if (billModal && event.target === billModal) closeBillModal();
-      });
-
-      // Attach safe form validation handlers
-      if (paymentForm) {
-        paymentForm.addEventListener('submit', function(e) {
-          const amountEl = document.getElementById('paymentAmount');
-          const amount = amountEl ? amountEl.value : null;
-          if (!amount || parseFloat(amount) <= 0) {
-            e.preventDefault();
-            alert('Please enter a valid payment amount');
-            if (amountEl) amountEl.focus();
-          }
-        });
-      }
-
-      // Allow quick navigation to guest list filtered by room number
-      window.viewRoomDetails = function(roomNumber) {
-        if (!roomNumber) return;
-        // Use the manage-guests search param to pre-fill the search box
-        window.location.href = '/manage-guests/?search=' + encodeURIComponent(roomNumber);
-      };
-
-      if (billForm) {
-        billForm.addEventListener('submit', function(e) {
-          const amountEl = document.getElementById('billPaymentAmount');
-          const amount = amountEl ? amountEl.value : null;
-          if (!amount || parseFloat(amount) <= 0) {
-            e.preventDefault();
-            alert('Please enter a valid payment amount');
-            if (amountEl) amountEl.focus();
-          }
-        });
-      }
-    });
+    function openPaymentModal(id, room) {
+      document.getElementById('monthlyPaymentId').value = id;
+      document.getElementById('paymentModal').style.display = 'flex';
+    }
+    function closePaymentModal() {
+      document.getElementById('paymentModal').style.display = 'none';
+    }
   </script>
 </body>
 

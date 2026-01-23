@@ -4,7 +4,6 @@
 
 <head>
   <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
-  <script defer src="{% static 'rental/js/theme-rotator.js' %}"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manage Buildings & Rooms - Panesar PG</title>
@@ -438,7 +437,8 @@
             {% for room in rooms %}
             <tr data-room-id="{{ room.id }}">
               <td>
-                <input type="text" class="room-input room-number" data-room-id="{{ room.id }}" value="{{ room.number }}" style="width:90px;">
+                <input type="text" class="room-input room-number" data-room-id="{{ room.id }}" value="{{ room.number }}"
+                  style="width:90px;">
               </td>
               <td>
                 <select class="room-input room-type" data-room-id="{{ room.id }}">
@@ -449,8 +449,11 @@
               </td>
               <td>
                 <div style="display:flex; gap:8px; align-items:center;">
-                  <input type="number" class="room-input room-price" data-room-id="{{ room.id }}" value="{{ room.price }}" step="0.01" style="width:120px;">
-                  <input type="number" class="room-input room-agreed-rent" data-room-id="{{ room.id }}" value="{{ room.agreed_rent|default_if_none:'' }}" placeholder="Agreed" step="0.01" style="width:120px;">
+                  <input type="number" class="room-input room-price" data-room-id="{{ room.id }}"
+                    value="{{ room.price }}" step="0.01" style="width:120px;">
+                  <input type="number" class="room-input room-agreed-rent" data-room-id="{{ room.id }}"
+                    value="{{ room.agreed_rent|default_if_none:'' }}" placeholder="Agreed" step="0.01"
+                    style="width:120px;">
                 </div>
               </td>
               <td>
@@ -531,7 +534,7 @@
       }
     });
 
-        // Save Room Changes
+    // Save Room Changes
     document.querySelectorAll('.btn-save').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const roomId = btn.dataset.roomId;

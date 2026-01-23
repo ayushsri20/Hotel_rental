@@ -4,7 +4,7 @@
 :root {
   /* High-Contrast Luxury Palette */
   --primary: #947a45;
-  /* Deep Bronze Gold for light mode */
+  /* Deep Bronze Gold */
   --primary-hover: #7a6438;
   --primary-light: rgba(148, 122, 69, 0.1);
   --secondary: #334155;
@@ -33,9 +33,10 @@
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(255, 255, 255, 0.5);
 
-  /* Gradients - Deepened Metallic */
+  /* Gradients */
   --grad-primary: linear-gradient(135deg, #947a45 0%, #7a6438 100%);
   --grad-surface: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  --grad-dark: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 
   --transition-all: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --radius-lg: 1rem;
@@ -47,7 +48,6 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  transition: var(--transition-all);
 }
 
 body {
@@ -56,74 +56,142 @@ body {
   color: var(--text-main);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-/* Skip link for accessibility */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: var(--primary);
-  color: white;
-  padding: 8px 16px;
-  z-index: 100;
-  border-radius: 0 0 8px 0;
+/* Typography Utility */
+.font-luxury {
+  font-family: 'Cinzel', serif;
 }
 
-.skip-link:focus {
-  top: 0;
+.text-luxury {
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Layout Utilities */
+.container-premium {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 /* Card Styles */
-.card {
+.card-premium {
   background: var(--bg-canvas);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-all);
   padding: 1.5rem;
 }
 
-.card:hover {
+.card-premium:hover {
   box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  border-color: var(--primary);
 }
 
-/* Button Styles */
-.btn-primary {
-  background: var(--grad-primary);
-  color: white;
+/* Button Refinement */
+.btn-premium {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.75rem 1.5rem;
-  border: none;
   border-radius: var(--radius-md);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+  transition: var(--transition-all);
+  text-decoration: none;
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+  border: none;
 }
 
-.btn-primary:hover {
+.btn-premium-primary {
+  background: var(--grad-primary);
+  color: #ffffff;
+  box-shadow: 0 4px 14px 0 rgba(148, 122, 69, 0.3);
+}
+
+.btn-premium-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(148, 122, 69, 0.4);
+}
+
+.btn-premium-secondary {
+  background: #ffffff;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+.btn-premium-secondary:hover {
+  background: var(--primary-light);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.23);
+}
+
+/* Header Styles */
+.navigation-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: var(--bg-canvas);
+  border-bottom: 3px solid var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.brand-logo img {
+  height: 40px;
+  width: auto;
+}
+
+.brand-logo span {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
 }
 
 /* Status Badges */
-.badge {
-  padding: 0.25rem 0.75rem;
+.badge-premium {
+  padding: 0.35rem 0.85rem;
   border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.badge-paid {
+.badge-success {
   background: #d1fae5;
   color: #065f46;
 }
 
-.badge-pending {
+.badge-warning {
   background: #ffedd5;
   color: #9a3412;
 }
 
-.badge-overdue {
+.badge-danger {
   background: #fee2e2;
   color: #991b1b;
 }
