@@ -49,7 +49,8 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
         except Exception as db_err:
             logger.error(f"DB AUTH ERROR: {db_err}")
-            return render(request, 'login.html', {'error': f'Database connection error: {db_err}'})
+            diag_str = f"Error: {db_err}. Path: {db_path}, Exists: {exists}, Size: {size}, CWD: {cwd}, Tables: {tables[:5] if 'tables' in locals() else 'N/A'}"
+            return render(request, 'login.html', {'error': f'Database connection error: {diag_str}'})
         
         if user is not None:
             login(request, user)
