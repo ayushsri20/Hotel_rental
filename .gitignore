@@ -123,7 +123,8 @@ dmypy.json
 media/
 
 # Static files (collected)
-staticfiles/
+/staticfiles/*
+!/staticfiles/.gitkeep
 
 # macOS
 .DS_Store
