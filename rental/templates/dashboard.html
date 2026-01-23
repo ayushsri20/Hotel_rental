@@ -159,23 +159,23 @@
     <section class="mgmt-grid">
       {% if is_admin %}
       <a href="{% url 'performance_dashboard' %}" class="card-premium mgmt-card">
-        <span class="mgmt-icon">📊</span>
+        <span class="mgmt-icon"><span role="img" aria-label="Analytics">📊</span></span>
         <h3 class="font-luxury">Analytics Hub</h3>
         <p style="font-size: 0.8125rem; color: var(--text-muted);">Occupancy trends & collection metrics.</p>
       </a>
       {% endif %}
       <a href="{% url 'manage_guests' %}" class="card-premium mgmt-card">
-        <span class="mgmt-icon">🏠</span>
+        <span class="mgmt-icon"><span role="img" aria-label="Tenants">🏠</span></span>
         <h3 class="font-luxury">Tenancy Register</h3>
         <p style="font-size: 0.8125rem; color: var(--text-muted);">Resident profiles & documentation.</p>
       </a>
       <a href="{% url 'manage_payments' %}" class="card-premium mgmt-card">
-        <span class="mgmt-icon">💍</span>
+        <span class="mgmt-icon"><span role="img" aria-label="Payments">💍</span></span>
         <h3 class="font-luxury">Rental Ledger</h3>
         <p style="font-size: 0.8125rem; color: var(--text-muted);">High-precision collection tracking.</p>
       </a>
       <a href="{% url 'manage_electricity_bills' %}" class="card-premium mgmt-card">
-        <span class="mgmt-icon">⚡</span>
+        <span class="mgmt-icon"><span role="img" aria-label="Electricity">⚡</span></span>
         <h3 class="font-luxury">Utility Matrix</h3>
         <p style="font-size: 0.8125rem; color: var(--text-muted);">Smart electricity & resource billing.</p>
       </a>

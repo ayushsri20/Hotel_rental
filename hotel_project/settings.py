@@ -93,32 +93,19 @@ WSGI_APPLICATION = 'hotel_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Default to SQLite for local development
+# Default to SQLite for local development, but prioritize Postgres if DATABASE_URL is set
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
-# If DATABASE_URL is provided (production on Railway/Render), use it
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    try:
-        DATABASES['default'] = dj_database_url.parse(
-            DATABASE_URL, 
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-        # Ensure SSL mode for production Postgres
-        if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
-            DATABASES['default']['OPTIONS'] = {
-                'sslmode': 'require',
-            }
-    except Exception as e:
-        print(f"ERROR: Failed to parse DATABASE_URL: {e}", file=__import__('sys').stderr)
-        raise
-
+# Ensure SSL mode for production Postgres
+if DATABASES['default'].get('ENGINE') == 'django.db.backends.postgresql':
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS']['sslmode'] = 'require'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -166,27 +153,22 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS if ori
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Locations where Django will look for static files
-STATICFILES_DIRS = [
-    BASE_DIR / 'rental' / 'static',
-]
+# Extra places for collectstatic to look for static files.
+STATICFILES_DIRS = []
 
-# Use WhiteNoise for efficient static serving
+# Use WhiteNoise for efficient static serving with a custom non-strict storage
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "hotel_project.storage.MyStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
-if not DEBUG:
-    WHITENOISE_MANIFEST_STRICT = False
-    WHITENOISE_USE_FINDERS = True # Keep True for admin styles fallback
-else:
-    pass
-
+# WhiteNoise settings
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = DEBUG
 
 # Media files (Uploads) - for guest documents, ID proofs, etc.
