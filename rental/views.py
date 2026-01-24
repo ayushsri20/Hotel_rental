@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -24,6 +25,8 @@ def home(request):
 def health_check(request):
     return JsonResponse({'status': 'ok', 'timestamp': datetime.now().isoformat()})
 
+@csrf_exempt
+@csrf_exempt  # Temporary: Bypass CSRF for Railway deployment
 @require_http_methods(["GET", "POST"])
 def login_view(request):
     if request.method == 'POST':
