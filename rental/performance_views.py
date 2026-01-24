@@ -142,7 +142,7 @@ def performance_dashboard(request):
             'occupancy_rate': float(occupancy_rate),
             'building_occupancy': building_occupancy,
             'room_data': room_data,
-            'electricity_bills': electricity_bills,
+            'electricity_bills': [], # Fallback for now
         }
         
         return render(request, 'performance_dashboard.html', context)

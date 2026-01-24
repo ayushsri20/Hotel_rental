@@ -41,11 +41,11 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         """Add security headers to response"""
         
-        # Content Security Policy - allowed unsafe-inline for template scripts
+        # Content Security Policy - expanded for Google Fonts
         csp = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline'; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; "
             "img-src 'self' data: https:; "
             "font-src 'self' data: https://fonts.googleapis.com https://fonts.gstatic.com; "
             "connect-src 'self'; "
