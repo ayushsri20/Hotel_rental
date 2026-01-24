@@ -728,11 +728,15 @@ def manage_users(request):
     try:
         # Filter to only show people who are actually meant to be working (staff/admins)
         managed_users = User.objects.filter(is_staff=True).order_by('-date_joined')
-        return render(request, 'manage_users.html', {'managed_users': managed_users})
+        return render(request, 'manage_users.html', {
+            'managed_users': managed_users,
+            'is_admin': request.user.is_staff or request.user.is_superuser
+        })
     except Exception as e:
         logger.error(f"Error in manage_users view: {e}", exc_info=True)
         return render(request, 'manage_users.html', {
             'managed_users': [],
+            'is_admin': request.user.is_staff or request.user.is_superuser,
             'error': 'Unable to load users. Please try again later.'
         })
 
