@@ -205,10 +205,33 @@ def manage_guests(request):
         'without_room': guests.filter(room__isnull=True).count(),
     }
     
+    # Generate dynamic building list from existing rooms
+    building_prefixes = set()
+    building_map = {
+        'A': 'M1 Complex',
+        'B': 'Building 1',
+        'C': 'Building 2',
+        'D': 'Building 3',
+        'E': 'Building 4',
+        'F': 'Building 5',
+        'G': 'Building 6',
+    }
+    
+    for room in rooms:
+        prefix = room.number.split('-')[0] if '-' in room.number else room.number[0]
+        building_prefixes.add(prefix)
+    
+    # Sort and convert to list with display names
+    buildings = sorted([
+        {'prefix': prefix, 'name': building_map.get(prefix, f'Building {prefix}')}
+        for prefix in building_prefixes
+    ], key=lambda x: x['prefix'])
+    
     context = {
         'guests': guests,
         'rooms': rooms,
         'guest_stats': guest_stats,
+        'buildings': buildings,  # Dynamic building list for filters
     }
     
     return render(request, 'manage_guests.html', context)
@@ -351,6 +374,16 @@ def add_guest(request):
             if file_field in request.FILES:
                 validate_image_file(request.FILES[file_field])
         
+        # Only first_name and last_name are required
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        
+        if not first_name or not last_name:
+            return JsonResponse({
+                'success': False,
+                'message': 'First name and last name are required'
+            }, status=400)
+        
         check_in = request.POST.get('check_in_date')
         check_out = request.POST.get('check_out_date')
         dob = request.POST.get('date_of_birth')
@@ -361,11 +394,15 @@ def add_guest(request):
             try: return datetime.strptime(d, '%Y-%m-%d').date()
             except: return None
 
+        # Get room and agreed_rent
+        room_id = request.POST.get('room_id') or None
+        agreed_rent_str = request.POST.get('agreed_rent', '').strip()
+        
         guest = Guest.objects.create(
-            first_name=request.POST.get('first_name'),
-            last_name=request.POST.get('last_name'),
-            email=request.POST.get('email'),
-            phone=request.POST.get('phone'),
+            first_name=first_name,
+            last_name=last_name,
+            email=request.POST.get('email', '').strip(),
+            phone=request.POST.get('phone', '').strip(),
             gender=request.POST.get('gender', 'M'),
             date_of_birth=parse_date(dob),
             address=request.POST.get('address', ''),
@@ -379,13 +416,21 @@ def add_guest(request):
             student_college=request.POST.get('student_college', ''),
             check_in_date=parse_date(check_in),
             check_out_date=parse_date(check_out),
-            room_id=request.POST.get('room_id') or None,
+            room_id=room_id,
             notes=request.POST.get('notes', ''),
         )
         
-        # Room status update
+        # Room status update and agreed_rent handling
         if guest.room:
             guest.room.is_available = False
+            # Set agreed_rent on the room if provided (default ₹7000)
+            if agreed_rent_str:
+                try:
+                    guest.room.agreed_rent = float(agreed_rent_str)
+                except ValueError:
+                    guest.room.agreed_rent = 7000  # Default
+            elif not guest.room.agreed_rent:
+                guest.room.agreed_rent = 7000  # Default if not set
             guest.room.save()
 
         if 'govt_id_photo' in request.FILES:
@@ -680,9 +725,16 @@ def get_guests(request):
 @user_passes_test(is_admin)
 def manage_users(request):
     """View to manage motel staff/employees ONLY - Tenants are managed separately"""
-    # Filter to only show people who are actually meant to be working (staff/admins)
-    managed_users = User.objects.filter(is_staff=True).order_by('-date_joined')
-    return render(request, 'manage_users.html', {'managed_users': managed_users})
+    try:
+        # Filter to only show people who are actually meant to be working (staff/admins)
+        managed_users = User.objects.filter(is_staff=True).order_by('-date_joined')
+        return render(request, 'manage_users.html', {'managed_users': managed_users})
+    except Exception as e:
+        logger.error(f"Error in manage_users view: {e}", exc_info=True)
+        return render(request, 'manage_users.html', {
+            'managed_users': [],
+            'error': 'Unable to load users. Please try again later.'
+        })
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
@@ -965,11 +1017,11 @@ def create_electricity_bill(request):
         if not month_str:
             return JsonResponse({'success': False, 'message': 'Month is required (YYYY-MM or YYYY-MM-DD)'}, status=400)
 
-        # Parse numeric fields with validation
+        # Parse numeric fields with validation and defaults
         try:
-            starting_reading = float(request.POST.get('starting_reading', 0))
-            ending_reading = float(request.POST.get('ending_reading', 0))
-            rate_per_unit = float(request.POST.get('rate_per_unit', 0))
+            starting_reading = float(request.POST.get('starting_reading') or 13)  # Default: 13 units
+            ending_reading = float(request.POST.get('ending_reading') or (starting_reading + 150))  # Default: +150 units  
+            rate_per_unit = float(request.POST.get('rate_per_unit') or 6)  # Default: ₹6/unit
         except (TypeError, ValueError):
             return JsonResponse({'success': False, 'message': 'Invalid numeric input for readings or rate'}, status=400)
 

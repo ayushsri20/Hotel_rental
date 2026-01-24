@@ -369,11 +369,9 @@
           <label>Cluster</label>
           <select id="buildingFilter" onchange="filterTable()" class="input" style="padding: 0.5rem 2rem 0.5rem 1rem;">
             <option value="all">All Clusters</option>
-            <option value="A">M1 Complex</option>
-            <option value="B">Building 1</option>
-            <option value="C">Building 2</option>
-            <option value="D">Building 3</option>
-            <option value="E">Building 4</option>
+            {% for building in buildings %}
+            <option value="{{ building.prefix }}">{{ building.name }}</option>
+            {% endfor %}
           </select>
         </div>
         <div class="filter-group">
@@ -490,18 +488,23 @@
           </div>
           <div class="form-group">
             <label>Email</label>
-            <input type="email" name="email" id="formEmail" class="input" required>
+            <input type="email" name="email" id="formEmail" class="input" placeholder="Optional">
           </div>
           <div class="form-group">
             <label>Phone</label>
-            <input type="tel" name="phone" id="formPhone" class="input" required>
+            <input type="tel" name="phone" id="formPhone" class="input" placeholder="Optional">
           </div>
           <div class="form-group">
             <label>Room</label>
-            <select name="room" id="formRoom" class="input">
+            <select name="room_id" id="formRoom" class="input">
               <option value="">Select Room...</option>
               {% for room in rooms %}<option value="{{ room.id }}">Room {{ room.number }}</option>{% endfor %}
             </select>
+          </div>
+          <div class="form-group">
+            <label>Agreed Rent (₹)</label>
+            <input type="number" name="agreed_rent" id="formAgreedRent" class="input" value="7000" placeholder="7000">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Default: ₹7000/month</div>
           </div>
           <div class="form-group">
             <label>Gender</label>

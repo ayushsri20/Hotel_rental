@@ -43,8 +43,8 @@ class Guest(models.Model):
     
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    phone = models.CharField(max_length=15)
+    email = models.EmailField(blank=True)  # Removed unique=True to allow shared emails
+    phone = models.CharField(max_length=15, blank=True)  # Made optional
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='M')
     date_of_birth = models.DateField(null=True, blank=True)
     address = models.TextField(blank=True)
