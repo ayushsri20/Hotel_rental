@@ -1,265 +1,220 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 {% load static %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Performance Intelligence - Panesar PG</title>
-  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
-  <style>
-    /* Performance Specific Styles */
-    .kpi-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 3rem;
+{% block title %}Analytics Hub - Panesar PG{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Analytics Specific Refinements */
+  .perf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .perf-chart-container {
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .data-table-luxury {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-canvas);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .data-table-luxury th {
+    background: var(--bg-main);
+    padding: 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: var(--text-muted);
+  }
+
+  .data-table-luxury td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.875rem;
+  }
+
+  .metric-bubble {
+    padding: 0.5rem 1rem;
+    background: var(--primary-light);
+    border-radius: 99px;
+    color: var(--primary);
+    font-weight: 800;
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 768px) {
+
+    .data-table-luxury,
+    .data-table-luxury thead,
+    .data-table-luxury tbody,
+    .data-table-luxury th,
+    .data-table-luxury td,
+    .data-table-luxury tr {
+      display: block;
     }
 
-    .kpi-card {
-      padding: 2rem;
-      border-left: 4px solid var(--primary);
+    .data-table-luxury thead {
+      display: none;
     }
 
-    .analysis-section {
-      margin-bottom: 4rem;
-    }
-
-    .table-luxury {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 0.5rem;
-    }
-
-    .table-luxury th {
+    .data-table-luxury tr {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
       padding: 1rem;
-      text-align: left;
-      font-size: 0.75rem;
+    }
+
+    .data-table-luxury td {
+      border: none;
+      padding: 0.5rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .data-table-luxury td::before {
+      content: attr(data-label);
       font-weight: 800;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-size: 0.75rem;
     }
+  }
+</style>
+{% endblock %}
 
-    .table-luxury tr td {
-      background: var(--bg-canvas);
-      padding: 1.25rem 1rem;
-      border-top: 1px solid var(--border-subtle);
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .table-luxury tr td:first-child {
-      border-left: 1px solid var(--border-subtle);
-      border-top-left-radius: var(--radius-md);
-      border-bottom-left-radius: var(--radius-md);
-    }
-
-    .table-luxury tr td:last-child {
-      border-right: 1px solid var(--border-subtle);
-      border-top-right-radius: var(--radius-md);
-      border-bottom-right-radius: var(--radius-md);
-    }
-
-    .progress-track {
-      height: 8px;
-      background: var(--bg-main);
-      border-radius: 99px;
-      overflow: hidden;
-      margin-top: 0.5rem;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--grad-primary);
-      transition: width 0.8s ease;
-    }
-  </style>
-</head>
-
-<body>
-  <!-- Global Navigation -->
-  <nav class="navigation-bar">
-    <a href="/" class="brand-logo">
-      <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Logo">
-      <span>PERFORMANCE INTEL</span>
-    </a>
-    <div class="nav-actions">
-      <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">Execution View</a>
-      <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="margin-left: 1rem;">End Session</a>
+{% block content %}
+<header class="card-premium glass-panel" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Analytics Hub</h1>
+      <p style="color: var(--text-muted); font-weight: 500;">Financial performance and occupancy health metrics.</p>
     </div>
-  </nav>
+    <div style="display: flex; gap: 1rem;">
+      <button onclick="window.print()" class="btn-premium btn-premium-secondary">Export Report</button>
+      <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
+    </div>
+  </div>
+</header>
 
-  <main class="container-premium">
-    <header style="margin-bottom: 3rem;">
-      <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Collection & Yield Intelligence</h1>
-      <p style="color: var(--text-muted); font-weight: 600;">Real-time asset performance and financial monitoring.</p>
-    </header>
+<div class="stat-row">
+  <div class="card-premium stat-card">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Expected
+      Yield</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--primary);">₹{{ total_expected_rent|floatformat:0 }}
+    </div>
+  </div>
+  <div class="card-premium stat-card" style="border-top-color: var(--success);">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Realized
+      Revenue</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--success);">₹{{ total_collected|floatformat:0 }}</div>
+  </div>
+  <div class="card-premium stat-card" style="border-top-color: var(--danger);">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Accounts
+      Receivable</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--danger);">₹{{ total_pending|floatformat:0 }}</div>
+  </div>
+  <div class="card-premium stat-card">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Efficiency
+    </div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--primary);">{{ collection_efficiency|floatformat:1 }}%
+    </div>
+  </div>
+</div>
 
-    <section class="kpi-row">
-      <div class="card-premium kpi-card">
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--primary); text-transform: uppercase;">Total
-          Collection</div>
-        <div style="font-size: 2rem; font-weight: 900; margin: 0.5rem 0;">₹{{ total_collection|floatformat:0 }}</div>
-        <p style="font-size: 0.75rem; color: var(--text-muted);">Cumulative asset revenue</p>
+<div class="perf-grid">
+  <div class="perf-chart-container">
+    <h3 class="font-luxury" style="margin-bottom: 1.5rem; color: var(--primary);">Occupancy Distribution</h3>
+    <div style="height: 300px; display: flex; align-items: flex-end; gap: 2rem;">
+      <!-- Simple CSS Bar Chart for distribution -->
+      {% for b_name, count in building_occupancy.items %}
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+        <div
+          style="width: 100%; background: var(--grad-primary); border-radius: 4px 4px 0 0; height: {% widthratio count 10 100 %}%; transition: height 1s;">
+        </div>
+        <span style="font-size: 0.65rem; font-weight: 800;">Bldg {{ b_name }}</span>
       </div>
-      <div class="card-premium kpi-card" style="border-left-color: var(--secondary);">
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--secondary); text-transform: uppercase;">
-          Efficiency</div>
-        <div style="font-size: 2rem; font-weight: 900; margin: 0.5rem 0;">{{ collection_efficiency }}%</div>
-        <p style="font-size: 0.75rem; color: var(--text-muted);">Yield versus potential</p>
-      </div>
-      <div class="card-premium kpi-card" style="border-left-color: var(--danger);">
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--danger); text-transform: uppercase;">Outstanding
-        </div>
-        <div style="font-size: 2rem; font-weight: 900; margin: 0.5rem 0;">₹{{ pending_amount|floatformat:0 }}</div>
-        <p style="font-size: 0.75rem; color: var(--text-muted);">Unrealized monthly dues</p>
-      </div>
-      <div class="card-premium kpi-card" style="border-left-color: var(--warning);">
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--warning); text-transform: uppercase;">Utilities
-        </div>
-        <div style="font-size: 2rem; font-weight: 900; margin: 0.5rem 0;">₹{{ total_bills|floatformat:0 }}</div>
-        <p style="font-size: 0.75rem; color: var(--text-muted);">Electricity overhead</p>
-      </div>
-    </section>
-
-    <section class="analysis-section">
-      <h2 class="font-luxury"
-        style="margin-bottom: 2rem; border-bottom: 2px solid var(--primary); display: inline-block; padding-bottom: 0.5rem;">
-        Unit Performance Ledger</h2>
-
-      <table class="table-luxury">
-        <thead>
-          <tr>
-            <th>Asset ID</th>
-            <th>Stakeholder</th>
-            <th>Target</th>
-            <th>Realized</th>
-            <th>Variance</th>
-            <th>Health</th>
-            <th style="text-align: right;">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for room_data in room_collections %}
-          <tr>
-            <td style="font-weight: 800; color: var(--secondary);">Room {{ room_data.room_number }}</td>
-            <td>{{ room_data.guest_name|default:"-" }}</td>
-            <td style="font-weight: 700;">₹{{ room_data.monthly_rent|floatformat:0 }}</td>
-            <td style="color: var(--success); font-weight: 800;">₹{{ room_data.collected|floatformat:0 }}</td>
-            <td style="color: var(--danger); font-weight: 800;">₹{{ room_data.pending|floatformat:0 }}</td>
-            <td style="width: 200px;">
-              <div style="font-size: 0.75rem; font-weight: 800; display: flex; justify-content: space-between;">
-                <span>{{ room_data.collection_percentage }}%</span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill" style="width: {{ room_data.collection_percentage }}%;"></div>
-              </div>
-            </td>
-            <td style="text-align: right;">
-              <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                {% if room_data.monthly_payment_id %}
-                <button class="btn-premium btn-premium-primary" style="padding: 0.5rem 1rem; font-size: 0.75rem;"
-                  onclick="openPaymentModal('{{ room_data.monthly_payment_id }}', 'Room {{ room_data.room_number }}')">Record</button>
-                {% endif %}
-                <a href="/manage-guests/?room_id={{ room_data.room_number }}" class="btn-premium btn-premium-secondary"
-                  style="padding: 0.5rem 1rem; font-size: 0.75rem;">View</a>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </section>
-
-    <section class="analysis-section">
-      <h2 class="font-luxury"
-        style="margin-bottom: 2rem; border-bottom: 2px solid var(--primary); display: inline-block; padding-bottom: 0.5rem;">
-        Resource Overhead Matrix</h2>
-
-      <table class="table-luxury">
-        <thead>
-          <tr>
-            <th>Asset ID</th>
-            <th>Cycle</th>
-            <th>Resource Units</th>
-            <th>Liability</th>
-            <th>Coverage</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for bill_data in electricity_bills %}
-          <tr>
-            <td style="font-weight: 800; color: var(--secondary);">Room {{ bill_data.room_number }}</td>
-            <td>{{ bill_data.month|date:"M Y" }}</td>
-            <td>{{ bill_data.units_consumed }} kWh</td>
-            <td style="font-weight: 800;">₹{{ bill_data.bill_amount|floatformat:0 }}</td>
-            <td style="color: var(--success); font-weight: 800;">₹{{ bill_data.paid_amount|floatformat:0 }}</td>
-            <td>
-              <span
-                class="badge-premium {% if bill_data.bill_status == 'paid' %}badge-success{% elif bill_data.bill_status == 'partial' %}badge-warning{% else %}badge-danger{% endif %}">
-                {{ bill_data.bill_status }}
-              </span>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </section>
-  </main>
-
-  <!-- Modals and JS remain functional but visually updated -->
-  <div id="paymentModal" class="modal-overlay" onclick="closePaymentModal()">
-    <div class="card-premium glass-panel" style="width: 100%; max-width: 440px; padding: 2.5rem;"
-      onclick="event.stopPropagation()">
-      <h2 class="font-luxury text-luxury" style="margin-bottom: 2rem;">Record Asset Revenue</h2>
-      <form method="POST" action="{% url 'record_payment_dashboard' %}">
-        {% csrf_token %}
-        <input type="hidden" name="monthly_payment_id" id="monthlyPaymentId">
-
-        <div style="margin-bottom: 1.5rem;">
-          <label
-            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Revenue
-            Amount (₹)</label>
-          <input type="number" name="payment_amount" required step="0.01"
-            style="width: 100%; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-family: inherit;">
-        </div>
-
-        <div style="margin-bottom: 1.5rem;">
-          <label
-            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Transaction
-            Method</label>
-          <select name="payment_method" required
-            style="width: 100%; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-family: inherit;">
-            <option value="cash">Cash Settlement</option>
-            <option value="bank_transfer">Digital Wire</option>
-            <option value="upi">Instant UPI</option>
-          </select>
-        </div>
-
-        <div style="margin-bottom: 2rem;">
-          <label
-            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Settlement
-            Date</label>
-          <input type="date" name="payment_date" required
-            style="width: 100%; padding: 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font-family: inherit;">
-        </div>
-
-        <button type="submit" class="btn-premium btn-premium-primary" style="width: 100%; padding: 1rem;">Confirm
-          Revenue</button>
-      </form>
+      {% endfor %}
     </div>
   </div>
 
-  <script>
-    function openPaymentModal(id, room) {
-      document.getElementById('monthlyPaymentId').value = id;
-      document.getElementById('paymentModal').style.display = 'flex';
-    }
-    function closePaymentModal() {
-      document.getElementById('paymentModal').style.display = 'none';
-    }
-  </script>
-</body>
+  <div class="perf-chart-container" style="display: flex; flex-direction: column; justify-content: center;">
+    <h3 class="font-luxury" style="margin-bottom: 1rem; color: var(--primary);">Complex Health</h3>
+    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 2rem;">Current performance compared to peak
+      capacity periods.</p>
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <div>
+        <div
+          style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 800; margin-bottom: 0.5rem;">
+          <span>RENTAL FLOW</span>
+          <span>{{ collection_efficiency|floatformat:0 }}%</span>
+        </div>
+        <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+          <div style="width: {{ collection_efficiency }}%; height: 100%; background: var(--success);"></div>
+        </div>
+      </div>
+      <div>
+        <div
+          style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 800; margin-bottom: 0.5rem;">
+          <span>UNIT UTILIZATION</span>
+          <span>{{ occupancy_rate|floatformat:0 }}%</span>
+        </div>
+        <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+          <div style="width: {{ occupancy_rate }}%; height: 100%; background: var(--primary);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-</html>
+<div class="card-premium glass-panel" style="padding: 0; overflow: hidden;">
+  <div
+    style="padding: 1.5rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+    <h2 class="font-luxury" style="color: var(--primary); font-size: 1.25rem;">Detailed Unit Audit</h2>
+    <span class="metric-bubble">{{ room_data|length }} Units Scanned</span>
+  </div>
+  <div style="overflow-x: auto;">
+    <table class="data-table-luxury">
+      <thead>
+        <tr>
+          <th>Room</th>
+          <th>Type</th>
+          <th>Primary Resident</th>
+          <th>Price Point</th>
+          <th>Payment Status</th>
+          <th>Net Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rd in room_data %}
+        <tr>
+          <td data-label="Room" style="font-weight: 800; color: var(--primary);">{{ rd.room_number }}</td>
+          <td data-label="Type">{{ rd.room_type }}</td>
+          <td data-label="Resident" style="font-weight: 700;">{{ rd.active_guest|default:"—" }}</td>
+          <td data-label="Price">₹{{ rd.price }}</td>
+          <td data-label="Payment">₹{{ rd.paid|floatformat:0 }} / ₹{{ rd.expected|floatformat:0 }}</td>
+          <td data-label="Net Status">
+            {% if rd.balance <= 0 %} <span class="badge-premium badge-success" style="font-size: 0.65rem;">CLEAR</span>
+              {% else %}
+              <span class="badge-premium badge-danger" style="font-size: 0.65rem;">DUE ₹{{ rd.balance|floatformat:0
+                }}</span>
+              {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

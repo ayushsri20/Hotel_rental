@@ -1,613 +1,320 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 {% load static %}
 
-<head>
-  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Buildings & Rooms - Panesar PG</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+{% block title %}Manage Buildings & Rooms - Panesar PG{% endblock %}
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%) !important;
-      min-height: 100vh;
-      padding: 20px;
-      background-attachment: fixed;
-    }
+{% block extra_head %}
+<style>
+  /* Page Specific Overrides */
+  body {
+    background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%) !important;
+    background-attachment: fixed !important;
+  }
 
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
+  .card-premium.header {
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
 
-    /* Header */
-    .header {
-      background: white;
-      padding: 25px 30px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+  .rooms-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
 
-    .header h1 {
-      color: #6B5638;
-      font-size: 24px;
-      /* Reduced to fit with logo */
-      font-weight: 800;
-    }
+  .rooms-table th {
+    padding: 12px;
+    text-align: left;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-subtle);
+  }
 
-    .logo-img {
-      height: 48px;
-      width: auto;
-      margin-right: 1rem;
-    }
+  .rooms-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.8125rem;
+  }
 
-    .header-actions {
-      display: flex;
-      gap: 10px;
-    }
+  .room-input {
+    padding: 0.5rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+  }
 
-    .btn {
-      padding: 10px 20px;
-      border-radius: 6px;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
+  .room-input:focus {
+    border-color: var(--primary);
+    outline: none;
+  }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #6B5638;
-    }
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(220, 20, 60, 0.4);
-    }
+  .status-available {
+    background: #d1fae5;
+    color: #065f46;
+  }
 
-    .btn-secondary {
-      background: #E8D7C3;
-      color: #6B5638;
-    }
+  .status-booked {
+    background: #fee2e2;
+    color: #991b1b;
+  }
 
-    .btn-secondary:hover {
-      background: #D4C5B9;
-    }
+  .add-room-section {
+    margin-bottom: 2rem;
+  }
 
-    .btn-success {
-      background: #28a745;
-      color: #6B5638;
-      padding: 8px 16px;
-      font-size: 14px;
-    }
+  .add-room-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    align-items: end;
+  }
 
-    .btn-success:hover {
-      background: #218838;
-    }
+  @media (max-width: 768px) {
 
-    .btn-danger {
-      background: #dc3545;
-      color: #6B5638;
-      padding: 8px 16px;
-      font-size: 14px;
-    }
-
-    .btn-danger:hover {
-      background: #c82333;
-    }
-
-    /* Alert Messages */
-    .alert {
-      padding: 15px 20px;
-      border-radius: 6px;
-      margin-bottom: 20px;
-      display: none;
-      border-left: 4px solid;
-    }
-
-    .alert.success {
-      background: #d4edda;
-      color: #155724;
-      border-color: #28a745;
-    }
-
-    .alert.error {
-      background: #f8d7da;
-      color: #721c24;
-      border-color: #dc3545;
-    }
-
-    .alert.show {
+    .rooms-table,
+    .rooms-table thead,
+    .rooms-table tbody,
+    .rooms-table th,
+    .rooms-table td,
+    .rooms-table tr {
       display: block;
-    }
-
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .modal.show {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 500px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      border-bottom: 1px solid #E8D7C3;
-      padding-bottom: 15px;
-    }
-
-    .modal-header h2 {
-      color: #6B5638;
-    }
-
-    .close {
-      font-size: 28px;
-      font-weight: bold;
-      color: #aaa;
-      cursor: pointer;
-      background: none;
-      border: none;
-    }
-
-    .close:hover {
-      color: #000;
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    .form-group label {
-      display: block;
-      color: #6B5638;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 2px solid #D4C5B9;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #8B6F47;
-    }
-
-    /* Buildings Section */
-    .buildings-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .building-card {
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      transition: transform 0.3s ease;
-    }
-
-    .building-card:hover {
-      transform: translateY(-5px);
-    }
-
-    .building-header {
-      background: linear-gradient(135deg, #8B6F47 0%, #6B5638 100%);
-      color: #6B5638;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .building-name {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-
-    .building-subtitle {
-      font-size: 12px;
-      opacity: 0.9;
-    }
-
-    .rooms-table {
-      width: 100%;
-      border-collapse: collapse;
     }
 
     .rooms-table thead {
-      background: #f8f9fa;
-      border-top: 1px solid #D4C5B9;
+      display: none;
     }
 
-    .rooms-table th {
-      padding: 12px;
-      text-align: left;
-      color: #8B6F47;
-      font-weight: 700;
-      font-size: 12px;
+    .rooms-table tr {
+      margin-bottom: 1rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      background: var(--bg-canvas);
     }
 
     .rooms-table td {
-      padding: 12px;
-      border-bottom: 1px solid #D4C5B9;
-      font-size: 13px;
-    }
-
-    .rooms-table tbody tr:hover {
-      background: #f8f9fa;
-    }
-
-    .room-input {
-      padding: 6px 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    .room-input:focus {
-      outline: none;
-      border-color: #8B6F47;
-      box-shadow: 0 0 0 2px rgba(220, 20, 60, 0.1);
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .status-available {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-booked {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .action-buttons {
+      border: none;
+      padding: 0.5rem 0;
       display: flex;
-      gap: 8px;
-      justify-content: center;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .add-room-section {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    .rooms-table td::before {
+      content: attr(data-label);
+      font-weight: 800;
+      color: var(--text-muted);
+      font-size: 0.75rem;
     }
+  }
+</style>
+{% endblock %}
 
-    .add-room-section h3 {
-      color: #6B5638;
-      margin-bottom: 15px;
-    }
+{% block content %}
+<div class="card-premium header glass-panel">
+  <div style="display: flex; align-items: center;">
+    <h1 class="font-luxury" style="font-size: 1.5rem; color: var(--primary);">Manage Inventory</h1>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
+  </div>
+</div>
 
-    .add-room-form {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-      margin-bottom: 15px;
-    }
+<!-- Alert Messages -->
+<div id="successAlert"
+  style="display:none; background: #d1fae5; color: #065f46; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.875rem; font-weight: 600;">
+</div>
+<div id="errorAlert"
+  style="display:none; background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.875rem; font-weight: 600;">
+</div>
 
-    /* Footer */
-    .footer {
-      background: white;
-      padding: 20px 30px;
-      border-radius: 10px;
-      text-align: center;
-      color: #666;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
+<!-- Add New Room Section -->
+<div class="card-premium add-room-section glass-panel">
+  <h3 class="font-luxury" style="margin-bottom: 1.5rem; color: var(--primary);">➕ Add New Room</h3>
+  <form id="addRoomForm" class="add-room-form">
+    {% csrf_token %}
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Room Number</label>
+      <input type="text" id="newRoomNumber" class="room-input" placeholder="e.g., G-01" required style="width: 100%;">
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Type</label>
+      <select id="newRoomType" class="room-input" required style="width: 100%;">
+        <option value="">Type</option>
+        <option value="single">Single</option>
+        <option value="double">Double</option>
+        <option value="suite">Suite</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Price (₹)</label>
+      <input type="number" id="newRoomPrice" class="room-input" placeholder="Price" step="0.01" required
+        style="width: 100%;">
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Agreed Rent</label>
+      <input type="number" id="newRoomAgreedRent" class="room-input" placeholder="Optional" step="0.01"
+        style="width: 100%;">
+    </div>
+    <button type="submit" class="btn-premium btn-premium-primary">Add Room</button>
+  </form>
+</div>
 
-    .footer a {
-      color: #8B6F47;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    @media (max-width: 768px) {
-      .header {
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      .add-room-form {
-        grid-template-columns: 1fr;
-      }
-
-      .buildings-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .rooms-table {
-        font-size: 12px;
-      }
-
-      .rooms-table th,
-      .rooms-table td {
-        padding: 8px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <div style="display: flex; align-items: center;">
-        <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar Logo" class="logo-img">
-        <h1>Manage Buildings & Rooms</h1>
-      </div>
-      <div class="header-actions">
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
-        <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
-      </div>
+<!-- Buildings Grid -->
+<div class="building-grid">
+  {% for building_name, rooms in buildings %}
+  <div class="card-premium building-card" style="padding: 0;">
+    <div class="building-header" style="background: var(--grad-primary); color: white; padding: 1rem;">
+      <div class="font-luxury" style="font-size: 1.25rem;">Building {{ building_name }}</div>
+      <div style="font-size: 0.7rem; opacity: 0.8;">{{ rooms|length }} Units</div>
     </div>
 
-    <!-- Alert Messages -->
-    <div id="successAlert" class="alert success"></div>
-    <div id="errorAlert" class="alert error"></div>
-
-    <!-- Add New Room Section -->
-    <div class="add-room-section">
-      <h3>➕ Add New Room</h3>
-      <form id="addRoomForm" class="add-room-form">
-        {% csrf_token %}
-        <input type="text" id="newRoomNumber" placeholder="e.g., G-01" required>
-        <select id="newRoomType" required>
-          <option value="">Select Type</option>
-          <option value="single">Single ($50)</option>
-          <option value="double">Double ($75)</option>
-          <option value="suite">Suite ($150)</option>
-        </select>
-        <input type="number" id="newRoomPrice" placeholder="Price" step="0.01" required>
-        <input type="number" id="newRoomAgreedRent" placeholder="Agreed Rent (optional)" step="0.01">
-        <button type="submit" class="btn btn-success">+ Add Room</button>
-      </form>
-    </div>
-
-    <!-- Buildings Grid -->
-    <div class="buildings-grid">
-      {% for building_name, rooms in buildings %}
-      <div class="building-card">
-        <div class="building-header">
-          <div class="building-name">Building {{ building_name }}</div>
-          <div class="building-subtitle">{{ rooms|length }} Rooms</div>
-        </div>
-
-        <table class="rooms-table">
-          <thead>
-            <tr>
-              <th>Room #</th>
-              <th>Type</th>
-              <th>Price</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for room in rooms %}
-            <tr data-room-id="{{ room.id }}">
-              <td>
-                <input type="text" class="room-input room-number" data-room-id="{{ room.id }}" value="{{ room.number }}"
-                  style="width:90px;">
-              </td>
-              <td>
-                <select class="room-input room-type" data-room-id="{{ room.id }}">
-                  <option value="single" {% if room.room_type == 'single' %}selected{% endif %}>Single</option>
-                  <option value="double" {% if room.room_type == 'double' %}selected{% endif %}>Double</option>
-                  <option value="suite" {% if room.room_type == 'suite' %}selected{% endif %}>Suite</option>
-                </select>
-              </td>
-              <td>
-                <div style="display:flex; gap:8px; align-items:center;">
-                  <input type="number" class="room-input room-price" data-room-id="{{ room.id }}"
-                    value="{{ room.price }}" step="0.01" style="width:120px;">
-                  <input type="number" class="room-input room-agreed-rent" data-room-id="{{ room.id }}"
-                    value="{{ room.agreed_rent|default_if_none:'' }}" placeholder="Agreed" step="0.01"
-                    style="width:120px;">
-                </div>
-              </td>
-              <td>
-                <label style="margin: 0;">
-                  <input type="checkbox" class="room-status" data-room-id="{{ room.id }}" {% if room.is_available %}checked{% endif %}>
-                  {% if room.is_available %}
-                  <span class="status-badge status-available">Available</span>
-                  {% else %}
-                  <span class="status-badge status-booked">Booked</span>
-                  {% endif %}
-                </label>
-              </td>
-              <td>
-                <div class="action-buttons">
-                  <button class="btn btn-success btn-save" data-room-id="{{ room.id }}">Save</button>
-                  <button class="btn btn-danger btn-delete" data-room-id="{{ room.id }}">Delete</button>
-                </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% endfor %}
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <p>© 2025 Panesar PG Management System | <a href="{% url 'dashboard' %}">Dashboard</a></p>
+    <div style="overflow-x: auto;">
+      <table class="rooms-table">
+        <thead>
+          <tr>
+            <th>Room #</th>
+            <th>Type</th>
+            <th>Price/Rent</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for room in rooms %}
+          <tr data-room-id="{{ room.id }}">
+            <td data-label="Room #">
+              <input type="text" class="room-input room-number" data-room-id="{{ room.id }}" value="{{ room.number }}"
+                style="width:70px;">
+            </td>
+            <td data-label="Type">
+              <select class="room-input room-type" data-room-id="{{ room.id }}" style="width: 90px;">
+                <option value="single" {% if room.room_type=='single' %}selected{% endif %}>Single</option>
+                <option value="double" {% if room.room_type=='double' %}selected{% endif %}>Double</option>
+                <option value="suite" {% if room.room_type=='suite' %}selected{% endif %}>Suite</option>
+              </select>
+            </td>
+            <td data-label="Price/Rent">
+              <div style="display:flex; flex-direction: column; gap:4px;">
+                <input type="number" class="room-input room-price" data-room-id="{{ room.id }}" value="{{ room.price }}"
+                  step="0.01" style="width:90px;" title="Base Price">
+                <input type="number" class="room-input room-agreed-rent" data-room-id="{{ room.id }}"
+                  value="{{ room.agreed_rent|default_if_none:'' }}" placeholder="Agreed" step="0.01" style="width:90px;"
+                  title="Agreed Rent">
+              </div>
+            </td>
+            <td data-label="Status">
+              <label style="margin: 0; cursor: pointer;">
+                <input type="checkbox" class="room-status" data-room-id="{{ room.id }}" {% if room.is_available
+                  %}checked{% endif %}>
+                {% if room.is_available %}
+                <span class="status-badge status-available">Available</span>
+                {% else %}
+                <span class="status-badge status-booked">Booked</span>
+                {% endif %}
+              </label>
+            </td>
+            <td data-label="Actions">
+              <div style="display: flex; gap: 4px;">
+                <button class="btn-premium btn-premium-primary btn-save" data-id="{{ room.id }}"
+                  style="padding: 0.4rem 0.8rem; font-size: 0.7rem;">Save</button>
+                <button class="btn-premium btn-premium-secondary btn-delete" data-id="{{ room.id }}"
+                  style="padding: 0.4rem 0.8rem; font-size: 0.7rem; border-color: var(--danger); color: var(--danger);">Del</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
+  {% endfor %}
+</div>
+{% endblock %}
 
-  <script>
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+{% block scripts %}
+<script>
+  const csrftoken = '{{ csrf_token }}';
 
-    function showAlert(message, type) {
-      const alertEl = type === 'success' ?
-        document.getElementById('successAlert') :
-        document.getElementById('errorAlert');
+  function showAlert(message, type) {
+    const alertEl = type === 'success' ? document.getElementById('successAlert') : document.getElementById('errorAlert');
+    alertEl.textContent = message;
+    alertEl.style.display = 'block';
+    setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+  }
 
-      alertEl.textContent = message;
-      alertEl.classList.add('show');
+  // Add Room
+  document.getElementById('addRoomForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('room_number', document.getElementById('newRoomNumber').value);
+    formData.append('room_type', document.getElementById('newRoomType').value);
+    formData.append('price', document.getElementById('newRoomPrice').value);
+    formData.append('agreed_rent', document.getElementById('newRoomAgreedRent').value);
+    formData.append('csrfmiddlewaretoken', csrftoken);
 
-      setTimeout(() => {
-        alertEl.classList.remove('show');
-      }, 4000);
-    }
+    try {
+      const response = await fetch('{% url "add_room" %}', { method: 'POST', body: formData });
+      const data = await response.json();
+      if (data.success) {
+        showAlert(data.message, 'success');
+        setTimeout(() => location.reload(), 1000);
+      } else showAlert(data.message, 'error');
+    } catch (error) { showAlert('Error: ' + error.message, 'error'); }
+  });
 
-    // Add Room
-    document.getElementById('addRoomForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
+  // Save Room Changes
+  document.querySelectorAll('.btn-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const roomId = btn.dataset.id;
+      const row = document.querySelector(`tr[data-room-id="${roomId}"]`);
       const formData = new FormData();
-      formData.append('room_number', document.getElementById('newRoomNumber').value);
-      formData.append('room_type', document.getElementById('newRoomType').value);
-      formData.append('price', document.getElementById('newRoomPrice').value);
-      formData.append('agreed_rent', document.getElementById('newRoomAgreedRent').value);
+      formData.append('number', row.querySelector('.room-number').value);
+      formData.append('room_type', row.querySelector('.room-type').value);
+      formData.append('price', row.querySelector('.room-price').value);
+      formData.append('agreed_rent', row.querySelector('.room-agreed-rent').value);
+      formData.append('is_available', row.querySelector('.room-status').checked);
       formData.append('csrfmiddlewaretoken', csrftoken);
 
       try {
-        const response = await fetch('{% url "add_room" %}', {
-          method: 'POST',
-          body: formData,
-        });
-
+        const response = await fetch(`/api/room/${roomId}/update/`, { method: 'POST', body: formData });
         const data = await response.json();
+        if (data.success) showAlert(data.message, 'success');
+        else showAlert(data.message, 'error');
+      } catch (error) { showAlert('Error: ' + error.message, 'error'); }
+    });
+  });
 
+  // Delete Room
+  document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this room?')) return;
+      const roomId = btn.dataset.id;
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', csrftoken);
+      try {
+        const response = await fetch(`/api/room/${roomId}/delete/`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
         if (data.success) {
           showAlert(data.message, 'success');
-          document.getElementById('addRoomForm').reset();
-          setTimeout(() => location.reload(), 1500);
-        } else {
-          showAlert(data.message, 'error');
-        }
-      } catch (error) {
-        showAlert('Error adding room: ' + error.message, 'error');
-      }
+          setTimeout(() => location.reload(), 1000);
+        } else showAlert(data.message, 'error');
+      } catch (error) { showAlert('Error: ' + error.message, 'error'); }
     });
-
-    // Save Room Changes
-    document.querySelectorAll('.btn-save').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const roomId = btn.dataset.roomId;
-        const row = document.querySelector(`tr[data-room-id="${roomId}"]`);
-
-        const formData = new FormData();
-        formData.append('number', row.querySelector('.room-number').value);
-        formData.append('room_type', row.querySelector('.room-type').value);
-        formData.append('price', row.querySelector('.room-price').value);
-        const agreedInput = row.querySelector('.room-agreed-rent');
-        formData.append('agreed_rent', agreedInput ? agreedInput.value : '');
-        formData.append('is_available', row.querySelector('.room-status').checked);
-        formData.append('csrfmiddlewaretoken', csrftoken);
-
-        try {
-          const response = await fetch(`/api/room/${roomId}/update/`, {
-            method: 'POST',
-            body: formData,
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            showAlert(data.message, 'success');
-            // Update the status badge
-            const statusBadge = row.querySelector('.status-badge');
-            if (row.querySelector('.room-status').checked) {
-              statusBadge.textContent = 'Available';
-              statusBadge.classList.remove('status-booked');
-              statusBadge.classList.add('status-available');
-            } else {
-              statusBadge.textContent = 'Booked';
-              statusBadge.classList.remove('status-available');
-              statusBadge.classList.add('status-booked');
-            }
-          } else {
-            showAlert(data.message, 'error');
-          }
-        } catch (error) {
-          showAlert('Error updating room: ' + error.message, 'error');
-        }
-      });
-    });
-
-    // Delete Room
-    document.querySelectorAll('.btn-delete').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        if (!confirm('Are you sure you want to delete this room?')) return;
-
-        const roomId = btn.dataset.roomId;
-
-        try {
-          const response = await fetch(`/api/room/${roomId}/delete/`, {
-            method: 'POST',
-            headers: {
-              'X-CSRFToken': csrftoken,
-            },
-          });
-
-          const data = await response.json();
-
-          if (data.success) {
-            showAlert(data.message, 'success');
-            document.querySelector(`tr[data-room-id="${roomId}"]`).remove();
-            setTimeout(() => location.reload(), 1500);
-          } else {
-            showAlert(data.message, 'error');
-          }
-        } catch (error) {
-          showAlert('Error deleting room: ' + error.message, 'error');
-        }
-      });
-    });
-  </script>
-</body>
-
-</html>
+  });
+</script>
+{% endblock %}

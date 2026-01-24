@@ -90,6 +90,7 @@ def performance_dashboard(request):
 
             room_data = {
                 'room_number': room.number,
+                'room_type': room.get_room_type_display(),
                 'guest_name': f"{guest.first_name} {guest.last_name}" if guest else "Vacant",
                 'monthly_rent': float(monthly_rent),
                 'collected': float(collected),
@@ -100,84 +101,47 @@ def performance_dashboard(request):
             }
             room_collections.append(room_data)
         
-        # Calculate summary statistics using Decimal accumulators
-        total_collection = acc_collected_this_month
-        pending_amount = acc_pending_amount
+        # Calculate summary statistics
+        total_expected_rent = acc_expected_monthly
+        total_collected = acc_collected_this_month
+        total_pending = acc_pending_amount
         
-        expected_monthly_collection = acc_expected_monthly
-        collected_this_month = acc_collected_this_month
+        # Occupancy rate
+        occupancy_rate = (occupied_rooms / total_rooms * 100) if total_rooms > 0 else 0
         
-        # Calculate collection efficiency
-        if expected_monthly_collection > 0:
-            collection_efficiency = int((collected_this_month / expected_monthly_collection) * 100)
-        else:
-            collection_efficiency = 0
+        # Collection efficiency
+        collection_efficiency = (total_collected / total_expected_rent * 100) if total_expected_rent > 0 else 0
         
-        # Get overdue payments (past due date)
-        overdue_payments = MonthlyPayment.objects.filter(
-            payment_status__in=['pending', 'partial'],
-            paid_date__isnull=True
-        ).filter(month__lt=current_month)
-        
-        overdue_amount = Decimal('0.00')
-        for p in overdue_payments:
-            overdue_amount += p.remaining_amount()
-        
-        # Get electricity bills data
-        electricity_bills = []
-        bills = ElectricityBill.objects.select_related('room', 'guest').order_by('-month')[:20]
-        
-        total_bills_pending = Decimal('0.00')
-        
-        for bill in bills:
-            bill_data = {
-                'bill_id': bill.id,
-                'room_number': bill.room.number,
-                'month': bill.month,
-                'units_consumed': float(bill.units_consumed),
-                'bill_amount': float(bill.bill_amount),
-                'paid_amount': float(bill.paid_amount),
-                'remaining': float(bill.remaining_amount()),
-                'bill_status': bill.bill_status,
-            }
-            electricity_bills.append(bill_data)
-            
-            if bill.bill_status in ['pending', 'partial']:
-                total_bills_pending += bill.remaining_amount()
-        
-        # Structured context for easier template consumption
-        context = {
-            'kpis': {
-                'total_collection': float(total_collection),
-                'all_time_collection': float(total_collected),
-                'total_rooms': total_rooms,
-                'occupied_rooms': occupied_rooms,
-                'pending_amount': float(pending_amount),
-                'overdue_amount': float(overdue_amount),
-                'total_bills': float(total_bills_pending),
-                'collection_efficiency': collection_efficiency,
-            },
-            'summary': {
-                'expected_monthly_collection': float(expected_monthly_collection),
-                'collected_this_month': float(collected_this_month),
-            },
-            'rooms': room_collections,
-            'bills': electricity_bills,
-            'meta': {
-                'generated_at': datetime.now().isoformat(),
-            },
+        # Building occupancy breakdown
+        building_occupancy = {}
+        for room in all_rooms:
+            prefix = room.number.split('-')[0] if '-' in room.number else 'Other'
+            if prefix not in building_occupancy:
+                building_occupancy[prefix] = 0
+            if not room.is_available:
+                building_occupancy[prefix] += 1
 
-            # Backwards compatibility: keep previous flat keys
-            'total_rooms': total_rooms,
-            'occupied_rooms': occupied_rooms,
-            'total_collection': float(total_collection),
-            'pending_amount': float(pending_amount),
-            'overdue_amount': float(overdue_amount),
-            'total_bills': float(total_bills_pending),
-            'room_collections': room_collections,
-            'expected_monthly_collection': float(expected_monthly_collection),
-            'collected_this_month': float(collected_this_month),
-            'collection_efficiency': collection_efficiency,
+        # Prepare room_data for the detailed table
+        room_data = []
+        for rc in room_collections:
+            room_data.append({
+                'room_number': rc['room_number'],
+                'room_type': rc['room_type'],
+                'active_guest': rc['guest_name'],
+                'price': rc['monthly_rent'],
+                'expected': rc['expected'] if 'expected' in rc else rc['monthly_rent'],
+                'paid': rc['collected'],
+                'balance': rc['pending'],
+            })
+
+        context = {
+            'total_expected_rent': float(total_expected_rent),
+            'total_collected': float(total_collected),
+            'total_pending': float(total_pending),
+            'collection_efficiency': float(collection_efficiency),
+            'occupancy_rate': float(occupancy_rate),
+            'building_occupancy': building_occupancy,
+            'room_data': room_data,
             'electricity_bills': electricity_bills,
         }
         

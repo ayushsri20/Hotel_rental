@@ -6,9 +6,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Sum, Q, Avg
 from .models import Room, Booking, Guest, MonthlyPayment, PaymentRecord, ElectricityBill
 from collections import defaultdict
 from datetime import datetime
+from decimal import Decimal
 import json
 
 import logging
@@ -25,8 +27,6 @@ def home(request):
 def health_check(request):
     return JsonResponse({'status': 'ok', 'timestamp': datetime.now().isoformat()})
 
-@csrf_exempt
-@csrf_exempt  # Temporary: Bypass CSRF for Railway deployment
 @require_http_methods(["GET", "POST"])
 def login_view(request):
     if request.method == 'POST':
@@ -214,7 +214,6 @@ def manage_guests(request):
         'D': 'Building 3',
         'E': 'Building 4',
         'F': 'Building 5',
-        'G': 'Building 6',
     }
     
     for room in rooms:
@@ -724,20 +723,22 @@ def get_guests(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def manage_users(request):
-    """View to manage motel staff/employees ONLY - Tenants are managed separately"""
+    """View to manage owners/superusers ONLY as per latest requirement"""
     try:
-        # Filter to only show people who are actually meant to be working (staff/admins)
-        managed_users = User.objects.filter(is_staff=True).order_by('-date_joined')
+        # User requested to only show users with superuser property
+        managed_users = User.objects.filter(is_superuser=True).order_by('-date_joined')
         return render(request, 'manage_users.html', {
             'managed_users': managed_users,
-            'is_admin': request.user.is_staff or request.user.is_superuser
+            'is_admin': request.user.is_superuser
         })
     except Exception as e:
-        logger.error(f"Error in manage_users view: {e}", exc_info=True)
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Error in manage_users view: {e}\n{error_details}")
         return render(request, 'manage_users.html', {
             'managed_users': [],
-            'is_admin': request.user.is_staff or request.user.is_superuser,
-            'error': 'Unable to load users. Please try again later.'
+            'is_admin': request.user.is_superuser,
+            'error': f'Unable to load owner accounts: {str(e)}'
         })
 
 @login_required(login_url='login')
@@ -1480,3 +1481,71 @@ def get_electricity_history(request, room_id):
             'success': False,
             'message': str(e)
         }, status=400)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def update_payment_record(request, record_id):
+    """Update an existing payment record and sync monthly payment total"""
+    try:
+        record = get_object_or_404(PaymentRecord, id=record_id)
+        monthly_payment = record.monthly_payment
+        
+        old_amount = record.payment_amount
+        raw_amount = request.POST.get('payment_amount', str(old_amount))
+        new_amount = Decimal(raw_amount)
+        
+        record.payment_amount = new_amount
+        date_str = request.POST.get('payment_date')
+        if date_str:
+            record.payment_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            
+        record.payment_method = request.POST.get('payment_method', record.payment_method)
+        record.notes = request.POST.get('notes', record.notes)
+        record.save()
+        
+        # Recalculate total paid for the month
+        total_paid = PaymentRecord.objects.filter(monthly_payment=monthly_payment).aggregate(
+            total=Sum('payment_amount'))['total'] or Decimal('0.00')
+        
+        monthly_payment.paid_amount = total_paid
+        # Update status
+        if monthly_payment.paid_amount >= monthly_payment.rent_amount:
+            monthly_payment.payment_status = 'paid'
+        elif monthly_payment.paid_amount > 0:
+            monthly_payment.payment_status = 'partial'
+        else:
+            monthly_payment.payment_status = 'pending'
+        monthly_payment.save()
+        
+        return JsonResponse({'success': True, 'message': 'Payment record updated'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def delete_payment_record(request, record_id):
+    """Delete a payment record and sync monthly payment total"""
+    try:
+        record = get_object_or_404(PaymentRecord, id=record_id)
+        monthly_payment = record.monthly_payment
+        record.delete()
+        
+        # Recalculate
+        total_paid = PaymentRecord.objects.filter(monthly_payment=monthly_payment).aggregate(
+            total=Sum('payment_amount'))['total'] or Decimal('0.00')
+        
+        monthly_payment.paid_amount = total_paid
+        if monthly_payment.paid_amount >= monthly_payment.rent_amount:
+            monthly_payment.payment_status = 'paid'
+        elif monthly_payment.paid_amount > 0:
+            monthly_payment.payment_status = 'partial'
+        else:
+            monthly_payment.payment_status = 'pending'
+        monthly_payment.save()
+        
+        return JsonResponse({'success': True, 'message': 'Payment record deleted'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)

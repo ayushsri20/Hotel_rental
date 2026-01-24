@@ -3,10 +3,10 @@ from rental.models import Room
 
 
 class Command(BaseCommand):
-    help = 'Load sample rooms for all 6 buildings (42 total rooms)'
+    help = 'Load sample rooms for all 6 buildings (36 total rooms)'
 
     def handle(self, *args, **options):
-        """Create 42 rooms across 6 buildings (M1, 1-6) with 6 rooms each"""
+        """Create 36 rooms across 6 buildings (M1, 1-5) with 6 rooms each"""
         
         # M1 Complex (A) - Premium building
         m1_rooms = [
@@ -68,24 +68,14 @@ class Command(BaseCommand):
             ('F-106', 'single', 7000),
         ]
         
-        # Building 6 (G) - 6 rooms
-        building6_rooms = [
-            ('G-101', 'single', 7000),
-            ('G-102', 'single', 7000),
-            ('G-103', 'double', 7000),
-            ('G-104', 'double', 7000),
-            ('G-105', 'single', 7000),
-            ('G-106', 'single', 7000),
-        ]
-        
         all_rooms = (m1_rooms + building1_rooms + building2_rooms + 
-                     building3_rooms + building4_rooms + building5_rooms + building6_rooms)
+                     building3_rooms + building4_rooms + building5_rooms)
         
         created_count = 0
         skipped_count = 0
         
         self.stdout.write(self.style.SUCCESS('\n' + '='*60))
-        self.stdout.write(self.style.SUCCESS('Creating 42 Rooms Across 6 Buildings'))
+        self.stdout.write(self.style.SUCCESS('Creating 36 Rooms Across 6 Buildings'))
         self.stdout.write(self.style.SUCCESS('='*60 + '\n'))
         
         for room_number, room_type, price in all_rooms:

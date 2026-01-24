@@ -1,346 +1,332 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 {% load static %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Imperial Dashboard - Panesar PG</title>
-  <link rel="stylesheet" href="{% static 'rental/css/theme.css' %}">
-  <style>
-    /* Dashboard Specific Enhancements */
-    .dashboard-header {
-      margin-bottom: 3rem;
-      padding: 2.5rem;
-    }
+{% block title %}Imperial Dashboard - Panesar PG{% endblock %}
 
-    .mgmt-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 3.5rem;
-    }
+{% block extra_head %}
+<style>
+  /* Dashboard Specific Enhancements */
+  .dashboard-header {
+    margin-bottom: 3rem;
+    padding: 2.5rem;
+  }
 
-    .mgmt-card {
-      text-align: center;
-      padding: 2.5rem;
-      text-decoration: none;
-    }
+  .mgmt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3.5rem;
+  }
 
-    .mgmt-icon {
-      font-size: 3rem;
-      margin-bottom: 1.5rem;
-      display: block;
-    }
+  .mgmt-card {
+    text-align: center;
+    padding: 2.5rem;
+    text-decoration: none;
+  }
 
-    .stat-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 4rem;
-    }
+  .mgmt-icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    display: block;
+  }
 
-    .stat-card {
-      padding: 2rem;
-      text-align: center;
-      border-top: 4px solid var(--primary);
-    }
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
 
-    .building-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 2rem;
-    }
+  .stat-card {
+    padding: 2rem;
+    text-align: center;
+    border-top: 4px solid var(--primary);
+  }
 
-    .building-card {
-      padding: 0;
-      overflow: hidden;
-    }
+  .building-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+  }
 
-    .building-header {
-      background: var(--grad-primary);
-      color: white;
-      padding: 1.5rem;
-      text-align: center;
-    }
+  .building-card {
+    padding: 0;
+    overflow: hidden;
+  }
 
-    .room-matrix {
-      padding: 1.5rem;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
-    }
+  .building-header {
+    background: var(--grad-primary);
+    color: white;
+    padding: 1.5rem;
+    text-align: center;
+  }
 
-    .room-tile {
-      padding: 0.75rem 0.5rem;
-      text-align: center;
-      font-weight: 800;
-      font-size: 0.8125rem;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: var(--transition-all);
-      border: 1px solid var(--border-subtle);
-    }
+  .room-matrix {
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
 
-    .room-tile:hover {
-      transform: scale(1.05);
-    }
+  .room-tile {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.8125rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-all);
+    border: 1px solid var(--border-subtle);
+  }
 
-    .room-tile.empty {
-      background: #f0fdf4;
-      color: #166534;
-      border-color: #bbf7d0;
-    }
+  .room-tile:hover {
+    transform: scale(1.05);
+  }
 
-    .room-tile.partial {
-      background: #fef9c3;
-      color: #854d0e;
-      border-color: #fef08a;
-    }
+  .room-tile.empty {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
 
-    .room-tile.full {
-      background: #fef2f2;
-      color: #991b1b;
-      border-color: #fecaca;
-    }
+  .room-tile.partial {
+    background: #fef9c3;
+    color: #854d0e;
+    border-color: #fef08a;
+  }
 
-    /* Modal Overlay */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      padding: 1.5rem;
-    }
+  .room-tile.full {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+  }
 
-    .modal-content-luxury {
-      width: 100%;
-      max-width: 600px;
-      padding: 3rem;
-    }
-  </style>
-</head>
+  /* Modal Overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+  }
 
-<body>
-  <!-- Global Navigation -->
-  <nav class="navigation-bar">
-    <a href="/" class="brand-logo">
-      <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Logo">
-      <span>IMPERIAL PORTAL</span>
-    </a>
-    <div class="nav-actions">
-      {% if is_admin %}
-      <a href="{% url 'manage_users' %}" class="btn-premium btn-premium-secondary">Staff Access</a>
-      {% endif %}
-      <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="margin-left: 1rem;">End Session</a>
+  .modal-content-luxury {
+    width: 100%;
+    max-width: 600px;
+    padding: 3rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="card-premium dashboard-header glass-panel">
+  {% if error %}
+  <div
+    style="background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem;">
+    <strong>Warning:</strong> {{ error }}
+  </div>
+  {% endif %}
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">The Imperial Outlook</h1>
+      <p style="color: var(--text-muted); font-weight: 500;">Live overview of student accommodations and complex
+        operations.</p>
     </div>
-  </nav>
-
-  <main class="container-premium">
-    <header class="card-premium dashboard-header glass-panel">
-      {% if error %}
-      <div
-        style="background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem;">
-        <strong>Warning:</strong> {{ error }}
-      </div>
-      {% endif %}
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">The Imperial Outlook</h1>
-          <p style="color: var(--text-muted); font-weight: 500;">Live overview of student accommodations and complex
-            operations.</p>
-        </div>
-        <div style="text-align: right;">
-          <div class="badge-premium badge-success">System Online</div>
-          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Managed by Hotel/Motel Staff</p>
-        </div>
-      </div>
-    </header>
-
-    <section class="mgmt-grid">
-      {% if is_admin %}
-      <a href="{% url 'performance_dashboard' %}" class="card-premium mgmt-card">
-        <span class="mgmt-icon"><span role="img" aria-label="Analytics">📊</span></span>
-        <h3 class="font-luxury">Analytics Hub</h3>
-        <p style="font-size: 0.8125rem; color: var(--text-muted);">Occupancy trends & collection metrics.</p>
-      </a>
-      {% endif %}
-      <a href="{% url 'manage_guests' %}" class="card-premium mgmt-card">
-        <span class="mgmt-icon"><span role="img" aria-label="Tenants">🏠</span></span>
-        <h3 class="font-luxury">Tenancy Register</h3>
-        <p style="font-size: 0.8125rem; color: var(--text-muted);">Resident profiles & documentation.</p>
-      </a>
-      <a href="{% url 'manage_payments' %}" class="card-premium mgmt-card">
-        <span class="mgmt-icon"><span role="img" aria-label="Payments">💍</span></span>
-        <h3 class="font-luxury">Rental Ledger</h3>
-        <p style="font-size: 0.8125rem; color: var(--text-muted);">High-precision collection tracking.</p>
-      </a>
-      <a href="{% url 'manage_electricity_bills' %}" class="card-premium mgmt-card">
-        <span class="mgmt-icon"><span role="img" aria-label="Electricity">⚡</span></span>
-        <h3 class="font-luxury">Utility Matrix</h3>
-        <p style="font-size: 0.8125rem; color: var(--text-muted);">Smart electricity & resource billing.</p>
-      </a>
-    </section>
-
-    <div class="stat-row">
-      <div class="card-premium stat-card">
-        <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);">{{ total_rooms }}</div>
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Total
-          Inventory</div>
-      </div>
-      <div class="card-premium stat-card" style="border-top-color: var(--success);">
-        <div style="font-size: 2.5rem; font-weight: 800; color: var(--success);">{{ active_rooms_count }}</div>
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Active
-          Occupancy</div>
-      </div>
-      <div class="card-premium stat-card">
-        <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);">{{ occupancy_rate }}%</div>
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Yield
-          Percentage</div>
-      </div>
-      <div class="card-premium stat-card" style="border-top-color: var(--danger);">
-        <div style="font-size: 2.5rem; font-weight: 800; color: var(--danger);">{{ total_guests }}</div>
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Resident
-          Base</div>
-      </div>
+    <div style="text-align: right;">
+      <div class="badge-premium badge-success">System Online</div>
+      <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Managed by Hotel/Motel Staff</p>
     </div>
+  </div>
+</header>
 
-    <section>
-      <h2 class="font-luxury"
-        style="font-size: 2rem; margin-bottom: 2rem; padding-left: 0.5rem; border-left: 4px solid var(--primary);">
-        Building Units</h2>
-      <div class="building-grid">
-        {% for building_name, rooms in buildings %}
-        <div class="card-premium building-card">
-          <div class="building-header font-luxury">
-            <h3 style="font-size: 1.25rem;">Building {{ building_name }}</h3>
-            <span style="font-size: 0.75rem; opacity: 0.9;">{{ rooms|length }} Units Inspected</span>
-          </div>
-          <div class="room-matrix">
-            {% for room in rooms %}
-            <div class="room-tile {{ room.occupancy_status }}" onclick="openRoomDetails(event, '{{ room.id }}')">
-              {{ room.number }}
-            </div>
-            {% endfor %}
-          </div>
+<section class="mgmt-grid">
+  {% if is_admin %}
+  <a href="{% url 'performance_dashboard' %}" class="card-premium mgmt-card">
+    <span class="mgmt-icon"><span role="img" aria-label="Analytics">📊</span></span>
+    <h3 class="font-luxury">Analytics Hub</h3>
+    <p style="font-size: 0.8125rem; color: var(--text-muted);">Occupancy trends & collection metrics.</p>
+  </a>
+  {% endif %}
+  <a href="{% url 'manage_guests' %}" class="card-premium mgmt-card">
+    <span class="mgmt-icon"><span role="img" aria-label="Tenants">🏠</span></span>
+    <h3 class="font-luxury">Tenancy Register</h3>
+    <p style="font-size: 0.8125rem; color: var(--text-muted);">Resident profiles & documentation.</p>
+  </a>
+  <a href="{% url 'manage_payments' %}" class="card-premium mgmt-card">
+    <span class="mgmt-icon"><span role="img" aria-label="Payments">💍</span></span>
+    <h3 class="font-luxury">Rental Ledger</h3>
+    <p style="font-size: 0.8125rem; color: var(--text-muted);">High-precision collection tracking.</p>
+  </a>
+  <a href="{% url 'manage_electricity_bills' %}" class="card-premium mgmt-card">
+    <span class="mgmt-icon"><span role="img" aria-label="Electricity">⚡</span></span>
+    <h3 class="font-luxury">Utility Matrix</h3>
+    <p style="font-size: 0.8125rem; color: var(--text-muted);">Smart electricity & resource billing.</p>
+  </a>
+</section>
+
+<div class="stat-row">
+  <div class="card-premium stat-card">
+    <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);">{{ total_rooms }}</div>
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Total
+      Inventory</div>
+  </div>
+  <div class="card-premium stat-card" style="border-top-color: var(--success);">
+    <div style="font-size: 2.5rem; font-weight: 800; color: var(--success);">{{ active_rooms_count }}</div>
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Active
+      Occupancy</div>
+  </div>
+  <div class="card-premium stat-card">
+    <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);">{{ occupancy_rate }}%</div>
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Yield
+      Percentage</div>
+  </div>
+  <div class="card-premium stat-card" style="border-top-color: var(--danger);">
+    <div style="font-size: 2.5rem; font-weight: 800; color: var(--danger);">{{ total_guests }}</div>
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Resident
+      Base</div>
+  </div>
+</div>
+
+<section>
+  <h2 class="font-luxury"
+    style="font-size: 2rem; margin-bottom: 2rem; padding-left: 0.5rem; border-left: 4px solid var(--primary);">Building
+    Units</h2>
+  <div class="building-grid">
+    {% for building_name, rooms in buildings %}
+    <div class="card-premium building-card">
+      <div class="building-header font-luxury">
+        <h3 style="font-size: 1.25rem;">Building {{ building_name }}</h3>
+        <span style="font-size: 0.75rem; opacity: 0.9;">{{ rooms|length }} Units Inspected</span>
+      </div>
+      <div class="room-matrix">
+        {% for room in rooms %}
+        <div class="room-tile {{ room.occupancy_status }}" onclick="openRoomDetails(event, '{{ room.id }}')">
+          {{ room.number }}
         </div>
         {% endfor %}
       </div>
-    </section>
-  </main>
+    </div>
+    {% endfor %}
+  </div>
+</section>
 
-  <!-- Room Detail Modal -->
-  <div id="roomDetailModal" class="modal-overlay" onclick="closeModal(event)">
-    <div class="card-premium modal-content-luxury glass-panel" onclick="event.stopPropagation()">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem;">
-        <div>
-          <h2 id="detailRoomNumber" class="font-luxury text-luxury" style="font-size: 2.5rem;">Room ---</h2>
-          <p id="detailBuilding" style="color: var(--text-muted); font-weight: 700;">Building ---</p>
-        </div>
-        <div id="detailRoomStatus"></div>
+<!-- Room Detail Modal -->
+<div id="roomDetailModal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="card-premium modal-content-luxury glass-panel" onclick="event.stopPropagation()">
+    <div
+      style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h2 id="detailRoomNumber" class="font-luxury text-luxury" style="font-size: 2.5rem;">Room ---</h2>
+        <p id="detailBuilding" style="color: var(--text-muted); font-weight: 700;">Building ---</p>
       </div>
+      <div id="detailRoomStatus"></div>
+    </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 3rem;">
-        <div class="card-premium"
-          style="background: var(--bg-main); text-align: center; border-radius: var(--radius-md);">
-          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Agreed
-            Rent</div>
-          <div id="detailPrice" style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">₹0</div>
-        </div>
-        <div class="card-premium"
-          style="background: var(--bg-main); text-align: center; border-radius: var(--radius-md);">
-          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-            Occupancy</div>
-          <div id="detailOccupancy" style="font-size: 1.5rem; font-weight: 900; color: var(--text-main);">0 / 0</div>
-        </div>
+    <div
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+      <div class="card-premium"
+        style="background: var(--bg-main); text-align: center; border-radius: var(--radius-md);">
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Agreed
+          Rent</div>
+        <div id="detailPrice" style="font-size: 1.5rem; font-weight: 900; color: var(--primary);">₹0</div>
       </div>
-
-      <h4 class="font-luxury" style="margin-bottom: 1rem; color: var(--secondary);">Resident Directory</h4>
-      <div id="detailTenantList" style="margin-bottom: 3rem; max-height: 250px; overflow-y: auto;">
-        <!-- Tenants -->
-      </div>
-
-      <div style="display: flex; gap: 1rem;">
-        <button id="btnManageRoom" class="btn-premium btn-premium-primary" style="flex: 2;">Manage Tenancy</button>
-        <button onclick="document.getElementById('roomDetailModal').style.display='none'"
-          class="btn-premium btn-premium-secondary" style="flex: 1;">Dismiss</button>
+      <div class="card-premium"
+        style="background: var(--bg-main); text-align: center; border-radius: var(--radius-md);">
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+          Occupancy</div>
+        <div id="detailOccupancy" style="font-size: 1.5rem; font-weight: 900; color: var(--text-main);">0 / 0</div>
       </div>
     </div>
-  </div>
 
-  <script>
-    const buildingsData = {
+    <h4 class="font-luxury" style="margin-bottom: 1rem; color: var(--secondary);">Resident Directory</h4>
+    <div id="detailTenantList" style="margin-bottom: 3rem; max-height: 250px; overflow-y: auto;">
+      <!-- Tenants -->
+    </div>
+
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+      <button id="btnManageRoom" class="btn-premium btn-premium-primary" style="flex: 2; min-width: 150px;">Manage
+        Tenancy</button>
+      <button onclick="document.getElementById('roomDetailModal').style.display='none'"
+        class="btn-premium btn-premium-secondary" style="flex: 1; min-width: 100px;">Dismiss</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const buildingsData = {
       {% for building_name, rooms in buildings %}
-    '{{ building_name|escapejs }}': [
-      {% for room in rooms %}
-    {
-      id: '{{ room.id }}',
-        number: '{{ room.number|escapejs }}',
-          price: '{{ room.price }}',
-            agreed_rent: '{{ room.agreed_rent|default_if_none:"" }}',
-              type: '{{ room.get_room_type_display|escapejs }}',
-                tenants: [
-                  {% for t in room.current_tenants %}
-    { name: '{{ t.full_name|escapejs }}', id: '{{ t.id }}' },
-    {% endfor %}
+  '{{ building_name|escapejs }}': [
+    {% for room in rooms %}
+  {
+    id: '{{ room.id }}',
+      number: '{{ room.number|escapejs }}',
+        price: '{{ room.price }}',
+          agreed_rent: '{{ room.agreed_rent|default_if_none:"" }}',
+            type: '{{ room.get_room_type_display|escapejs }}',
+              tenants: [
+                {% for t in room.current_tenants %}
+  { name: '{{ t.full_name|escapejs }}', id: '{{ t.id }}' },
+  {% endfor %}
           ]
         },
-    {% endfor %}
+  {% endfor %}
       ],
-    {% endfor %}
+  {% endfor %}
     };
 
-    function openRoomDetails(e, id) {
-      let room = null;
-      let buildingName = '';
+  function openRoomDetails(e, id) {
+    let room = null;
+    let buildingName = '';
 
-      for (const [bName, rooms] of Object.entries(buildingsData)) {
-        const r = rooms.find(r => r.id === id);
-        if (r) {
-          room = r;
-          buildingName = bName;
-          break;
-        }
+    for (const [bName, rooms] of Object.entries(buildingsData)) {
+      const r = rooms.find(r => r.id === id);
+      if (r) {
+        room = r;
+        buildingName = bName;
+        break;
       }
+    }
 
-      if (!room) return;
+    if (!room) return;
 
-      document.getElementById('detailRoomNumber').textContent = `Room ${room.number}`;
-      document.getElementById('detailBuilding').textContent = `Building ${buildingName} • ${room.type} Bed Unit`;
+    document.getElementById('detailRoomNumber').textContent = `Room ${room.number}`;
+    document.getElementById('detailBuilding').textContent = `Building ${buildingName} • ${room.type} Bed Unit`;
 
-      const priceVal = (room.agreed_rent && room.agreed_rent.length > 0) ? room.agreed_rent : room.price;
-      document.getElementById('detailPrice').textContent = `₹${priceVal}`;
+    const priceVal = (room.agreed_rent && room.agreed_rent.length > 0) ? room.agreed_rent : room.price;
+    document.getElementById('detailPrice').textContent = `₹${priceVal}`;
 
-      const capacityMap = { 'Single': 1, 'Double': 2, 'Suite': 4 };
-      const max = capacityMap[room.type] || 2;
-      const current = room.tenants.length;
-      document.getElementById('detailOccupancy').textContent = `${current} / ${max}`;
+    const capacityMap = { 'Single': 1, 'Double': 2, 'Suite': 4 };
+    const max = capacityMap[room.type] || 2;
+    const current = room.tenants.length;
+    document.getElementById('detailOccupancy').textContent = `${current} / ${max}`;
 
-      const statusEl = document.getElementById('detailRoomStatus');
-      if (current >= max) {
-        statusEl.innerHTML = '<span class="badge-premium badge-danger">Max Capacity</span>';
-      } else if (current > 0) {
-        statusEl.innerHTML = '<span class="badge-premium badge-warning">Partial Occupancy</span>';
-      } else {
-        statusEl.innerHTML = '<span class="badge-premium badge-success">Fully Available</span>';
-      }
+    const statusEl = document.getElementById('detailRoomStatus');
+    if (current >= max) {
+      statusEl.innerHTML = '<span class="badge-premium badge-danger">Max Capacity</span>';
+    } else if (current > 0) {
+      statusEl.innerHTML = '<span class="badge-premium badge-warning">Partial Occupancy</span>';
+    } else {
+      statusEl.innerHTML = '<span class="badge-premium badge-success">Fully Available</span>';
+    }
 
-      const tList = document.getElementById('detailTenantList');
-      tList.innerHTML = '';
-      if (room.tenants.length > 0) {
-        room.tenants.forEach(t => {
-          const div = document.createElement('div');
-          div.className = 'card-premium';
-          div.style.marginBottom = '0.75rem';
-          div.style.padding = '1rem';
-          div.style.display = 'flex';
-          div.style.alignItems = 'center';
-          div.style.gap = '1rem';
-          div.innerHTML = `
+    const tList = document.getElementById('detailTenantList');
+    tList.innerHTML = '';
+    if (room.tenants.length > 0) {
+      room.tenants.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'card-premium';
+        div.style.marginBottom = '0.75rem';
+        div.style.padding = '1rem';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '1rem';
+        div.innerHTML = `
             <div style="width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800;">
               ${t.name.charAt(0)}
             </div>
@@ -349,20 +335,18 @@
               <div style="font-size: 0.75rem; color: var(--text-muted);">Tenant UID: ${t.id}</div>
             </div>
           `;
-          tList.appendChild(div);
-        });
-      } else {
-        tList.innerHTML = '<div style="text-align: center; padding: 2.5rem; color: var(--text-muted); font-style: italic;">No active residents in this unit.</div>';
-      }
-
-      document.getElementById('btnManageRoom').onclick = () => window.location.href = `/manage-guests/?room_id=${room.id}`;
-      document.getElementById('roomDetailModal').style.display = 'flex';
+        tList.appendChild(div);
+      });
+    } else {
+      tList.innerHTML = '<div style="text-align: center; padding: 2.5rem; color: var(--text-muted); font-style: italic;">No active residents in this unit.</div>';
     }
 
-    function closeModal(e) {
-      if (e.target.id === 'roomDetailModal') e.target.style.display = 'none';
-    }
-  </script>
-</body>
+    document.getElementById('btnManageRoom').onclick = () => window.location.href = `/manage-guests/?room_id=${room.id}`;
+    document.getElementById('roomDetailModal').style.display = 'flex';
+  }
 
-</html>
+  function closeModal(e) {
+    if (e.target.id === 'roomDetailModal') e.target.style.display = 'none';
+  }
+</script>
+{% endblock %}

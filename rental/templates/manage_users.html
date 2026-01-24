@@ -1,344 +1,270 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 {% load static %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Management - Panesar PG</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <style>
-        :root {
-            --primary: #c5a059;
-            --bg-main: #0a0a0b;
-            --card-bg: #161618;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.08);
-            --radius: 1.25rem;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-        }
+{% block title %}Owner Access Control - Panesar PG{% endblock %}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% block extra_head %}
+<style>
+    /* Page Specific Refinements */
+    .user-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-main);
-            color: var(--text-main);
-        }
+    .user-card {
+        transition: transform 0.2s;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
+    .user-card:hover {
+        transform: translateY(-4px);
+    }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 1.5rem 2rem;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 2rem;
-            border: 1px solid var(--border);
-        }
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
 
-        .logo-img {
-            height: 32px;
-            margin-right: 0.75rem;
-        }
+    .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--grad-primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
 
-        .header-title h1 {
-            font-size: 1.5rem;
-            font-weight: 800;
-        }
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        padding: 1rem;
+    }
 
+    .modal-content {
+        width: 100%;
+        max-width: 450px;
+        padding: 2.5rem;
+    }
+
+    .input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+    }
+
+    @media (max-width: 640px) {
         .user-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: 1fr;
         }
+    }
+</style>
+{% endblock %}
 
-        .user-card {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-            transition: transform 0.2s;
-        }
-
-        .user-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .user-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            font-size: 0.875rem;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #f1f5f9;
-            color: var(--text-main);
-        }
-
-        .btn-danger {
-            background: #fee2e2;
-            color: #ef4444;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 1.5rem;
-            width: 100%;
-            max-width: 450px;
-        }
-
-        .input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            margin-top: 0.25rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <header class="header">
-            <div style="display: flex; align-items: center;">
-                <img src="{% static 'rental/images/panesar-logo.png' %}" class="logo-img">
-                <div class="header-title">
-                    <h1>Staff Management</h1>
-                    <p style="color: var(--text-muted); font-size: 0.875rem;">Manage accounts for motel staff and
-                        employees ONLY (Not for tenants)</p>
-                </div>
-            </div>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-                <button onclick="openAddModal()" class="btn btn-primary">+ Add Staff Member</button>
-                {% if is_admin %}
-                <a href="{% url 'manage_users' %}" class="btn btn-secondary"
-                    style="border: 2px solid var(--primary); color: var(--primary);">👤 Manage Motel Staff</a>
-                {% endif %}
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
-            </div>
-        </header>
-
-        <div class="user-grid">
-            {% for user in managed_users %}
-            <div class="user-card">
-                <div class="user-info">
-                    <div class="user-avatar">{{ user.username|slice:":2"|upper }}</div>
-                    <div>
-                        <h3 style="font-size: 1.125rem;">{{ user.get_full_name|default:user.username }}</h3>
-                        <p style="color: var(--text-muted); font-size: 0.875rem;">{{ user.email }}</p>
-                    </div>
-                    {% if user.is_staff %}<span
-                        style="margin-left: auto; font-size: 0.75rem; background: #e0e7ff; color: var(--primary); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 700;">ADMIN</span>{%
-                    endif %}
-                </div>
-                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                    <button class="btn btn-secondary edit-user-btn" data-id="{{ user.id }}"
-                        data-fn="{{ user.first_name|escapejs }}" data-ln="{{ user.last_name|escapejs }}"
-                        data-email="{{ user.email|escapejs }}"
-                        data-staff="{{ user.is_staff|yesno:'true,false' }}">Edit</button>
-                    {% if request.user.id != user.id %}
-                    <button onclick="deleteUser('{{ user.id }}')" class="btn btn-danger">Delete</button>
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
+{% block content %}
+<header class="card-premium glass-panel" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Ownership Control</h1>
+            <p style="color: var(--text-muted); font-weight: 500;">Manage superuser accounts and high-level
+                administrative access.</p>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button onclick="openAddModal()" class="btn-premium btn-premium-primary">+ Grant Ownership</button>
+            <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
         </div>
     </div>
+</header>
 
-    <div id="addModal" class="modal">
-        <div class="modal-content">
-            <h2 style="margin-bottom: 1.5rem;">Add New Staff Member</h2>
-            <form id="addUserForm">
-                {% csrf_token %}
+<div class="user-grid">
+    {% for staff_member in managed_users %}
+    <div class="card-premium user-card glass-panel">
+        <div class="user-info">
+            <div class="user-avatar">{{ staff_member.username|slice:":2"|upper }}</div>
+            <div>
+                <h3 class="font-luxury" style="font-size: 1.125rem;">{{
+                    staff_member.get_full_name|default:staff_member.username }}</h3>
+                <p style="color: var(--text-muted); font-size: 0.8125rem;">{{ staff_member.email|default:"No email set"
+                    }}</p>
+            </div>
+            {% if staff_member.is_superuser %}
+            <span class="badge-premium badge-success" style="margin-left: auto; font-size: 0.65rem;">OWNER</span>
+            {% endif %}
+        </div>
+        <div
+            style="display: flex; gap: 0.5rem; justify-content: flex-end; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+            <button class="btn-premium btn-premium-secondary edit-user-btn"
+                style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" data-id="{{ staff_member.id }}"
+                data-fn="{{ staff_member.first_name|escapejs }}" data-ln="{{ staff_member.last_name|escapejs }}"
+                data-email="{{ staff_member.email|escapejs }}"
+                data-superuser="{{ staff_member.is_superuser|yesno:'true,false' }}">Edit
+                Credentials</button>
+            {% if request.user.id != staff_member.id %}
+            <button onclick="deleteUser('{{ staff_member.id }}')" class="btn-premium btn-premium-secondary"
+                style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-color: var(--danger); color: var(--danger);">Delete</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Modal -->
+<div id="addModal" class="modal-overlay" onclick="closeModals(event)">
+    <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+        <h2 class="font-luxury text-luxury" style="margin-bottom: 2rem; font-size: 1.5rem;">New Staff Onboarding</h2>
+        <form id="addUserForm">
+            {% csrf_token %}
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label
+                    style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Username</label>
+                <input type="text" name="username" class="input" required placeholder="ayush_admin">
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label
+                    style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Initial
+                    Password</label>
+                <input type="password" name="password" class="input" required placeholder="••••••••">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                 <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" name="username" class="input" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" name="password" class="input" required>
-                </div>
-                <div class="form-group">
-                    <label>First Name</label>
+                    <label
+                        style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">First
+                        Name</label>
                     <input type="text" name="first_name" class="input">
                 </div>
                 <div class="form-group">
-                    <label>Last Name</label>
+                    <label
+                        style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Last
+                        Name</label>
                     <input type="text" name="last_name" class="input">
                 </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" class="input">
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" id="addIsStaff" name="is_staff">
-                    <label for="addIsStaff">Give Admin Access</label>
-                </div>
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="button" onclick="closeModals()" class="btn btn-secondary"
-                        style="flex: 1;">Cancel</button>
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Create Account</button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label
+                    style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Work
+                    Email</label>
+                <input type="email" name="email" class="input" placeholder="official@panesarpghotel.com">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+                <input type="checkbox" id="addIsStaff" name="is_staff"
+                    style="width: 18px; height: 18px; accent-color: var(--primary);">
+                <label for="addIsStaff" style="font-weight: 800; color: var(--text-main); font-size: 0.8125rem;">Grant
+                    Administrative Privileges</label>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">Provision
+                    Account</button>
+                <button type="button" onclick="document.getElementById('addModal').style.display='none'"
+                    class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <h2 style="margin-bottom: 1.5rem;">Edit User Details</h2>
-            <form id="editUserForm">
-                {% csrf_token %}
-                <input type="hidden" id="editUserId">
+<!-- Edit Modal -->
+<div id="editModal" class="modal-overlay" onclick="closeModals(event)">
+    <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+        <h2 class="font-luxury text-luxury" style="margin-bottom: 2rem; font-size: 1.5rem;">Edit Member Details</h2>
+        <form id="editUserForm">
+            {% csrf_token %}
+            <input type="hidden" id="editUserId">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                 <div class="form-group">
-                    <label>First Name</label>
+                    <label
+                        style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">First
+                        Name</label>
                     <input type="text" id="editFirstName" name="first_name" class="input">
                 </div>
                 <div class="form-group">
-                    <label>Last Name</label>
+                    <label
+                        style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Last
+                        Name</label>
                     <input type="text" id="editLastName" name="last_name" class="input">
                 </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="editEmail" name="email" class="input">
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <input type="checkbox" id="editIsStaff" name="is_staff">
-                    <label for="editIsStaff">Has Admin Access</label>
-                </div>
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button type="button" onclick="closeModals()" class="btn btn-secondary"
-                        style="flex: 1;">Cancel</button>
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label
+                    style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Updated
+                    Email</label>
+                <input type="email" id="editEmail" name="email" class="input">
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+                <input type="checkbox" id="editIsStaff" name="is_staff"
+                    style="width: 18px; height: 18px; accent-color: var(--primary);">
+                <label for="editIsStaff" style="font-weight: 800; color: var(--text-main); font-size: 0.8125rem;">Active
+                    Admin Access</label>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">Commit Changes</button>
+                <button type="button" onclick="document.getElementById('editModal').style.display='none'"
+                    class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
     </div>
+</div>
+{% endblock %}
 
-    <script>
-        function openAddModal() {
-            document.getElementById('addUserForm').reset();
-            document.getElementById('addModal').style.display = 'flex';
+{% block scripts %}
+<script>
+    function openAddModal() {
+        document.getElementById('addUserForm').reset();
+        document.getElementById('addModal').style.display = 'flex';
+    }
+
+    document.addEventListener('click', e => {
+        if (e.target.classList.contains('edit-user-btn')) {
+            const b = e.target;
+            document.getElementById('editUserId').value = b.dataset.id;
+            document.getElementById('editFirstName').value = b.dataset.fn;
+            document.getElementById('editLastName').value = b.dataset.ln;
+            document.getElementById('editEmail').value = b.dataset.email;
+            document.getElementById('editIsStaff').checked = b.dataset.superuser === 'true';
+            document.getElementById('editModal').style.display = 'flex';
         }
+    });
 
-        // Use event delegation for edit buttons
-        document.addEventListener('click', e => {
-            if (e.target.classList.contains('edit-user-btn')) {
-                const b = e.target;
-                document.getElementById('editUserId').value = b.dataset.id;
-                document.getElementById('editFirstName').value = b.dataset.fn;
-                document.getElementById('editLastName').value = b.dataset.ln;
-                document.getElementById('editEmail').value = b.dataset.email;
-                document.getElementById('editIsStaff').checked = b.dataset.staff === 'true';
-                document.getElementById('editModal').style.display = 'flex';
-            }
-        });
-
-        function closeModals() {
+    function closeModals(e) {
+        if (e.target.classList.contains('modal-overlay')) {
             document.getElementById('editModal').style.display = 'none';
             document.getElementById('addModal').style.display = 'none';
         }
+    }
 
-        document.getElementById('addUserForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            formData.append('is_staff', document.getElementById('addIsStaff').checked);
+    document.getElementById('addUserForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        formData.set('is_staff', document.getElementById('addIsStaff').checked);
+        const res = await fetch(`/api/user/add/`, { method: 'POST', body: formData });
+        if ((await res.json()).success) location.reload(); else alert('Provisioning Error');
+    };
 
-            const res = await fetch(`/api/user/add/`, { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.success) location.reload();
-            else alert('Error: ' + data.message);
-        };
+    document.getElementById('editUserForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editUserId').value;
+        const formData = new FormData(e.target);
+        formData.set('is_staff', document.getElementById('editIsStaff').checked);
+        const res = await fetch(`/api/user/${id}/update/`, { method: 'POST', body: formData });
+        if ((await res.json()).success) location.reload(); else alert('Credential Update Error');
+    };
 
-        document.getElementById('editUserForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('editUserId').value;
-            const formData = new FormData(e.target);
-            formData.append('is_staff', document.getElementById('editIsStaff').checked);
-
-            const res = await fetch(`/api/user/${id}/update/`, { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.success) location.reload();
-            else alert('Error: ' + data.message);
-        };
-
-        async function deleteUser(id) {
-            if (!confirm('Are you sure you want to remove this staff member?')) return;
-            const formData = new FormData();
-            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-            const res = await fetch(`/api/user/${id}/delete/`, { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.success) location.reload();
-            else alert('Error: ' + data.message);
-        }
-
-        window.onclick = e => {
-            if (e.target.classList.contains('modal')) closeModals();
-        }
-    </script>
-</body>
-
-</html>
+    async function deleteUser(id) {
+        if (!confirm('Evict staff member from portal?')) return;
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        const res = await fetch(`/api/user/${id}/delete/`, { method: 'POST', body: fd });
+        if ((await res.json()).success) location.reload(); else alert('De-provisioning Error');
+    }
+</script>
+{% endblock %}

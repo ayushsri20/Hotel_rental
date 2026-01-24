@@ -1,490 +1,196 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Utility Matrix - Panesar PG{% endblock %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Utility Hub - Panesar PG</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
-  <style>
-    :root {
-      --primary: #947a45;
-      --primary-hover: #7a6438;
-      --bg-main: #f1f5f9;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-muted: #475569;
-      --success: #059669;
-      --error: #dc2626;
-      --warning: #d97706;
-      --border: #e2e8f0;
-      --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
-      --radius: 1.25rem;
+{% block extra_head %}
+<style>
+  /* Page Specific Refinements */
+  .utility-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .utility-card {
+    border-top: 4px solid #f59e0b;
+  }
+
+  .bill-history {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 1rem;
+    background: var(--bg-main);
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+  }
+
+  .bill-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--bg-canvas);
+    margin-bottom: 0.4rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .input {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+  }
+
+  @media (max-width: 640px) {
+    .utility-grid {
+      grid-template-columns: 1fr;
     }
+  }
+</style>
+{% endblock %}
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      line-height: 1.6;
-    }
-
-    .container {
-      max-width: 1500px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2.5rem;
-      background: var(--card-bg);
-      padding: 1.5rem 2rem;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-    }
-
-    .header-title h1 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--primary), #7c3aed);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .logo-img {
-      height: 32px;
-      width: auto;
-      margin-right: 0.75rem;
-    }
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2.5rem;
-    }
-
-    .stat-card {
-      background: var(--card-bg);
-      padding: 2rem;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4px;
-      height: 100%;
-      background: var(--primary);
-    }
-
-    .stat-label {
-      font-size: 0.8125rem;
-      font-weight: 800;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
-      letter-spacing: 0.05em;
-    }
-
-    .stat-value {
-      font-size: 2.25rem;
-      font-weight: 900;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.025em;
-    }
-
-    .stat-meta {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .section {
-      background: var(--card-bg);
-      padding: 2rem;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      margin-bottom: 2rem;
-    }
-
-    .filter-bar {
-      display: flex;
-      gap: 1.25rem;
-      margin-bottom: 2rem;
-      background: #f8fafc;
-      padding: 1.25rem;
-      border-radius: 1rem;
-      border: 1px solid var(--border);
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .table-wrapper {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0 0.75rem;
-    }
-
-    th {
-      padding: 1rem 1.5rem;
-      color: var(--text-muted);
-      font-weight: 800;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      text-align: left;
-    }
-
-    td {
-      padding: 1.5rem;
-      background: white;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      font-size: 0.9375rem;
-    }
-
-    td:first-child {
-      border-left: 1px solid var(--border);
-      border-radius: 1rem 0 0 1rem;
-    }
-
-    td:last-child {
-      border-right: 1px solid var(--border);
-      border-radius: 0 1rem 1rem 0;
-    }
-
-    .consumption-bar {
-      height: 10px;
-      background: #eef2ff;
-      border-radius: 5px;
-      overflow: hidden;
-      margin-top: 0.75rem;
-      width: 140px;
-    }
-
-    .consumption-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--primary), #818cf8);
-    }
-
-    .input {
-      padding: 0.875rem 1.25rem;
-      border-radius: 0.75rem;
-      border: 1px solid var(--border);
-      font-family: inherit;
-      background: white;
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
-
-    .btn {
-      padding: 0.875rem 1.75rem;
-      border-radius: 0.75rem;
-      font-weight: 800;
-      cursor: pointer;
-      border: none;
-      font-size: 0.875rem;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.625rem;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
-    }
-
-    .btn-secondary {
-      background: #f1f5f9;
-      color: var(--text-main);
-    }
-
-    .badge {
-      padding: 0.5rem 1rem;
-      border-radius: 2rem;
-      font-size: 0.75rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .badge-paid {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .badge-pending {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-content {
-      background: white;
-      width: 100%;
-      max-width: 500px;
-      border-radius: 2rem;
-      padding: 3rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-    <header class="header">
-      <div class="header-title" style="display: flex; align-items: center; gap: 1rem;">
-        <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar Logo" class="logo-img">
-        <div>
-          <h1 style="letter-spacing: -0.05em;">UTILITY REVENUE HUB</h1>
-          <p style="color: var(--text-muted); font-size: 0.875rem; font-weight: 500;">Electricity consumption and
-            billing analytics</p>
-        </div>
-      </div>
-      <div class="header-actions">
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Dashboard</a>
-      </div>
-    </header>
-
-    <div class="dashboard-grid">
-      <div class="stat-card" style="--primary: var(--error)">
-        <div class="stat-label">Total Outstanding</div>
-        <div class="stat-value" style="color: var(--error);">₹{{ bill_stats.total_pending_amount|floatformat:0 }}</div>
-        <div class="stat-meta">{{ bill_stats.pending }} bills awaiting payment</div>
-      </div>
-      <div class="stat-card" style="--primary: var(--success)">
-        <div class="stat-label">Revenue Collected (Month)</div>
-        <div class="stat-value" style="color: var(--success);">₹{{ total_collected_this_month|default:"0" }}</div>
-        <div class="stat-meta">{{ bill_stats.paid }} settlements completed</div>
-      </div>
-      <div class="stat-card" style="--primary: var(--warning)">
-        <div class="stat-label">Grid Load Coverage</div>
-        <div class="stat-value" style="color: var(--warning);">{{ avg_units|default:"42" }} <span
-            style="font-size: 1rem; font-weight: 600;">avg units</span></div>
-        <div class="stat-meta">Based on current cycle readings</div>
-      </div>
+{% block content %}
+<header class="card-premium glass-panel" style="margin-bottom: 2.5rem; padding: 2.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="font-luxury text-luxury" style="font-size: 2.5rem;">Utility Matrix</h1>
+      <p style="color: var(--text-muted); font-weight: 500;">Electricity meter tracking and resource billing management.
+      </p>
     </div>
-
-    <div class="section">
-      <h3 style="font-weight: 900; margin-bottom: 2rem; letter-spacing: -0.025em;">⚡ Generate Smart Invoices</h3>
-      <form id="readingForm" onsubmit="handleReadingSubmit(event)">
-        {% csrf_token %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">TARGET ROOM</label>
-            <select name="room_id" class="input" required>
-              <option value="">Select Room...</option>
-              {% for room in rooms %}<option value="{{ room.id }}">Room {{ room.number }}</option>{% endfor %}
-            </select>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">BILLING MONTH</label>
-            <input type="month" name="month" class="input" required id="currMonth">
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">RATE (₹/UNIT)</label>
-            <input type="number" name="rate_per_unit" class="input" required step="0.01" value="10.00">
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">METER READINGS (S/E)</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-              <input type="number" name="starting_reading" placeholder="Start" class="input" required step="0.01">
-              <input type="number" name="ending_reading" placeholder="End" class="input" required step="0.01">
-            </div>
-          </div>
-          <div style="display: flex; align-items: flex-end;">
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Generate
-              Invoice</button>
-          </div>
-        </div>
-      </form>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <h2 style="font-weight: 900; letter-spacing: -0.025em;">Utility Ledger</h2>
-        <div style="display: flex; gap: 1rem; align-items: center;">
-          <input type="text" id="billSearch" onkeyup="filterBills()" placeholder="Search room or month..." class="input"
-            style="width: 300px;">
-        </div>
-      </div>
-
-      <div class="filter-bar">
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">VIEW STATUS:</label>
-          <select id="statusFilter" onchange="filterBills()" class="input" style="padding: 0.5rem 1rem;">
-            <option value="all">All Records</option>
-            <option value="pending">Awaiting Payment</option>
-            <option value="paid">Settled Only</option>
-          </select>
-        </div>
-        <div style="margin-left: auto; font-size: 0.8125rem; font-weight: 700; color: var(--text-muted);">
-          Total Visible: <span id="billCount" style="color: var(--primary);">{{ bills|length }}</span>
-        </div>
-      </div>
-
-      <div class="table-wrapper">
-        <table id="billTable">
-          <thead>
-            <tr>
-              <th>Resource</th>
-              <th>Period</th>
-              <th>Usage Analytics</th>
-              <th>Financials</th>
-              <th>Status</th>
-              <th style="text-align: right;">Managed Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for bill in bills %}
-            <tr class="bill-row" data-status="{{ bill.bill_status }}">
-              <td style="font-weight: 900; color: var(--primary); font-size: 1.125rem;">Room {{ bill.room.number }}</td>
-              <td style="font-weight: 600;">{{ bill.month|date:"F Y" }}</td>
-              <td>
-                <div style="font-weight: 800; color: var(--text-main);">{{ bill.units_consumed|floatformat:1 }} Units
-                </div>
-                <div class="consumption-bar">
-                  <div class="consumption-fill" style="width: {% widthratio bill.units_consumed 500 100 %}%"></div>
-                </div>
-              </td>
-              <td>
-                <div style="font-weight: 900; color: var(--text-main); font-size: 1rem;">₹{{
-                  bill.bill_amount|floatformat:0 }}</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted);">@ ₹{{ bill.rate_per_unit }}/unit</div>
-              </td>
-              <td>
-                <span class="badge {% if bill.bill_status == 'paid' %}badge-paid{% else %}badge-pending{% endif %}">
-                  {{ bill.bill_status }}
-                </span>
-              </td>
-              <td style="text-align: right;">
-                <button onclick="openPaymentModal('{{ bill.id }}', '{{ bill.room.number }}', '{{ bill.bill_amount }}')"
-                  class="btn btn-secondary" style="padding: 0.625rem 1.25rem;">Record Collection</button>
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="6" style="text-align: center; padding: 4rem; color: var(--text-muted);">No records available.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+    <div style="display: flex; gap: 1rem;">
+      <button onclick="openModal('addBillModal')" class="btn-premium btn-premium-primary">+ Gen. Monthly Bill</button>
+      <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
     </div>
   </div>
+</header>
 
-  <div id="paymentModal" class="modal">
-    <div class="modal-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h2 style="font-weight: 900; letter-spacing: -0.025em;">Invoice Settlement</h2>
-        <button onclick="closeModal()"
-          style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+<div class="utility-grid">
+  {% for data in bill_stats %}
+  <div class="card-premium utility-card">
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+      <div>
+        <h3 class="font-luxury" style="font-size: 1.25rem; color: var(--primary);">Room {{ data.room.number }}</h3>
+        <p style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">{% if
+          data.tenant %}{{ data.tenant.full_name }}{% else %}Vacant{% endif %}</p>
       </div>
-      <p style="margin-bottom: 2rem; color: var(--text-muted); font-weight: 500;">Recording payment for <span
-          id="modalRoom" style="color: var(--primary); font-weight: 800;"></span></p>
+      <div style="text-align: right;">
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">Current Reading</div>
+        <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{ data.latest_reading|default:"0"
+          }} <span style="font-size: 0.65rem; font-weight: 600;">units</span></div>
+      </div>
+    </div>
 
-      <form onsubmit="handlePaymentSubmit(event)">
-        {% csrf_token %}
-        <input type="hidden" name="bill_id" id="modalBillId">
-        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">SETTLEMENT AMOUNT (₹)</label>
-            <input type="number" name="paid_amount" id="modalAmount" class="input" required step="0.01">
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">DATE OF RECEIPT</label>
-            <input type="date" name="paid_date" class="input" id="modalDate" required>
-          </div>
-          <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-            <button type="button" onclick="closeModal()" class="btn btn-secondary" style="flex: 1;">Cancel</button>
-            <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center;">Confirm
-              Settlement</button>
-          </div>
-        </div>
-      </form>
+    <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+        <span style="color: var(--text-muted); font-weight: 600;">Total Billed</span>
+        <span style="font-weight: 800;">₹{{ data.total_billed|floatformat:0 }}</span>
+      </div>
+    </div>
+
+    <div class="bill-history">
+      {% for bill in data.recent_bills %}
+      <div class="bill-row">
+        <div>{{ bill.month|date:"M Y" }}</div>
+        <div style="font-weight: 800;">₹{{ bill.amount }}</div>
+        <div style="color: var(--text-muted);">{{ bill.units_consumed }}u</div>
+      </div>
+      {% empty %}
+      <div
+        style="text-align: center; color: var(--text-muted); font-size: 0.7rem; padding: 0.5rem; font-style: italic;">No
+        bills found.</div>
+      {% endfor %}
     </div>
   </div>
+  {% endfor %}
+</div>
 
-  <script>
-    document.getElementById('currMonth').value = new Date().toISOString().slice(0, 7);
+<!-- Bill Modal -->
+<div id="addBillModal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()"
+    style="max-width: 450px; padding: 2.5rem;">
+    <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 2rem;">Utility Entry</h2>
+    <form id="billForm">
+      {% csrf_token %}
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Unit
+          No / Room</label>
+        <select name="room_id" id="formRoomId" class="input" required onchange="updateReadings()">
+          <option value="">Select Room...</option>
+          {% for room in rooms %}<option value="{{ room.id }}"
+            data-last="{{ room.electricitybill_set.last.ending_reading|default:'13' }}">Room {{ room.number }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-    function filterBills() {
-      const q = document.getElementById('billSearch').value.toLowerCase();
-      const status = document.getElementById('statusFilter').value;
-      const rows = document.querySelectorAll('.bill-row');
-      let visible = 0;
+      <div class="input-group">
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Start
+            Reading</label>
+          <input type="number" name="starting_reading" id="formStartReading" class="input" required value="13"
+            step="0.01">
+        </div>
+        <div class="form-group">
+          <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">End
+            Reading</label>
+          <input type="number" name="ending_reading" id="formEndReading" class="input" required step="0.01">
+        </div>
+      </div>
 
-      rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        const stat = row.getAttribute('data-status');
-        const matches = text.includes(q) && (status === 'all' || stat === status);
-        row.style.display = matches ? '' : 'none';
-        if (matches) visible++;
-      });
-      document.getElementById('billCount').innerText = visible;
+      <div class="input-group">
+        <div class="form-group">
+          <label
+            style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Month</label>
+          <input type="month" name="billing_month" class="input" required value="{% now 'Y-m' %}">
+        </div>
+        <div class="form-group">
+          <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rate
+            (₹/u)</label>
+          <input type="number" name="rate_per_unit" class="input" value="6" step="0.5">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">Generate Bill</button>
+        <button type="button" onclick="document.getElementById('addBillModal').style.display='none'"
+          class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function closeModal(e) { if (e.target.id === 'addBillModal') e.target.style.display = 'none'; }
+  function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+
+  function updateReadings() {
+    const sel = document.getElementById('formRoomId');
+    const opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.last) {
+      document.getElementById('formStartReading').value = opt.dataset.last;
+      document.getElementById('formEndReading').value = parseFloat(opt.dataset.last) + 50;
     }
+  }
 
-    function openPaymentModal(id, room, amount) {
-      document.getElementById('modalBillId').value = id;
-      document.getElementById('modalRoom').innerText = 'Room ' + room;
-      document.getElementById('modalAmount').value = amount;
-      document.getElementById('modalDate').value = new Date().toISOString().split('T')[0];
-      document.getElementById('paymentModal').style.display = 'flex';
-    }
-    function closeModal() { document.getElementById('paymentModal').style.display = 'none'; }
-
-    async function handleReadingSubmit(e) {
-      e.preventDefault();
-      const res = await fetch("{% url 'create_electricity_bill' %}", { method: 'POST', body: new FormData(e.target) });
-      if ((await res.json()).success) location.reload(); else alert('Error creating bill. Check if bill for this month already exists.');
-    }
-
-    async function handlePaymentSubmit(e) {
-      e.preventDefault();
-      const res = await fetch("{% url 'record_electricity_payment' %}", { method: 'POST', body: new FormData(e.target) });
-      if ((await res.json()).success) location.reload(); else alert('Error recording payment');
-    }
-
-    window.onclick = e => { if (e.target.classList.contains('modal')) closeModal(); }
-  </script>
-</body>
-
-</html>
+  document.getElementById('billForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch('{% url "create_electricity_bill" %}', { method: 'POST', body: new FormData(e.target) });
+    const data = await res.json();
+    if (data.success) location.reload();
+    else alert('Error: ' + data.message);
+  };
+</script>
+{% endblock %}

@@ -35,15 +35,15 @@ SECRET_KEY = os.environ.get('SECRET_KEY') or 'django-insecure-' + get_random_sec
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ['1', 'true', 'yes']
 
-# Allow Railway and Render domains by default
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+# Strict ALLOWED_HOSTS for production
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 if os.environ.get('RAILWAY_PUBLIC_DOMAIN'):
     ALLOWED_HOSTS.append(os.environ.get('RAILWAY_PUBLIC_DOMAIN'))
 # Explicit fallback for current deployment
 ALLOWED_HOSTS.append('web-production-38bb.up.railway.app')
 ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
 if not ALLOWED_HOSTS:
-    ALLOWED_HOSTS = ['*']
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Security-enhanced ALLOWED_HOSTS in production
 if not DEBUG:

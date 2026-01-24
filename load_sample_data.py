@@ -2,7 +2,7 @@
 """
 Sample data loader for Panesar PG Hotel Management System
 Run this to populate the database with sample rooms
-Creates 42 rooms across 6 buildings (M1, 1, 2, 3, 4, 5, 6)
+Creates 36 rooms across 6 buildings (M1, 1, 2, 3, 4, 5)
 """
 
 import os
@@ -20,7 +20,7 @@ django.setup()
 from rental.models import Room
 
 def create_sample_rooms():
-    """Create sample rooms for all 6 buildings with 6 rooms each = 42 total rooms"""
+    """Create sample rooms for all 6 buildings with 6 rooms each = 36 total rooms"""
     
     # M1 Complex (A) - Premium building
     m1_rooms = [
@@ -82,24 +82,14 @@ def create_sample_rooms():
         ('F-106', 'single', 7000),
     ]
     
-    # Building 6 (G) - 6 rooms
-    building6_rooms = [
-        ('G-101', 'single', 7000),
-        ('G-102', 'single', 7000),
-        ('G-103', 'double', 7000),
-        ('G-104', 'double', 7000),
-        ('G-105', 'single', 7000),
-        ('G-106', 'single', 7000),
-    ]
-    
     all_rooms = (m1_rooms + building1_rooms + building2_rooms + 
-                 building3_rooms + building4_rooms + building5_rooms + building6_rooms)
+                 building3_rooms + building4_rooms + building5_rooms)
     
     created_count = 0
     skipped_count = 0
     
     print(f"\n{'='*60}")
-    print(f"Creating 42 Rooms Across 6 Buildings")
+    print(f"Creating 36 Rooms Across 6 Buildings")
     print(f"{'='*60}\n")
     
     for room_number, room_type, price in all_rooms:
