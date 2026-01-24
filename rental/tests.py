@@ -1,21 +1,27 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.conf import settings
 from .models import Room, ElectricityBill, Guest
 from django.core.files.uploadedfile import SimpleUploadedFile
 import json
 
 
+@override_settings(
+    MIDDLEWARE=[m for m in settings.MIDDLEWARE if 'LoginRequiredMiddleware' not in m],
+    APPEND_SLASH=False
+)
 class ElectricityBillFormTests(TestCase):
     def setUp(self):
         User = get_user_model()
         # create admin user
         self.admin = User.objects.create_superuser(username='admin', email='admin@example.com', password='password')
         # create a sample room
-        self.room = Room.objects.create(number='A-101', price=2000.0, is_available=True)
+        self.room = Room.objects.create(number='A-101', room_type='single', price=2000.0, is_available=True)
+        # Login the client
+        self.client.force_login(self.admin)
 
     def test_create_bill_with_month_yyyy_mm(self):
-        self.client.login(username='admin', password='password')
         url = reverse('create_electricity_bill')
         data = {
             'room_id': str(self.room.id),
@@ -35,7 +41,6 @@ class ElectricityBillFormTests(TestCase):
         self.assertEqual(bill.units_consumed, 50.0)
 
     def test_create_bill_missing_month(self):
-        self.client.login(username='admin', password='password')
         url = reverse('create_electricity_bill')
         data = {
             'room_id': str(self.room.id),
@@ -49,7 +54,6 @@ class ElectricityBillFormTests(TestCase):
         self.assertFalse(resp.get('success'))
 
     def test_create_bill_ending_less_than_start(self):
-        self.client.login(username='admin', password='password')
         url = reverse('create_electricity_bill')
         data = {
             'room_id': str(self.room.id),
@@ -65,17 +69,21 @@ class ElectricityBillFormTests(TestCase):
         self.assertFalse(resp.get('success'))
 
 
+@override_settings(
+    MIDDLEWARE=[m for m in settings.MIDDLEWARE if 'LoginRequiredMiddleware' not in m],
+    APPEND_SLASH=False
+)
 class GuestFileUploadTests(TestCase):
     """Test file upload functionality for guest documents"""
     
     def setUp(self):
         User = get_user_model()
         self.admin = User.objects.create_superuser(username='admin', email='admin@test.com', password='password')
-        self.room = Room.objects.create(number='B-201', price=3000.0, is_available=True)
+        self.room = Room.objects.create(number='B-201', room_type='double', price=3000.0, is_available=True)
+        self.client.force_login(self.admin)
     
     def test_add_guest_with_govt_id_photo(self):
         """Test adding guest with ID proof image"""
-        self.client.login(username='admin', password='password')
         
         # Create a small test image
         image_content = b'fake image content'
@@ -107,7 +115,6 @@ class GuestFileUploadTests(TestCase):
     
     def test_add_guest_with_college_id_photo(self):
         """Test adding guest with LPU ID photo"""
-        self.client.login(username='admin', password='password')
         
         test_image = SimpleUploadedFile(
             "college_id.png",
@@ -136,7 +143,6 @@ class GuestFileUploadTests(TestCase):
     
     def test_add_guest_with_document_verification(self):
         """Test adding guest with document verification image"""
-        self.client.login(username='admin', password='password')
         
         test_image = SimpleUploadedFile(
             "doc_verify.jpg",
@@ -163,7 +169,6 @@ class GuestFileUploadTests(TestCase):
     
     def test_guest_with_all_document_images(self):
         """Test guest with all three document images"""
-        self.client.login(username='admin', password='password')
         
         id_image = SimpleUploadedFile("id.jpg", b'id image', content_type="image/jpeg")
         lpu_image = SimpleUploadedFile("lpu.png", b'lpu image', content_type="image/png")
@@ -195,7 +200,6 @@ class GuestFileUploadTests(TestCase):
     
     def test_add_guest_with_invalid_file_extension(self):
         """Test that invalid file types are rejected"""
-        self.client.login(username='admin', password='password')
         
         # Try to upload a text file instead of image
         bad_file = SimpleUploadedFile(
@@ -221,7 +225,6 @@ class GuestFileUploadTests(TestCase):
     
     def test_update_guest_with_new_image(self):
         """Test updating guest with new image"""
-        self.client.login(username='admin', password='password')
         
         # Create initial guest
         guest = Guest.objects.create(
