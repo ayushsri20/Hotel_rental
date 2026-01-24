@@ -43,7 +43,7 @@ if os.environ.get('RAILWAY_PUBLIC_DOMAIN'):
 ALLOWED_HOSTS.append('web-production-38bb.up.railway.app')
 ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
 if not ALLOWED_HOSTS:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ['*'] # Permissive for troubleshooting
 
 # Security-enhanced ALLOWED_HOSTS in production
 if not DEBUG:
