@@ -52,3 +52,9 @@ echo "========================================="
 echo "Starting Gunicorn Web Server"
 echo "========================================="
 exec gunicorn -w 4 -b 0.0.0.0:${PORT:-8000} hotel_project.wsgi:application
+
+echo ""
+echo "========================================="
+echo "Loading Sample Room Data"
+echo "========================================="
+python3 load_sample_data.py || echo "Sample data already loaded or error occurred"
