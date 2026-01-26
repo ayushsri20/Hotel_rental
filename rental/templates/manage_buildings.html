@@ -69,6 +69,11 @@
     color: #991b1b;
   }
 
+  .status-partial {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
   .add-room-section {
     margin-bottom: 2rem;
   }
@@ -163,6 +168,15 @@
         style="width: 100%;">
     </div>
     <div class="form-group">
+      <label style="font-size: 0.75rem;">Capacity</label>
+      <select id="newRoomCapacity" class="room-input" required style="width: 100%;">
+        <option value="1">1 Person</option>
+        <option value="2" selected>2 People</option>
+        <option value="3">3 People</option>
+        <option value="4">4 People</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label style="font-size: 0.75rem;">Agreed Rent</label>
       <input type="number" id="newRoomAgreedRent" class="room-input" placeholder="Optional" step="0.01"
         style="width: 100%;">
@@ -186,6 +200,7 @@
           <tr>
             <th>Room #</th>
             <th>Type</th>
+            <th>Capacity</th>
             <th>Price/Rent</th>
             <th>Status</th>
             <th>Actions</th>
@@ -205,6 +220,10 @@
                 <option value="suite" {% if room.room_type=='suite' %}selected{% endif %}>Suite</option>
               </select>
             </td>
+            <td data-label="Capacity">
+              <input type="number" class="room-input room-capacity" data-room-id="{{ room.id }}"
+                value="{{ room.capacity }}" min="1" max="10" style="width: 60px;">
+            </td>
             <td data-label="Price/Rent">
               <div style="display:flex; flex-direction: column; gap:4px;">
                 <input type="number" class="room-input room-price" data-room-id="{{ room.id }}" value="{{ room.price }}"
@@ -215,14 +234,26 @@
               </div>
             </td>
             <td data-label="Status">
-              <label style="margin: 0; cursor: pointer;">
-                <input type="checkbox" class="room-status" data-room-id="{{ room.id }}" {% if room.is_available
-                  %}checked{% endif %}>
-                {% if room.is_available %}
-                <span class="status-badge status-available">Available</span>
-                {% else %}
-                <span class="status-badge status-booked">Booked</span>
-                {% endif %}
+              <label
+                style="margin: 0; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: start;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <input type="checkbox" class="room-status" data-room-id="{{ room.id }}" {% if room.is_available
+                    %}checked{% endif %}>
+                  {% if room.is_available %}
+                  <span class="status-badge status-available">Live</span>
+                  {% else %}
+                  <span class="status-badge status-booked">Hidden</span>
+                  {% endif %}
+                </div>
+                {% with occ=room.current_occupancy cap=room.capacity %}
+                {% if occ == 0 %}
+                <span class="status-badge status-available" style="background: #ebf8ff; color: #2b6cb0;">Empty (0/{{ cap
+                  }})</span>
+                {% elif occ < cap %} <span class="status-badge status-partial">Filled ({{ occ }}/{{ cap }})</span>
+                  {% else %}
+                  <span class="status-badge status-booked">Full ({{ cap }}/{{ cap }})</span>
+                  {% endif %}
+                  {% endwith %}
               </label>
             </td>
             <td data-label="Actions">
@@ -260,6 +291,7 @@
     const formData = new FormData();
     formData.append('room_number', document.getElementById('newRoomNumber').value);
     formData.append('room_type', document.getElementById('newRoomType').value);
+    formData.append('capacity', document.getElementById('newRoomCapacity').value);
     formData.append('price', document.getElementById('newRoomPrice').value);
     formData.append('agreed_rent', document.getElementById('newRoomAgreedRent').value);
     formData.append('csrfmiddlewaretoken', csrftoken);
@@ -282,6 +314,7 @@
       const formData = new FormData();
       formData.append('number', row.querySelector('.room-number').value);
       formData.append('room_type', row.querySelector('.room-type').value);
+      formData.append('capacity', row.querySelector('.room-capacity').value);
       formData.append('price', row.querySelector('.room-price').value);
       formData.append('agreed_rent', row.querySelector('.room-agreed-rent').value);
       formData.append('is_available', row.querySelector('.room-status').checked);

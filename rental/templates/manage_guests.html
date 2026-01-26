@@ -258,8 +258,12 @@
           <select name="room_id" id="formRoom" class="input">
             <option value="">No Room Assigned</option>
             {% for room in available_rooms %}
-            <option value="{{ room.id }}">{{ room.number }} - {{ room.get_room_type_display }} (₹{{ room.price }})
+            {% if not room.is_full or room.id == guest.room.id %}
+            <option value="{{ room.id }}" {% if room.id==guest.room.id %}selected{% endif %}>
+              {{ room.number }} - {{ room.get_room_type_display }}
+              ({{ room.current_occupancy }}/{{ room.capacity }} Slots)
             </option>
+            {% endif %}
             {% endfor %}
           </select>
         </div>
@@ -329,11 +333,11 @@
               room_id: '{{ guest.room.id|default:"" }}',
                 check_in_date: '{{ guest.check_in_date|date:"Y-m-d"|default:"" }}',
                   agreed_rent: '{{ guest.room.agreed_rent|default:"7000" }}',
-                    occupation: '{{ guest.occupation|escapejs }}',
+                    occupation: '{{ guest.occupation|default:"student"|escapejs }}',
                       student_college: '{{ guest.student_college|default:""|escapejs }}'
-  },
+  } {% if not forloop.last %}, {% endif %}
   {% endfor %}
-    ];
+  ];
 
   function filterTable() {
     const bValue = document.getElementById('buildingFilter').value;

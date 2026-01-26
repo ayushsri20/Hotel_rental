@@ -97,14 +97,11 @@ def dashboard(request):
             room.current_tenants = tenants
             
             # Determine Capacity
-            capacity_map = {'single': 1, 'double': 2, 'suite': 4}
-            capacity = capacity_map.get(room.room_type.lower(), 2) # Default to 2
-            room.capacity = capacity
-            
+            # Use database capacity and model properties
             count = len(tenants)
             if count == 0:
                 room.occupancy_status = 'empty'
-            elif count < capacity:
+            elif count < room.capacity:
                 room.occupancy_status = 'partial'
             else:
                 room.occupancy_status = 'full'
@@ -229,6 +226,7 @@ def manage_guests(request):
     context = {
         'guests': guests,
         'rooms': rooms,
+        'available_rooms': [r for r in rooms if r.effective_availability or r.guest_set.filter(is_active=True).exists()], # Include partially filled
         'guest_stats': guest_stats,
         'buildings': buildings,  # Dynamic building list for filters
     }
@@ -251,6 +249,7 @@ def update_room(request, room_id):
             room.number = new_number
 
         room.room_type = request.POST.get('room_type', room.room_type)
+        room.capacity = int(request.POST.get('capacity', room.capacity))
         # Support per-room negotiated rent (agreed_rent). If provided, persist it.
         room.price = float(request.POST.get('price', room.price))
         agreed_val = request.POST.get('agreed_rent', None)
@@ -269,6 +268,7 @@ def update_room(request, room_id):
                 'id': room.id,
                 'number': room.number,
                 'room_type': room.room_type,
+                'capacity': room.capacity,
                 'price': str(room.price),
                 'agreed_rent': str(room.agreed_rent) if room.agreed_rent is not None else None,
                 'is_available': room.is_available,
@@ -288,6 +288,7 @@ def add_room(request):
         room_number = request.POST.get('room_number')
         room_type = request.POST.get('room_type')
         price = float(request.POST.get('price', 0))
+        capacity = int(request.POST.get('capacity', 1))
         agreed_val = request.POST.get('agreed_rent', None)
         agreed_rent = None
         if agreed_val is not None and agreed_val != '':
@@ -306,6 +307,7 @@ def add_room(request):
             number=room_number,
             room_type=room_type,
             price=price,
+            capacity=capacity,
             agreed_rent=agreed_rent,
             is_available=True
         )
@@ -317,6 +319,7 @@ def add_room(request):
                 'id': room.id,
                 'number': room.number,
                 'room_type': room.room_type,
+                'capacity': room.capacity,
                     'price': str(room.price),
                     'agreed_rent': str(room.agreed_rent) if room.agreed_rent is not None else None,
                 'is_available': room.is_available,
@@ -395,6 +398,14 @@ def add_guest(request):
 
         # Get room and agreed_rent
         room_id = request.POST.get('room_id') or None
+        if room_id:
+            room = get_object_or_404(Room, id=room_id)
+            if room.is_full:
+                 return JsonResponse({
+                    'success': False,
+                    'message': f'Room {room.number} is already full ({room.capacity}/{room.capacity})'
+                }, status=400)
+
         agreed_rent_str = request.POST.get('agreed_rent', '').strip()
         
         guest = Guest.objects.create(
@@ -421,7 +432,10 @@ def add_guest(request):
         
         # Room status update and agreed_rent handling
         if guest.room:
-            guest.room.is_available = False
+            # Mark as not available only if it reached capacity
+            if guest.room.is_full:
+                guest.room.is_available = False
+            
             # Set agreed_rent on the room if provided (default ₹7000)
             if agreed_rent_str:
                 try:
@@ -566,14 +580,28 @@ def update_guest(request, guest_id):
             # Handle Room Change
             if guest.room_id != new_room_id:
                 # Free old room
-                if guest.room:
-                    guest.room.is_available = True
-                    guest.room.save()
-                # Occy new room
+                old_room = guest.room
+                if old_room:
+                    # After this guest leaves, the room will definitely have a free slot
+                    old_room.is_available = True
+                    old_room.save()
+                
+                # Occupy new room
                 if new_room_id:
                     new_room = Room.objects.get(id=new_room_id)
-                    new_room.is_available = False
-                    new_room.save()
+                    # We check if NEW room is full (excluding the guest themselves if they were already there, 
+                    # but here guest.room_id != new_room_id so they weren't)
+                    if new_room.is_full:
+                         return JsonResponse({
+                            'success': False,
+                            'message': f'Room {new_room.number} is already full ({new_room.capacity}/{new_room.capacity})'
+                        }, status=400)
+                    
+                    # Update new room status if it becomes full after this guest joins
+                    # Note: guest.room_id = new_room_id happens below, so for now current_occupancy doesn't include them
+                    if new_room.current_occupancy + 1 >= new_room.capacity:
+                        new_room.is_available = False
+                        new_room.save()
             
             # Apply updates
             guest.first_name = updates['first_name'] or guest.first_name
@@ -636,6 +664,35 @@ def update_guest(request, guest_id):
             'success': False,
             'message': f'Error updating guest: {str(e)}'
         }, status=400)
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def checkout_guest(request, guest_id):
+    """Mark guest as inactive and free up their room slot."""
+    try:
+        guest = get_object_or_404(Guest, id=guest_id)
+        room = guest.room
+        
+        with transaction.atomic():
+            guest.is_active = False
+            # We don't delete the guest or room, just unassign the room for this inactive record
+            # Or keep the room but since guest is inactive, current_occupancy (which filters by is_active=True) will drop.
+            # To be clear, we usually unassign the room completely during checkout.
+            guest.room = None
+            guest.save()
+            
+            if room:
+                # Once a guest checks out, the room is definitely not full anymore
+                room.is_available = True
+                room.save()
+                
+        return JsonResponse({
+            'success': True,
+            'message': f'Guest {guest.full_name} checked out successfully. Room {room.number if room else "N/A"} now has a free slot.'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)

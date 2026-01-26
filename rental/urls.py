@@ -22,6 +22,7 @@ urlpatterns = [
     path('api/guests/', views.get_guests, name='get_guests'),
     path('api/guest/add/', views.add_guest, name='add_guest'),
     path('api/guest/<int:guest_id>/update/', views.update_guest, name='update_guest'),
+    path('api/guest/<int:guest_id>/checkout/', views.checkout_guest, name='checkout_guest'),
     path('api/guest/<int:guest_id>/delete/', views.delete_guest, name='delete_guest'),
     # Restore original and add new
     path('api/available-rooms/', views.get_available_rooms, name='get_available_rooms'),

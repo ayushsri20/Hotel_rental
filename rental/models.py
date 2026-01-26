@@ -11,13 +11,43 @@ class Room(models.Model):
     room_type = models.CharField(max_length=10, choices=ROOM_TYPES)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     agreed_rent = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Per-room negotiated rent (overrides price when set)")
-    is_available = models.BooleanField(default=True)
+    capacity = models.PositiveSmallIntegerField(default=1, help_text="Maximum number of tenants allowed in this room")
+    is_available = models.BooleanField(default=True, help_text="Manual override for room availability")
     
     class Meta:
         ordering = ['number']
     
     def __str__(self):
         return f"Room {self.number} - {self.get_room_type_display()}"
+
+    @property
+    def current_occupancy(self):
+        """Returns the number of active guests currently in this room"""
+        return self.guest_set.filter(is_active=True).count()
+
+    @property
+    def is_full(self):
+        """Returns True if the room has reached its maximum capacity"""
+        return self.current_occupancy >= self.capacity
+
+    @property
+    def is_partially_filled(self):
+        """Returns True if the room has some guests but still has spare capacity"""
+        occ = self.current_occupancy
+        return 0 < occ < self.capacity
+
+    @property
+    def available_slots(self):
+        """Returns the number of empty slots in the room"""
+        return max(0, self.capacity - self.current_occupancy)
+
+    @property
+    def effective_availability(self):
+        """
+        Returns True if the room is both manually marked available 
+        AND has not reached physical capacity.
+        """
+        return self.is_available and not self.is_full
 
 class Booking(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
