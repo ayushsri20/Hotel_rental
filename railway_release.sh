@@ -23,6 +23,6 @@ else:
 "
 
 echo "=== Loading initial room data ==="
-python3 manage.py load_rooms
+python3 load_production_data.py || echo "Warning: Data loading failed, continuing..."
 
 echo "=== Release phase complete ==="
