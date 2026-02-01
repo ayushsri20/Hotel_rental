@@ -22,4 +22,7 @@ else:
     print('✓ Superuser already exists')
 "
 
+echo "=== Loading initial room data ==="
+python3 manage.py load_rooms
+
 echo "=== Release phase complete ==="
