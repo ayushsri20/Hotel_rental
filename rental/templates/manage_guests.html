@@ -141,18 +141,14 @@
 
 <div class="card-premium filter-container glass-panel">
   <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-    <div style="position: relative;">
-      <select id="buildingFilter" onchange="filterTable()" class="input" style="padding: 0.5rem 2rem 0.5rem 1rem;">
-        <option value="all">All Clusters</option>
-        {% for building in buildings %}
-        <option value="{{ building.prefix }}">{{ building.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div style="position: relative;">
-      <input type="text" id="searchInput" onkeyup="filterTable()" class="input" placeholder="Search by name or UID..."
-        style="padding: 0.5rem 1rem; min-width: 250px;">
-    </div>
+    <select id="buildingFilter" onchange="filterTable()" class="input" style="width: auto;">
+      <option value="all">All Clusters</option>
+      {% for building in buildings %}
+      <option value="{{ building.prefix }}">{{ building.name }}</option>
+      {% endfor %}
+    </select>
+    <input type="text" id="searchInput" onkeyup="filterTable()" class="input" placeholder="Search by name or UID..."
+      style="min-width: 250px;">
   </div>
   <div class="badge-premium badge-success">{{ guests|length }} Active Residents</div>
 </div>
@@ -167,11 +163,10 @@
         <h3 class="font-luxury" style="font-size: 1.25rem;">{{ guest.full_name }}</h3>
         <p style="color: var(--text-muted); font-size: 0.75rem;">Resident UID: {{ guest.id }}</p>
       </div>
-      {% if guest.is_active %}
-      <span class="badge-premium badge-success" style="margin-left: auto;">ACTIVE</span>
-      {% else %}
-      <span class="badge-premium badge-warning" style="margin-left: auto;">ARCHIVED</span>
-      {% endif %}
+      <span class="badge-premium {% if guest.is_active %}badge-success{% else %}badge-warning{% endif %}"
+        style="margin-left: auto;">
+        {% if guest.is_active %}ACTIVE{% else %}ARCHIVED{% endif %}
+      </span>
     </div>
 
     <div class="guest-info-grid">
@@ -257,15 +252,45 @@
           <label>Assign Room</label>
           <select name="room_id" id="formRoom" class="input">
             <option value="">No Room Assigned</option>
-            {% for room in available_rooms %}
-            {% if not room.is_full or room.id == guest.room.id %}
-            <option value="{{ room.id }}" {% if room.id==guest.room.id %}selected{% endif %}>
-              {{ room.number }} - {{ room.get_room_type_display }}
-              ({{ room.current_occupancy }}/{{ room.capacity }} Slots)
-            </option>
+
+            <!-- Partially Filled Rooms (1/2) - Priority for roommate pairing -->
+            <optgroup label="🟡 Shared Rooms (1/2 Slots) - Roommate Available">
+              {% for room in available_rooms %}
+              {% if room.current_occupancy == 1 and room.capacity == 2 %}
+              {% with tenants=room.get_active_tenants %}
+              <option value="{{ room.id }}" {% if room.id==guest.room.id %}selected{% endif %}>
+                {{ room.number }} - {{ room.get_room_type_display }} (1/2)
+                {% if tenants %}with {{ tenants.first.full_name }}{% endif %}
+              </option>
+              {% endwith %}
+              {% endif %}
+              {% endfor %}
+            </optgroup>
+
+            <!-- Empty Rooms (0/2 or 0/1) -->
+            <optgroup label="🟢 Empty Rooms - No Current Tenants">
+              {% for room in available_rooms %}
+              {% if room.current_occupancy == 0 %}
+              <option value="{{ room.id }}" {% if room.id==guest.room.id %}selected{% endif %}>
+                {{ room.number }} - {{ room.get_room_type_display }} (0/{{ room.capacity }})
+              </option>
+              {% endif %}
+              {% endfor %}
+            </optgroup>
+
+            <!-- Full Rooms (only shown if editing current tenant) -->
+            {% if guest.room and guest.room.is_full %}
+            <optgroup label="🔴 Full Rooms - Current Assignment Only">
+              <option value="{{ guest.room.id }}" selected>
+                {{ guest.room.number }} - {{ guest.room.get_room_type_display }} ({{ guest.room.current_occupancy }}/{{
+                guest.room.capacity }}) - Current Room
+              </option>
+            </optgroup>
             {% endif %}
-            {% endfor %}
           </select>
+          <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
+            💡 Partially filled rooms shown first for better roommate pairing
+          </div>
         </div>
         <div class="form-group">
           <label>Check-in Date</label>
@@ -273,8 +298,7 @@
         </div>
         <div class="form-group">
           <label>Agreed Rent (₹)</label>
-          <input type="number" name="agreed_rent" id="formAgreedRent" class="input" value="7000" placeholder="7000">
-          <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">Default: ₹7000/month</div>
+          <input type="number" name="agreed_rent" id="formAgreedRent" class="input" value="7000">
         </div>
       </div>
 
@@ -297,18 +321,6 @@
         </div>
       </div>
 
-      <div
-        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-        <div class="form-group">
-          <label>Govt ID Photo</label>
-          <input type="file" name="govt_id_photo" class="input">
-        </div>
-        <div class="form-group">
-          <label>College ID Photo</label>
-          <input type="file" name="college_id_photo" class="input">
-        </div>
-      </div>
-
       <div style="display: flex; gap: 1rem; margin-top: 1rem;">
         <button type="submit" id="submitBtn" class="btn-premium btn-premium-primary" style="flex: 2;">Complete
           Registration</button>
@@ -322,6 +334,7 @@
 
 {% block scripts %}
 <script>
+  const csrftoken = '{{ csrf_token }}';
   const guestsData = [
     {% for guest in guests %}
   {
@@ -343,7 +356,6 @@
     const bValue = document.getElementById('buildingFilter').value;
     const sValue = document.getElementById('searchInput').value.toLowerCase();
     const cards = document.querySelectorAll('.guest-card');
-
     cards.forEach(card => {
       const matchesBuilding = bValue === 'all' || card.dataset.building === bValue;
       const matchesSearch = card.dataset.name.includes(sValue) || card.dataset.uid.includes(sValue);
@@ -382,10 +394,7 @@
     document.getElementById('collegeField').style.display = occ === 'student' ? 'block' : 'none';
   }
 
-  function closeModal(e) {
-    if (e.target.id === 'guestModal') e.target.style.display = 'none';
-  }
-
+  function closeModal(e) { if (e.target.id === 'guestModal') e.target.style.display = 'none'; }
   function editGuest(id) { openModal('edit', id); }
 
   document.getElementById('guestForm').onsubmit = async (e) => {
@@ -393,7 +402,6 @@
     const guestId = document.getElementById('formGuestId').value;
     const url = guestId ? `/api/guest/${guestId}/update/` : '{% url "add_guest" %}';
     const formData = new FormData(e.target);
-
     try {
       const res = await fetch(url, { method: 'POST', body: formData });
       const data = await res.json();
@@ -403,10 +411,9 @@
   };
 
   async function checkoutGuest(id) {
-    if (!confirm('End tenancy for this resident? The room will become available immediately.')) return;
+    if (!confirm('End tenancy for this resident?')) return;
     const formData = new FormData();
-    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
+    formData.append('csrfmiddlewaretoken', csrftoken);
     try {
       const res = await fetch(`/api/guest/${id}/checkout/`, { method: 'POST', body: formData });
       const data = await res.json();
@@ -415,14 +422,10 @@
     } catch (err) { alert('System Error: ' + err.message); }
   }
 
-  // Handle room_id from URL
   window.onload = () => {
     const params = new URLSearchParams(window.location.search);
     const roomId = params.get('room_id');
-    if (roomId) {
-      openModal('add');
-      document.getElementById('formRoom').value = roomId;
-    }
+    if (roomId) { openModal('add'); document.getElementById('formRoom').value = roomId; }
   };
 </script>
 {% endblock %}

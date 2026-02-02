@@ -121,13 +121,15 @@ def dashboard(request):
                 return 'M1'
             elif original_name == 'M1': # Handle direct naming if changed in db
                 return 'M1'
-            else:
+            elif len(original_name) == 1:
                 try:
                     # Convert B->1, C->2, D->3, etc.
                     val = ord(original_name) - ord('B') + 1
                     return str(val) if val > 0 else original_name
                 except:
                     return original_name
+            else:
+                return original_name
         
         # Apply mapping to building names
         mapped_buildings = [(map_building_name(name), rooms) for name, rooms in sorted_buildings]
@@ -172,9 +174,14 @@ def manage_buildings(request):
     def map_building_name(original_name):
         if original_name == 'A':
             return 'M1'
+        elif len(original_name) == 1:
+            try:
+                # Convert B->1, C->2, D->3, etc.
+                return str(ord(original_name) - ord('B') + 1)
+            except:
+                return original_name
         else:
-            # Convert B->1, C->2, D->3, etc.
-            return str(ord(original_name) - ord('B') + 1)
+            return original_name
     
     # Apply mapping to building names
     mapped_buildings = [(map_building_name(name), rooms) for name, rooms in sorted_buildings]
@@ -185,6 +192,69 @@ def manage_buildings(request):
     }
     
     return render(request, 'manage_buildings.html', context)
+
+def get_available_rooms_for_allocation(exclude_guest_id=None):
+    """
+    Returns rooms available for tenant allocation with intelligent sorting.
+    
+    Filters:
+    - is_available = True (manual override)
+    - current_occupancy < MAX_CAPACITY (2)
+    - Excludes the current guest's room if editing
+    
+    Sorting:
+    - Partially filled rooms first (better for roommate pairing)
+    - Then empty rooms
+    - Ordered by room number within each group
+    
+    Args:
+        exclude_guest_id: If provided, always include the guest's current room
+    
+    Returns:
+        QuerySet of available rooms
+    """
+    from django.db.models import Count, Case, When, IntegerField
+    
+    # Base filter: manually available and not full
+    available_rooms = Room.objects.filter(
+        is_available=True
+    ).annotate(
+        active_tenant_count=Count(
+            'guest',
+            filter=Q(guest__is_active=True)
+        )
+    ).filter(
+        active_tenant_count__lt=Room.MAX_CAPACITY
+    )
+    
+    # If editing a guest, include their current room even if full
+    if exclude_guest_id:
+        try:
+            guest = Guest.objects.get(id=exclude_guest_id)
+            if guest.room:
+                available_rooms = Room.objects.filter(
+                    Q(id__in=available_rooms.values_list('id', flat=True)) |
+                    Q(id=guest.room.id)
+                ).annotate(
+                    active_tenant_count=Count(
+                        'guest',
+                        filter=Q(guest__is_active=True)
+                    )
+                )
+        except Guest.DoesNotExist:
+            pass
+    
+    # Sort: partially filled first, then empty, then by room number
+    available_rooms = available_rooms.annotate(
+        sort_priority=Case(
+            When(active_tenant_count=1, then=0),  # Partially filled (priority)
+            When(active_tenant_count=0, then=1),  # Empty
+            default=2,
+            output_field=IntegerField()
+        )
+    ).order_by('sort_priority', 'number')
+    
+    return available_rooms
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
@@ -226,7 +296,7 @@ def manage_guests(request):
     context = {
         'guests': guests,
         'rooms': rooms,
-        'available_rooms': [r for r in rooms if r.effective_availability or r.guest_set.filter(is_active=True).exists()], # Include partially filled
+        'available_rooms': get_available_rooms_for_allocation(),  # Use enhanced filtering
         'guest_stats': guest_stats,
         'buildings': buildings,  # Dynamic building list for filters
     }
@@ -892,12 +962,25 @@ def manage_electricity_bills(request):
     rooms = Room.objects.all().order_by('number')
     bills = ElectricityBill.objects.select_related('room', 'guest').order_by('-month')
     
-    # Get bill status summary
+    # Get bill status summary with safe calculations
+    pending_bills = bills.filter(bill_status__in=['pending', 'overdue'])
+    total_pending = Decimal('0.00')
+    try:
+        for bill in pending_bills:
+            try:
+                total_pending += bill.remaining_amount()
+            except (AttributeError, TypeError):
+                # Skip bills with invalid data
+                continue
+    except Exception as e:
+        logger.error(f"Error calculating pending bills: {e}")
+        total_pending = Decimal('0.00')
+    
     bill_stats = {
         'pending': bills.filter(bill_status='pending').count(),
         'paid': bills.filter(bill_status='paid').count(),
         'overdue': bills.filter(bill_status='overdue').count(),
-        'total_pending_amount': sum(b.remaining_amount() for b in bills.filter(bill_status__in=['pending', 'overdue'])),
+        'total_pending_amount': total_pending,
     }
     
     context = {

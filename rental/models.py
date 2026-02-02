@@ -1,7 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 class Room(models.Model):
+    """Room model with strict 2-tenant maximum capacity"""
+    
+    # System-wide maximum capacity per room
+    MAX_CAPACITY = 2
+    
     ROOM_TYPES = [
         ('single', 'Single'),
         ('double', 'Double'),
@@ -11,7 +17,7 @@ class Room(models.Model):
     room_type = models.CharField(max_length=10, choices=ROOM_TYPES)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     agreed_rent = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Per-room negotiated rent (overrides price when set)")
-    capacity = models.PositiveSmallIntegerField(default=1, help_text="Maximum number of tenants allowed in this room")
+    capacity = models.PositiveSmallIntegerField(default=2, help_text="Maximum number of tenants allowed in this room (max 2)")
     is_available = models.BooleanField(default=True, help_text="Manual override for room availability")
     
     class Meta:
@@ -48,6 +54,54 @@ class Room(models.Model):
         AND has not reached physical capacity.
         """
         return self.is_available and not self.is_full
+    
+    def clean(self):
+        """Validate room capacity does not exceed system maximum"""
+        super().clean()
+        if self.capacity > self.MAX_CAPACITY:
+            raise ValidationError({
+                'capacity': f'Room capacity cannot exceed {self.MAX_CAPACITY} tenants.'
+            })
+        if self.capacity < 1:
+            raise ValidationError({
+                'capacity': 'Room capacity must be at least 1.'
+            })
+    
+    def save(self, *args, **kwargs):
+        """Enforce capacity limit on save"""
+        # Cap capacity at MAX_CAPACITY
+        if self.capacity > self.MAX_CAPACITY:
+            self.capacity = self.MAX_CAPACITY
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
+    def get_active_tenants(self):
+        """Returns queryset of active guests currently in this room"""
+        return self.guest_set.filter(is_active=True).select_related('room')
+    
+    def can_accommodate(self, count=1):
+        """
+        Check if room can accommodate additional tenants.
+        
+        Args:
+            count: Number of tenants to accommodate (default: 1)
+        
+        Returns:
+            bool: True if room has enough available slots
+        """
+        return self.available_slots >= count
+    
+    def get_occupancy_status(self):
+        """Returns human-readable occupancy status"""
+        occ = self.current_occupancy
+        cap = self.capacity
+        
+        if occ == 0:
+            return f"Empty (0/{cap})"
+        elif occ < cap:
+            return f"Partial ({occ}/{cap})"
+        else:
+            return f"Full ({cap}/{cap})"
 
 class Booking(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
@@ -106,6 +160,37 @@ class Guest(models.Model):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def roommate(self):
+        """Returns the co-tenant if this guest shares a room, None otherwise"""
+        if not self.room or not self.is_active:
+            return None
+        
+        # Query for other active tenants in the same room
+        roommates = Guest.objects.filter(
+            room=self.room,
+            is_active=True
+        ).exclude(id=self.id)
+        
+        return roommates.first() if roommates.exists() else None
+    
+    def clean(self):
+        """Validate guest assignment to room"""
+        super().clean()
+        
+        # If assigning to a room, check capacity
+        if self.room and self.is_active:
+            # Get current occupancy excluding this guest (in case of update)
+            current_occupancy = self.room.guest_set.filter(
+                is_active=True
+            ).exclude(id=self.id).count()
+            
+            # Check if room can accommodate this guest
+            if current_occupancy >= self.room.capacity:
+                raise ValidationError({
+                    'room': f'Room {self.room.number} is full ({current_occupancy}/{self.room.capacity} tenants). Cannot assign more guests.'
+                })
 
 
 class MonthlyPayment(models.Model):
