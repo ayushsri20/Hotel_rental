@@ -81,13 +81,10 @@
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
       <div>
         <h3 class="font-luxury" style="font-size: 1.25rem; color: var(--primary);">Room {{ data.room.number }}</h3>
-        <p style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">{% if
-          data.tenant %}{{ data.tenant.full_name }}{% else %}Vacant{% endif %}</p>
-      </div>
+        <p style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">{% if data.tenant %}{{ data.tenant.full_name }}{% else %}Vacant{% endif %}</p>
       <div style="text-align: right;">
         <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">Current Reading</div>
-        <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{ data.latest_reading|default:"0"
-          }} <span style="font-size: 0.65rem; font-weight: 600;">units</span></div>
+        <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{ data.latest_reading|default:"0" }} <span style="font-size: 0.65rem; font-weight: 600;">units</span></div>
       </div>
     </div>
 
@@ -102,7 +99,7 @@
       {% for bill in data.recent_bills %}
       <div class="bill-row">
         <div>{{ bill.month|date:"M Y" }}</div>
-        <div style="font-weight: 800;">₹{{ bill.amount }}</div>
+        <div style="font-weight: 800;">₹{{ bill.bill_amount }}</div>
         <div style="color: var(--text-muted);">{{ bill.units_consumed }}u</div>
       </div>
       {% empty %}

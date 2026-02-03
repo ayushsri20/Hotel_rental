@@ -960,32 +960,48 @@ def manage_payments(request):
 def manage_electricity_bills(request):
     """Electricity bill tracking and management"""
     rooms = Room.objects.all().order_by('number')
-    bills = ElectricityBill.objects.select_related('room', 'guest').order_by('-month')
     
-    # Get bill status summary with safe calculations
-    pending_bills = bills.filter(bill_status__in=['pending', 'overdue'])
-    total_pending = Decimal('0.00')
-    try:
-        for bill in pending_bills:
-            try:
-                total_pending += bill.remaining_amount()
-            except (AttributeError, TypeError):
-                # Skip bills with invalid data
-                continue
-    except Exception as e:
-        logger.error(f"Error calculating pending bills: {e}")
-        total_pending = Decimal('0.00')
+    # Build room data list expected by template
+    bill_stats = []
     
-    bill_stats = {
-        'pending': bills.filter(bill_status='pending').count(),
-        'paid': bills.filter(bill_status='paid').count(),
-        'overdue': bills.filter(bill_status='overdue').count(),
-        'total_pending_amount': total_pending,
-    }
+    for room in rooms:
+        # Get active tenant for this room
+        tenant = Guest.objects.filter(room=room, is_active=True).first()
+        
+        # Get all bills for this room
+        room_bills = ElectricityBill.objects.filter(room=room).order_by('-month')
+        
+        # Get latest reading (ending_reading from most recent bill)
+        latest_reading = 13  # Default
+        if room_bills.exists():
+            latest_bill = room_bills.first()
+            latest_reading = latest_bill.ending_reading if latest_bill.ending_reading else 13
+        
+        # Calculate total billed amount for this room
+        total_billed = Decimal('0.00')
+        try:
+            for bill in room_bills:
+                try:
+                    total_billed += Decimal(str(bill.bill_amount)) if bill.bill_amount else Decimal('0.00')
+                except (AttributeError, TypeError, ValueError):
+                    continue
+        except Exception as e:
+            logger.error(f"Error calculating total billed for room {room.number}: {e}")
+        
+        # Get recent bills (last 5)
+        recent_bills = room_bills[:5]
+        
+        # Add room data to list
+        bill_stats.append({
+            'room': room,
+            'tenant': tenant,
+            'latest_reading': latest_reading,
+            'total_billed': total_billed,
+            'recent_bills': recent_bills,
+        })
     
     context = {
         'rooms': rooms,
-        'bills': bills[:100],
         'bill_stats': bill_stats,
     }
     
