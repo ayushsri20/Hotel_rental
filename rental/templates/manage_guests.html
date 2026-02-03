@@ -258,7 +258,7 @@
               {% for room in available_rooms %}
               {% if room.current_occupancy == 1 and room.capacity == 2 %}
               {% with tenants=room.get_active_tenants %}
-              <option value="{{ room.id }}" {% if room.id==guest.room.id %}selected{% endif %}>
+              <option value="{{ room.id }}">
                 {{ room.number }} - {{ room.get_room_type_display }} (1/2)
                 {% if tenants %}with {{ tenants.first.full_name }}{% endif %}
               </option>
@@ -271,22 +271,14 @@
             <optgroup label="🟢 Empty Rooms - No Current Tenants">
               {% for room in available_rooms %}
               {% if room.current_occupancy == 0 %}
-              <option value="{{ room.id }}" {% if room.id==guest.room.id %}selected{% endif %}>
+              <option value="{{ room.id }}">
                 {{ room.number }} - {{ room.get_room_type_display }} (0/{{ room.capacity }})
               </option>
               {% endif %}
               {% endfor %}
             </optgroup>
 
-            <!-- Full Rooms (only shown if editing current tenant) -->
-            {% if guest.room and guest.room.is_full %}
-            <optgroup label="🔴 Full Rooms - Current Assignment Only">
-              <option value="{{ guest.room.id }}" selected>
-                {{ guest.room.number }} - {{ guest.room.get_room_type_display }} ({{ guest.room.current_occupancy }}/{{
-                guest.room.capacity }}) - Current Room
-              </option>
-            </optgroup>
-            {% endif %}
+            <!-- Full Rooms section removed - handled by JavaScript when editing -->
           </select>
           <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">
             💡 Partially filled rooms shown first for better roommate pairing
