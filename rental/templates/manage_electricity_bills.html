@@ -203,7 +203,7 @@
     style="max-width: 900px; padding: 2.5rem;">
     <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 1.5rem;">⚡ Bulk Meter Reading Entry</h2>
 
-    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: end;">
       <div class="form-group" style="flex: 1; margin: 0;">
         <label
           style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Billing
@@ -213,7 +213,20 @@
       <div class="form-group" style="flex: 1; margin: 0;">
         <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rate
           (₹/unit)</label>
-        <input type="number" id="bulkRate" class="input" value="13" step="0.5" required>
+        <input type="number" id="bulkRate" class="input" value="13" step="0.5" required
+          onchange="recalculateAllPrices()">
+      </div>
+      <div class="form-group" style="flex: 1; margin: 0;">
+        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Filter
+          by Building</label>
+        <select id="buildingFilter" class="input" onchange="filterByBuilding()">
+          <option value="">All Buildings</option>
+          {% for data in bill_stats %}
+          {% with building=data.room.number|slice:":2" %}
+          <option value="{{ building }}">{{ building }}</option>
+          {% endwith %}
+          {% endfor %}
+        </select>
       </div>
     </div>
 
@@ -237,12 +250,15 @@
             <th
               style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
               Units</th>
+            <th
+              style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+              Price</th>
           </tr>
         </thead>
         <tbody id="bulkTableBody">
           {% for data in bill_stats %}
           <tr style="border-bottom: 1px solid var(--border-subtle);" data-room-id="{{ data.room.id }}"
-            data-last-reading="{{ data.latest_reading }}">
+            data-last-reading="{{ data.latest_reading }}" data-room-number="{{ data.room.number }}">
             <td style="padding: 0.75rem; font-weight: 700;">{{ data.room.number }}</td>
             <td style="padding: 0.75rem; font-size: 0.875rem;">
               {% if data.tenant %}{{ data.tenant.full_name }}{% else %}<span
@@ -257,6 +273,7 @@
             </td>
             <td style="padding: 0.75rem; text-align: right; font-weight: 700; color: var(--primary);"
               class="units-cell">-</td>
+            <td style="padding: 0.75rem; text-align: right; font-weight: 700; color: #10b981;" class="price-cell">-</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -368,36 +385,79 @@
     const lastReading = parseFloat(row.dataset.lastReading);
     const newReading = parseFloat(input.value);
     const unitsCell = row.querySelector('.units-cell');
+    const priceCell = row.querySelector('.price-cell');
+    const rate = parseFloat(document.getElementById('bulkRate').value) || 13;
 
     if (newReading && newReading >= lastReading) {
       const units = newReading - lastReading;
+      const price = units * rate;
+
       unitsCell.textContent = units.toFixed(2);
       unitsCell.style.color = 'var(--primary)';
+
+      priceCell.textContent = '₹' + price.toFixed(2);
+      priceCell.style.color = '#10b981';
+
       updateBulkSummary();
     } else {
       unitsCell.textContent = '-';
       unitsCell.style.color = 'var(--text-muted)';
+      priceCell.textContent = '-';
+      priceCell.style.color = 'var(--text-muted)';
     }
+  }
+
+  function recalculateAllPrices() {
+    // Recalculate all prices when rate changes
+    const inputs = document.querySelectorAll('.bulk-reading-input');
+    inputs.forEach(input => {
+      if (input.value && parseFloat(input.value) > 0) {
+        calculateUnits(input);
+      }
+    });
+  }
+
+  function filterByBuilding() {
+    const selectedBuilding = document.getElementById('buildingFilter').value;
+    const rows = document.querySelectorAll('#bulkTableBody tr');
+
+    rows.forEach(row => {
+      const roomNumber = row.dataset.roomNumber;
+      if (!selectedBuilding || roomNumber.startsWith(selectedBuilding)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    updateBulkSummary();
   }
 
   function updateBulkSummary() {
     const inputs = document.querySelectorAll('.bulk-reading-input');
     let count = 0;
     let totalUnits = 0;
+    let totalAmount = 0;
 
     inputs.forEach(input => {
+      const row = input.closest('tr');
+      // Skip hidden rows (filtered out)
+      if (row.style.display === 'none') return;
+
       if (input.value && parseFloat(input.value) > 0) {
         count++;
-        const row = input.closest('tr');
         const units = parseFloat(row.querySelector('.units-cell').textContent);
         if (!isNaN(units)) {
           totalUnits += units;
+          const priceText = row.querySelector('.price-cell').textContent.replace('₹', '');
+          const price = parseFloat(priceText);
+          if (!isNaN(price)) {
+            totalAmount += price;
+          }
         }
       }
     });
 
-    const rate = parseFloat(document.getElementById('bulkRate').value) || 13;
-    const totalAmount = totalUnits * rate;
     const summary = document.getElementById('bulkSummary');
 
     if (count > 0) {
