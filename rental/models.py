@@ -221,7 +221,28 @@ class MonthlyPayment(models.Model):
         return f"{self.room.number} - {self.month.strftime('%B %Y')} - {self.payment_status}"
     
     def remaining_amount(self):
+        """Calculate remaining rent amount (without electricity)"""
         return self.rent_amount - self.paid_amount
+    
+    def get_electricity_amount(self):
+        """Get electricity bill amount for this month"""
+        from decimal import Decimal
+        try:
+            # Get electricity bill for this room and month
+            bill = self.room.electricity_bills.filter(month=self.month).first()
+            if bill:
+                return Decimal(str(bill.bill_amount))
+            return Decimal('0.00')
+        except Exception:
+            return Decimal('0.00')
+    
+    def get_total_amount_due(self):
+        """Calculate total amount due including rent and electricity"""
+        return self.rent_amount + self.get_electricity_amount()
+    
+    def get_total_remaining(self):
+        """Calculate total remaining amount including electricity"""
+        return self.get_total_amount_due() - self.paid_amount
 
 
 class PaymentRecord(models.Model):

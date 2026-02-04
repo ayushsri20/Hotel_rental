@@ -113,22 +113,34 @@
     </div>
 
     <div style="padding: 1.5rem;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-        <div style="text-align: center; flex: 1;">
-          <div style="font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-            Expected</div>
-          <div style="font-weight: 800; color: var(--text-main);">₹{{ payment.rent_amount }}</div>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem;">
+          <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600;">RENT</div>
+          <div style="font-weight: 700; color: var(--text-main);">₹{{ payment.rent_amount }}</div>
         </div>
+        {% if payment.get_electricity_amount > 0 %}
         <div
-          style="text-align: center; flex: 1; border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle);">
-          <div style="font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Paid
-          </div>
-          <div style="font-weight: 800; color: var(--success);">₹{{ payment.paid_amount }}</div>
+          style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(245, 158, 11, 0.1);">
+          <div style="color: var(--text-muted); font-size: 0.75rem; font-weight: 600;">⚡ ELECTRICITY</div>
+          <div style="font-weight: 700; color: #f59e0b;">₹{{ payment.get_electricity_amount }}</div>
         </div>
-        <div style="text-align: center; flex: 1;">
-          <div style="font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-            Pending</div>
-          <div style="font-weight: 800; color: var(--danger);">₹{{ payment.remaining_amount }}</div>
+        {% endif %}
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-top: 2px solid var(--border-subtle); background: var(--bg-main);">
+          <div style="color: var(--text-main); font-size: 0.875rem; font-weight: 800;">TOTAL DUE</div>
+          <div style="font-weight: 900; color: var(--primary); font-size: 1.125rem;">₹{{ payment.get_total_amount_due }}
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.5rem;">
+          <span style="color: var(--text-muted); font-weight: 600;">Paid</span>
+          <span style="font-weight: 800; color: #10b981;">₹{{ payment.paid_amount }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem;">
+          <span style="color: var(--text-muted); font-weight: 600;">Remaining</span>
+          <span style="font-weight: 800; color: #ef4444;">₹{{ payment.get_total_remaining }}</span>
         </div>
       </div>
 
