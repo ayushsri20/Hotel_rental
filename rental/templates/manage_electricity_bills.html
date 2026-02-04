@@ -110,9 +110,14 @@
         </p>
       </div>
       <div style="text-align: right;">
-        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">Current Reading</div>
-        <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{ data.latest_reading|default:"0"
-          }} <span style="font-size: 0.65rem; font-weight: 600;">units</span></div>
+        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">Latest Reading</div>
+        <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{
+          data.latest_reading|floatformat:0 }}</div>
+        {% if data.latest_units %}
+        <div style="font-size: 0.75rem; color: var(--success); font-weight: 600; margin-top: 0.25rem;">
+          {{ data.latest_units|floatformat:0 }} units used
+        </div>
+        {% endif %}
       </div>
     </div>
 
@@ -144,7 +149,11 @@
 <div id="bulkBillModal" class="modal-overlay">
   <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()"
     style="max-width: 900px; padding: 2.5rem;">
-    <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 1.5rem;">⚡ Bulk Meter Reading Entry</h2>
+    <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 0.5rem;">⚡ Generate Monthly Bills</h2>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+      Enter new meter readings for active rooms. <strong>Units = New Reading - Last Reading</strong> • <strong>Price =
+        Units × Rate</strong>
+    </p>
 
     <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: end;">
       <div class="form-group" style="flex: 1; margin: 0;">
@@ -191,10 +200,10 @@
               New Reading</th>
             <th
               style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-              Units</th>
+              Units Used</th>
             <th
               style="padding: 0.75rem; text-align: right; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-              Price</th>
+              Bill Amount</th>
           </tr>
         </thead>
         <tbody id="bulkTableBody">

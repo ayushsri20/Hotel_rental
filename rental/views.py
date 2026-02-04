@@ -973,9 +973,11 @@ def manage_electricity_bills(request):
         
         # Get latest reading (ending_reading from most recent bill)
         latest_reading = 13  # Default
+        latest_units = 0  # Units consumed in latest bill
         if room_bills.exists():
             latest_bill = room_bills.first()
             latest_reading = latest_bill.ending_reading if latest_bill.ending_reading else 13
+            latest_units = latest_bill.units_consumed if latest_bill.units_consumed else 0
         
         # Calculate total billed amount for this room
         total_billed = Decimal('0.00')
@@ -996,6 +998,7 @@ def manage_electricity_bills(request):
             'room': room,
             'tenant': tenant,
             'latest_reading': latest_reading,
+            'latest_units': latest_units,
             'total_billed': total_billed,
             'recent_bills': recent_bills,
         })
