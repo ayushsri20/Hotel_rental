@@ -1208,13 +1208,18 @@ def create_electricity_bill(request):
         except ValueError as e:
             return JsonResponse({'success': False, 'message': f'Error parsing month: {str(e)}'}, status=400)
 
-        # Parse due date if provided
+        # Parse due date if provided, otherwise default to last day of billing month
         due_date = None
         if due_date_str:
             try:
                 due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
             except ValueError:
                 return JsonResponse({'success': False, 'message': 'Invalid due date format. Use YYYY-MM-DD'}, status=400)
+        else:
+            # Default to last day of billing month
+            from calendar import monthrange
+            last_day = monthrange(month.year, month.month)[1]
+            due_date = month.replace(day=last_day)
 
         units_consumed = ending_reading - starting_reading
         bill_amount = units_consumed * rate_per_unit

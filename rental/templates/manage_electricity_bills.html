@@ -81,7 +81,14 @@
     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
       <div>
         <h3 class="font-luxury" style="font-size: 1.25rem; color: var(--primary);">Room {{ data.room.number }}</h3>
-        <p style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">{% if data.tenant %}{{ data.tenant.full_name }}{% else %}Vacant{% endif %}</p>
+        <p style="font-size: 0.875rem; color: var(--text-main); font-weight: 600; margin-top: 0.25rem;">
+          {% if data.tenant %}
+          {{ data.tenant.full_name }}
+          {% else %}
+          <span style="color: var(--text-muted); font-style: italic;">Vacant</span>
+          {% endif %}
+        </p>
+      </div>
       <div style="text-align: right;">
         <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">Current Reading</div>
         <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{ data.latest_reading|default:"0" }} <span style="font-size: 0.65rem; font-weight: 600;">units</span></div>
@@ -149,7 +156,7 @@
         <div class="form-group">
           <label
             style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Month</label>
-          <input type="month" name="billing_month" class="input" required value="{% now 'Y-m' %}">
+          <input type="month" name="month" class="input" required value="{% now 'Y-m' %}">
         </div>
         <div class="form-group">
           <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rate
