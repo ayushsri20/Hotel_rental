@@ -1272,6 +1272,140 @@ def create_electricity_bill(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 @require_http_methods(["POST"])
+def bulk_create_electricity_bills(request):
+    """Create electricity bills for multiple rooms at once"""
+    try:
+        import json
+        from calendar import monthrange
+        
+        month_str = request.POST.get('month')
+        rate_per_unit_str = request.POST.get('rate_per_unit')
+        readings_json = request.POST.get('readings')
+
+        # Validate required fields
+        if not month_str:
+            return JsonResponse({'success': False, 'message': 'Month is required'}, status=400)
+        if not readings_json:
+            return JsonResponse({'success': False, 'message': 'No readings provided'}, status=400)
+
+        # Parse rate
+        try:
+            rate_per_unit = float(rate_per_unit_str or 13)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'Invalid rate per unit'}, status=400)
+
+        # Parse month
+        try:
+            if len(month_str) == 10 and month_str[4] == '-' and month_str[7] == '-':
+                month = datetime.strptime(month_str, '%Y-%m-%d').date()
+            elif len(month_str) == 7 and month_str[4] == '-':
+                month = datetime.strptime(month_str, '%Y-%m').date()
+            else:
+                return JsonResponse({'success': False, 'message': f'Invalid month format: {month_str}'}, status=400)
+        except ValueError as e:
+            return JsonResponse({'success': False, 'message': f'Error parsing month: {str(e)}'}, status=400)
+
+        # Calculate due date (last day of month)
+        last_day = monthrange(month.year, month.month)[1]
+        due_date = month.replace(day=last_day)
+
+        # Parse readings JSON
+        try:
+            readings = json.loads(readings_json)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'Invalid readings data'}, status=400)
+
+        created_count = 0
+        updated_count = 0
+        errors = []
+
+        # Process each reading
+        for reading_data in readings:
+            try:
+                room_id = reading_data.get('room_id')
+                starting_reading = float(reading_data.get('starting_reading', 13))
+                ending_reading = float(reading_data.get('ending_reading'))
+
+                # Validate
+                if not room_id:
+                    errors.append({'room': 'Unknown', 'error': 'Room ID missing'})
+                    continue
+
+                if ending_reading < starting_reading:
+                    errors.append({'room': room_id, 'error': 'Ending reading less than starting'})
+                    continue
+
+                # Get room
+                try:
+                    room = Room.objects.get(id=room_id)
+                except Room.DoesNotExist:
+                    errors.append({'room': room_id, 'error': 'Room not found'})
+                    continue
+
+                # Calculate bill
+                units_consumed = ending_reading - starting_reading
+                bill_amount = units_consumed * rate_per_unit
+
+                # Get active guest
+                guest = Guest.objects.filter(room=room, is_active=True).first()
+
+                # Create or update bill
+                bill, created = ElectricityBill.objects.get_or_create(
+                    room=room,
+                    month=month,
+                    defaults={
+                        'guest': guest,
+                        'starting_reading': starting_reading,
+                        'ending_reading': ending_reading,
+                        'units_consumed': units_consumed,
+                        'rate_per_unit': rate_per_unit,
+                        'bill_amount': bill_amount,
+                        'due_date': due_date,
+                    }
+                )
+
+                if created:
+                    created_count += 1
+                else:
+                    # Update existing bill
+                    bill.guest = guest
+                    bill.starting_reading = starting_reading
+                    bill.ending_reading = ending_reading
+                    bill.units_consumed = units_consumed
+                    bill.rate_per_unit = rate_per_unit
+                    bill.bill_amount = bill_amount
+                    bill.due_date = due_date
+                    bill.save()
+                    updated_count += 1
+
+            except Exception as e:
+                errors.append({'room': reading_data.get('room_id', 'Unknown'), 'error': str(e)})
+
+        # Prepare response
+        message = f'Created {created_count} bills'
+        if updated_count > 0:
+            message += f', updated {updated_count} bills'
+        if errors:
+            message += f', {len(errors)} errors'
+
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'created_count': created_count,
+            'updated_count': updated_count,
+            'errors': errors
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error processing bulk bills: {str(e)}'
+        }, status=400)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
 def record_electricity_payment(request):
     """Record electricity bill payment"""
     try:
