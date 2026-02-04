@@ -89,7 +89,7 @@
       </p>
     </div>
     <div style="display: flex; gap: 1rem;">
-      <button class="btn-premium btn-premium-primary">+ Gen. Monthly Bill</button>
+      <button class="btn-premium btn-premium-primary" id="genMonthlyBillBtn">+ Gen. Monthly Bill</button>
       <button class="btn-premium" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);"
         onclick="openBulkModal()">⚡ Bulk Meter Entry</button>
       <a href="{% url 'dashboard' %}" class="btn-premium btn-premium-secondary">← Dashboard</a>
@@ -221,10 +221,9 @@
           by Building</label>
         <select id="buildingFilter" class="input" onchange="filterByBuilding()">
           <option value="">All Buildings</option>
-          {% for data in bill_stats %}
-          {% with building=data.room.number|slice:":2" %}
-          <option value="{{ building }}">{{ building }}</option>
-          {% endwith %}
+          {% regroup bill_stats by room.number|slice:":2" as building_groups %}
+          {% for building in building_groups %}
+          <option value="{{ building.grouper }}">{{ building.grouper }}</option>
           {% endfor %}
         </select>
       </div>
@@ -257,13 +256,11 @@
         </thead>
         <tbody id="bulkTableBody">
           {% for data in bill_stats %}
+          {% if data.tenant %}
           <tr style="border-bottom: 1px solid var(--border-subtle);" data-room-id="{{ data.room.id }}"
             data-last-reading="{{ data.latest_reading }}" data-room-number="{{ data.room.number }}">
             <td style="padding: 0.75rem; font-weight: 700;">{{ data.room.number }}</td>
-            <td style="padding: 0.75rem; font-size: 0.875rem;">
-              {% if data.tenant %}{{ data.tenant.full_name }}{% else %}<span
-                style="color: var(--text-muted); font-style: italic;">Vacant</span>{% endif %}
-            </td>
+            <td style="padding: 0.75rem; font-size: 0.875rem;">{{ data.tenant.full_name }}</td>
             <td style="padding: 0.75rem; text-align: right; font-weight: 600;">{{ data.latest_reading }}</td>
             <td style="padding: 0.75rem;">
               <input type="number" class="input bulk-reading-input"
@@ -275,6 +272,7 @@
               class="units-cell">-</td>
             <td style="padding: 0.75rem; text-align: right; font-weight: 700; color: #10b981;" class="price-cell">-</td>
           </tr>
+          {% endif %}
           {% endfor %}
         </tbody>
       </table>
