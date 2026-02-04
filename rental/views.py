@@ -1182,7 +1182,7 @@ def create_electricity_bill(request):
         try:
             starting_reading = float(request.POST.get('starting_reading') or 13)  # Default: 13 units
             ending_reading = float(request.POST.get('ending_reading') or (starting_reading + 150))  # Default: +150 units  
-            rate_per_unit = float(request.POST.get('rate_per_unit') or 6)  # Default: ₹6/unit
+            rate_per_unit = float(request.POST.get('rate_per_unit') or 13)  # Default: ₹13/unit
         except (TypeError, ValueError):
             return JsonResponse({'success': False, 'message': 'Invalid numeric input for readings or rate'}, status=400)
 
