@@ -139,6 +139,8 @@ class Guest(models.Model):
     id_type = models.CharField(max_length=50, blank=True, help_text="Passport, Aadhar, License, etc.")
     id_number = models.CharField(max_length=50, blank=True)
     govt_id_photo = models.ImageField(upload_to='govt_ids/', blank=True, null=True, help_text="Photo of Government ID document")
+    aadhar_front = models.ImageField(upload_to='aadhar_cards/', blank=True, null=True, help_text="Aadhar Card Front Side")
+    aadhar_back = models.ImageField(upload_to='aadhar_cards/', blank=True, null=True, help_text="Aadhar Card Back Side")
     college_id = models.CharField(max_length=100, blank=True, help_text="College ID or Student ID")
     college_id_photo = models.ImageField(upload_to='college_ids/', blank=True, null=True, help_text="Photo of College ID")
     student_college = models.CharField(max_length=100, blank=True, help_text="Name of the college/university")
@@ -150,6 +152,18 @@ class Guest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    
+    # Occupancy preference for the tenant
+    OCCUPANCY_CHOICES = [
+        ('single', 'Single (Private Room)'),
+        ('double', 'Double (Shared Room)'),
+    ]
+    occupancy_preference = models.CharField(
+        max_length=10,
+        choices=OCCUPANCY_CHOICES,
+        default='double',
+        help_text="Tenant's occupancy preference - defaults to double occupancy"
+    )
     
     class Meta:
         ordering = ['-created_at']

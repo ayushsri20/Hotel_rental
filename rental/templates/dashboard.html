@@ -269,6 +269,7 @@
         price: '{{ room.price }}',
           agreed_rent: '{{ room.agreed_rent|default_if_none:"" }}',
             type: '{{ room.get_room_type_display|escapejs }}',
+            capacity: {{ room.capacity }},
               tenants: [
                 {% for t in room.current_tenants %}
   { name: '{{ t.full_name|escapejs }}', id: '{{ t.id }}' },
@@ -296,13 +297,12 @@
     if (!room) return;
 
     document.getElementById('detailRoomNumber').textContent = `Room ${room.number}`;
-    document.getElementById('detailBuilding').textContent = `Building ${buildingName} • ${room.type} Bed Unit`;
+    document.getElementById('detailBuilding').textContent = `Building ${buildingName} • ${room.type}`;
 
     const priceVal = (room.agreed_rent && room.agreed_rent.length > 0) ? room.agreed_rent : room.price;
     document.getElementById('detailPrice').textContent = `₹${priceVal}`;
 
-    const capacityMap = { 'Single': 1, 'Double': 2, 'Suite': 4 };
-    const max = capacityMap[room.type] || 2;
+    const max = room.capacity || 2;
     const current = room.tenants.length;
     document.getElementById('detailOccupancy').textContent = `${current} / ${max}`;
 

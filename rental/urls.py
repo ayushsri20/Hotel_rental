@@ -46,6 +46,9 @@ urlpatterns = [
     path('api/room/<int:room_id>/tenants/', views.get_room_tenants, name='get_room_tenants'),
     path('api/room/<int:room_id>/payment-history/', views.get_payment_history, name='get_payment_history'),
     path('api/room/<int:room_id>/electricity-history/', views.get_electricity_history, name='get_electricity_history'),
+    path('api/payment-record/<int:record_id>/', views.get_payment_record_details, name='get_payment_record_details'),
+    path('api/room/payment/<int:payment_id>/records/', views.get_monthly_payment_records, name='get_monthly_payment_records'),
     path('api/payment-record/<int:record_id>/update/', views.update_payment_record, name='update_payment_record'),
     path('api/payment-record/<int:record_id>/delete/', views.delete_payment_record, name='delete_payment_record'),
+    path('api/payments/by-month/', views.get_payments_by_month, name='get_payments_by_month'),
 ]

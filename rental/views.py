@@ -5,11 +5,13 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.contrib.auth.models import User
+import json
 from django.db import transaction
 from django.db.models import Sum, Q, Avg
 from .models import Room, Booking, Guest, MonthlyPayment, PaymentRecord, ElectricityBill
 from collections import defaultdict
 from datetime import datetime
+from django.utils import timezone
 from decimal import Decimal
 import json
 
@@ -17,6 +19,33 @@ import logging
 import re
 
 logger = logging.getLogger(__name__)
+
+# Building mapping: Internal codes (A-F) to display names (M1, 1-5)
+BUILDING_MAP = {
+    'A': 'M1',
+    'B': '1',
+    'C': '2',
+    'D': '3',
+    'E': '4',
+    'F': '5',
+}
+
+BUILDING_DISPLAY_NAMES = {
+    'A': 'M1 Complex',
+    'B': 'Building 1',
+    'C': 'Building 2',
+    'D': 'Building 3',
+    'E': 'Building 4',
+    'F': 'Building 5',
+}
+
+def get_building_display_name(building_code):
+    """Convert building code (A-F) to display name (M1, 1-5)"""
+    return BUILDING_MAP.get(building_code, building_code)
+
+def get_building_full_name(building_code):
+    """Convert building code (A-F) to full display name (M1 Complex, Building 1, etc.)"""
+    return BUILDING_DISPLAY_NAMES.get(building_code, f'Building {building_code}')
 
 def is_admin(user):
     return user.is_staff or user.is_superuser
@@ -29,6 +58,11 @@ def health_check(request):
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
+    """Handle user login with proper session management"""
+    # If user is already logged in, redirect to dashboard
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -64,7 +98,22 @@ def login_view(request):
             return render(request, 'login.html', {'error': f'Database connection error: {diag_str}'})
         
         if user is not None:
+            # Clear any existing session data
+            request.session.flush()
+            
+            # Login user (creates new session)
             login(request, user)
+            
+            # Regenerate session key for security
+            request.session.cycle_key()
+            
+            # Set session expiry (optional - 2 weeks)
+            if not request.POST.get('remember_me'):
+                request.session.set_expiry(0)  # Session expires when browser closes
+            else:
+                request.session.set_expiry(1209600)  # 2 weeks
+            
+            logger.info(f"User {username} logged in successfully")
             return redirect('dashboard')
         else:
             context = {'error': 'Invalid username or password'}
@@ -73,8 +122,27 @@ def login_view(request):
     return render(request, 'login.html')
 
 def logout_view(request):
+    """Logout user and clear all session data"""
+    from django.contrib import messages
+    
+    # Clear session before logout
+    request.session.flush()
+    
+    # Perform logout
     logout(request)
-    return redirect('home')
+    
+    # Add success message
+    messages.success(request, 'You have been successfully logged out.')
+    
+    # Redirect to home with a fresh session
+    response = redirect('home')
+    
+    # Clear any cached authentication
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    
+    return response
 
 @login_required(login_url='login')
 def dashboard(request):
@@ -96,15 +164,24 @@ def dashboard(request):
             tenants = room_tenants.get(room.id, [])
             room.current_tenants = tenants
             
-            # Determine Capacity
+            # Determine occupancy status and color
             # Use database capacity and model properties
             count = len(tenants)
             if count == 0:
                 room.occupancy_status = 'empty'
+                room.status_color = 'green'  # Green for empty
+                room.status_text = 'Available'
+                room.status_badge = 'success'
             elif count < room.capacity:
                 room.occupancy_status = 'partial'
+                room.status_color = 'yellow'  # Yellow for partial
+                room.status_text = f'Partial ({count}/{room.capacity})'
+                room.status_badge = 'warning'
             else:
                 room.occupancy_status = 'full'
+                room.status_color = 'red'  # Red for full
+                room.status_text = f'Full ({count}/{room.capacity})'
+                room.status_badge = 'danger'
                 
         # Group rooms by building
         buildings = defaultdict(list)
@@ -112,27 +189,9 @@ def dashboard(request):
             building_name = room.number.split('-')[0]
             buildings[building_name].append(room)
         
-        # Sort buildings
+        # Sort buildings and apply display name mapping
         sorted_buildings = sorted(buildings.items())
-        
-        # Map building names: A -> M1, B -> 1, C -> 2, D -> 3, etc.
-        def map_building_name(original_name):
-            if original_name == 'A':
-                return 'M1'
-            elif original_name == 'M1': # Handle direct naming if changed in db
-                return 'M1'
-            elif len(original_name) == 1:
-                try:
-                    # Convert B->1, C->2, D->3, etc.
-                    val = ord(original_name) - ord('B') + 1
-                    return str(val) if val > 0 else original_name
-                except:
-                    return original_name
-            else:
-                return original_name
-        
-        # Apply mapping to building names
-        mapped_buildings = [(map_building_name(name), rooms) for name, rooms in sorted_buildings]
+        mapped_buildings = [(get_building_display_name(code), rooms) for code, rooms in sorted_buildings]
         
         # Calculate active stats
         active_rooms_count = rooms.filter(is_available=False).count()
@@ -170,21 +229,8 @@ def manage_buildings(request):
     
     sorted_buildings = sorted(buildings.items())
     
-    # Map building names: A -> M1, B -> 1, C -> 2, D -> 3, etc.
-    def map_building_name(original_name):
-        if original_name == 'A':
-            return 'M1'
-        elif len(original_name) == 1:
-            try:
-                # Convert B->1, C->2, D->3, etc.
-                return str(ord(original_name) - ord('B') + 1)
-            except:
-                return original_name
-        else:
-            return original_name
-    
-    # Apply mapping to building names
-    mapped_buildings = [(map_building_name(name), rooms) for name, rooms in sorted_buildings]
+    # Apply display name mapping
+    mapped_buildings = [(get_building_display_name(code), rooms) for code, rooms in sorted_buildings]
     
     context = {
         'buildings': mapped_buildings,
@@ -274,34 +320,40 @@ def manage_guests(request):
     
     # Generate dynamic building list from existing rooms
     building_prefixes = set()
-    building_map = {
-        'A': 'M1 Complex',
-        'B': 'Building 1',
-        'C': 'Building 2',
-        'D': 'Building 3',
-        'E': 'Building 4',
-        'F': 'Building 5',
-    }
     
     for room in rooms:
         prefix = room.number.split('-')[0] if '-' in room.number else room.number[0]
         building_prefixes.add(prefix)
     
-    # Sort and convert to list with display names
+    # Sort and convert to list with display names using centralized mapping
     buildings = sorted([
-        {'prefix': prefix, 'name': building_map.get(prefix, f'Building {prefix}')}
+        {'prefix': prefix, 'name': get_building_full_name(prefix)}
         for prefix in building_prefixes
     ], key=lambda x: x['prefix'])
     
+    # Prepare rich room data for JS filtering
+    rooms_data = []
+    for r in rooms:
+        rooms_data.append({
+            'id': r.id,
+            'number': r.number,
+            'type': r.room_type,
+            'capacity': r.capacity,
+            'occupancy': r.current_occupancy,
+            'is_full': r.is_full,
+            'tenants': [{'id': t.id, 'name': t.full_name} for t in r.get_active_tenants()]
+        })
+
     context = {
         'guests': guests,
         'rooms': rooms,
+        'rooms_data': json.dumps(rooms_data), # JSON for JS
         'available_rooms': get_available_rooms_for_allocation(),  # Use enhanced filtering
         'guest_stats': guest_stats,
         'buildings': buildings,  # Dynamic building list for filters
     }
     
-    return render(request, 'manage_guests.html', context)
+    return render(request, 'manage_guests_v2.html', context)
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
@@ -477,52 +529,63 @@ def add_guest(request):
                 }, status=400)
 
         agreed_rent_str = request.POST.get('agreed_rent', '').strip()
+        occupancy_preference = request.POST.get('occupancy_preference', 'double')
         
-        guest = Guest.objects.create(
-            first_name=first_name,
-            last_name=last_name,
-            email=request.POST.get('email', '').strip(),
-            phone=request.POST.get('phone', '').strip(),
-            gender=request.POST.get('gender', 'M'),
-            date_of_birth=parse_date(dob),
-            address=request.POST.get('address', ''),
-            city=request.POST.get('city', ''),
-            state=request.POST.get('state', ''),
-            country=request.POST.get('country', ''),
-            zip_code=request.POST.get('zip_code', ''),
-            id_type=request.POST.get('id_type', ''),
-            id_number=request.POST.get('id_number', ''),
-            college_id=request.POST.get('college_id', ''),
-            student_college=request.POST.get('student_college', ''),
-            check_in_date=parse_date(check_in),
-            check_out_date=parse_date(check_out),
-            room_id=room_id,
-            notes=request.POST.get('notes', ''),
-        )
-        
-        # Room status update and agreed_rent handling
-        if guest.room:
-            # Mark as not available only if it reached capacity
-            if guest.room.is_full:
-                guest.room.is_available = False
+        # Use transaction to ensure atomicity
+        with transaction.atomic():
+            guest = Guest.objects.create(
+                first_name=first_name,
+                last_name=last_name,
+                email=request.POST.get('email', '').strip(),
+                phone=request.POST.get('phone', '').strip(),
+                gender=request.POST.get('gender', 'M'),
+                date_of_birth=parse_date(dob),
+                address=request.POST.get('address', ''),
+                city=request.POST.get('city', ''),
+                state=request.POST.get('state', ''),
+                country=request.POST.get('country', ''),
+                zip_code=request.POST.get('zip_code', ''),
+                id_type=request.POST.get('id_type', ''),
+                id_number=request.POST.get('id_number', ''),
+                college_id=request.POST.get('college_id', ''),
+                student_college=request.POST.get('student_college', ''),
+                check_in_date=parse_date(check_in),
+                check_out_date=parse_date(check_out),
+                room_id=room_id,
+                notes=request.POST.get('notes', ''),
+                occupancy_preference=occupancy_preference,
+            )
             
-            # Set agreed_rent on the room if provided (default ₹7000)
-            if agreed_rent_str:
-                try:
-                    guest.room.agreed_rent = float(agreed_rent_str)
-                except ValueError:
-                    guest.room.agreed_rent = 7000  # Default
-            elif not guest.room.agreed_rent:
-                guest.room.agreed_rent = 7000  # Default if not set
-            guest.room.save()
+            # Room status update and agreed_rent handling
+            if guest.room:
+                # Refresh room data from database to get accurate occupancy
+                guest.room.refresh_from_db()
+                
+                # Mark as not available only if it reached capacity
+                if guest.room.is_full:
+                    guest.room.is_available = False
+                
+                # Set agreed_rent on the room if provided (default ₹7000)
+                if agreed_rent_str:
+                    try:
+                        guest.room.agreed_rent = float(agreed_rent_str)
+                    except ValueError:
+                        guest.room.agreed_rent = 7000  # Default
+                elif not guest.room.agreed_rent:
+                    guest.room.agreed_rent = 7000  # Default if not set
+                guest.room.save()
 
-        if 'govt_id_photo' in request.FILES:
-            guest.govt_id_photo = request.FILES['govt_id_photo']
-        if 'college_id_photo' in request.FILES:
-            guest.college_id_photo = request.FILES['college_id_photo']
-        if 'document_verification_image' in request.FILES:
-            guest.document_verification_image = request.FILES['document_verification_image']
-        guest.save()
+            if 'govt_id_photo' in request.FILES:
+                guest.govt_id_photo = request.FILES['govt_id_photo']
+            if 'college_id_photo' in request.FILES:
+                guest.college_id_photo = request.FILES['college_id_photo']
+            if 'document_verification_image' in request.FILES:
+                guest.document_verification_image = request.FILES['document_verification_image']
+            if 'aadhar_front' in request.FILES:
+                guest.aadhar_front = request.FILES['aadhar_front']
+            if 'aadhar_back' in request.FILES:
+                guest.aadhar_back = request.FILES['aadhar_back']
+            guest.save()
         
         return JsonResponse({
             'success': True,
@@ -533,6 +596,7 @@ def add_guest(request):
                 'email': guest.email,
                 'phone': guest.phone,
                 'room': str(guest.room) if guest.room else 'Unassigned',
+                'occupancy_preference': guest.get_occupancy_preference_display(),
             }
         })
     except ValueError as ve:
@@ -653,12 +717,15 @@ def update_guest(request, guest_id):
                 old_room = guest.room
                 if old_room:
                     # After this guest leaves, the room will definitely have a free slot
+                    old_room.refresh_from_db()
                     old_room.is_available = True
                     old_room.save()
                 
                 # Occupy new room
                 if new_room_id:
                     new_room = Room.objects.get(id=new_room_id)
+                    new_room.refresh_from_db()
+                    
                     # We check if NEW room is full (excluding the guest themselves if they were already there, 
                     # but here guest.room_id != new_room_id so they weren't)
                     if new_room.is_full:
@@ -694,6 +761,10 @@ def update_guest(request, guest_id):
             guest.room_id = new_room_id
             guest.notes = updates['notes']
             
+            # Update occupancy preference
+            occupancy_preference = request.POST.get('occupancy_preference', guest.occupancy_preference)
+            guest.occupancy_preference = occupancy_preference
+            
             # Update images only if provided
             if 'govt_id_photo' in request.FILES:
                 guest.govt_id_photo = request.FILES['govt_id_photo']
@@ -707,7 +778,7 @@ def update_guest(request, guest_id):
             guest.save()
             
             # Audit logging
-            logger.info(f"AUDIT - User: {request.user.username} - Updated Guest: {guest.id} ({guest.full_name})")
+            logger.info(f"AUDIT - User: {request.user.username} - Updated Guest: {guest.id} ({guest.full_name})") 
         
         return JsonResponse({
             'success': True,
@@ -746,14 +817,17 @@ def checkout_guest(request, guest_id):
         
         with transaction.atomic():
             guest.is_active = False
-            # We don't delete the guest or room, just unassign the room for this inactive record
-            # Or keep the room but since guest is inactive, current_occupancy (which filters by is_active=True) will drop.
-            # To be clear, we usually unassign the room completely during checkout.
-            guest.room = None
+            # Fix: Record checkout date
+            guest.check_out_date = timezone.now().date()
+            
+            # Fix: Do NOT clear guest.room to preserve history
+            # guest.room = None 
             guest.save()
             
             if room:
                 # Once a guest checks out, the room is definitely not full anymore
+                # Only mark available if it was previously marked unavailable due to capacity
+                # But typically we want it available now.
                 room.is_available = True
                 room.save()
                 
@@ -762,7 +836,10 @@ def checkout_guest(request, guest_id):
             'message': f'Guest {guest.full_name} checked out successfully. Room {room.number if room else "N/A"} now has a free slot.'
         })
     except Exception as e:
-        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"CHECKOUT ERROR for guest {guest_id}: {error_details}") # Print to console/logs
+        return JsonResponse({'success': False, 'message': f"System Error: {str(e)}"}, status=400)
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
@@ -930,30 +1007,180 @@ def delete_user(request, user_id):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def manage_payments(request):
-    """Monthly payment tracking and management"""
-    rooms = Room.objects.all().order_by('number')
-    payments = MonthlyPayment.objects.select_related('room', 'guest').order_by('-month')
-    monthly_payments = MonthlyPayment.objects.select_related('room', 'guest').filter(
-        payment_status__in=['pending', 'partial']
-    ).order_by('-month')
+    """Monthly payment tracking and management with advanced analytics"""
+    from datetime import date, timedelta
+    from django.db.models import Count, DecimalField
+    from calendar import monthrange
+    import calendar
     
-    # Get payment status summary
-    payment_stats = {
-        'pending': payments.filter(payment_status='pending').count(),
-        'partial': payments.filter(payment_status='partial').count(),
-        'paid': payments.filter(payment_status='paid').count(),
-        'overdue': payments.filter(payment_status='overdue').count(),
-        'total_pending_amount': sum(p.remaining_amount() for p in payments.filter(payment_status__in=['pending', 'partial', 'overdue'])),
+    # render with v3 to bypass cache
+    template_name = 'manage_payments_v3.html'
+    today = date.today()
+    current_month = date(today.year, today.month, 1)
+    
+    # Handle filtering parameters
+    filter_status = request.GET.get('status', 'all')
+    filter_month = request.GET.get('month', '')
+    filter_room = request.GET.get('room', '')
+    filter_building = request.GET.get('building', '')
+    
+    # Base queryset
+    rooms = Room.objects.all().order_by('number')
+    payments = MonthlyPayment.objects.select_related('room', 'guest').prefetch_related('payment_records')
+    
+    # Apply filters
+    if filter_status != 'all':
+        payments = payments.filter(payment_status=filter_status)
+    
+    if filter_month:
+        try:
+            filter_date = datetime.strptime(filter_month, '%Y-%m').date()
+            payments = payments.filter(month=filter_date)
+        except ValueError:
+            pass
+    
+    if filter_room:
+        payments = payments.filter(room__number__icontains=filter_room)
+    
+    if filter_building:
+        payments = payments.filter(room__number__startswith=filter_building)
+    
+    # Order by month (newest first)
+    payments = payments.order_by('-month', 'room__number')
+    
+    # Get payments for display - show all room payment cards
+    # If no filters applied, default to current month to avoid overwhelming display
+    if not any([filter_status != 'all', filter_month, filter_room, filter_building]):
+        monthly_payments = payments.filter(month=current_month).order_by('room__number')
+    else:
+        monthly_payments = payments.order_by('-month', 'room__number')
+    
+    
+    # Calculate comprehensive analytics
+    all_payments = MonthlyPayment.objects.select_related('room', 'guest')
+    
+    # Current month analytics
+    current_month_payments = all_payments.filter(month=current_month)
+    current_month_revenue = sum(p.paid_amount for p in current_month_payments)
+    current_month_expected = sum(p.rent_amount for p in current_month_payments)
+    current_month_pending = sum(p.remaining_amount() for p in current_month_payments)
+    
+    # Overall analytics
+    total_collected = PaymentRecord.objects.aggregate(
+        total=Sum('payment_amount', output_field=DecimalField())
+    )['total'] or Decimal('0.00')
+    
+    total_pending = sum(
+        p.remaining_amount() for p in all_payments.filter(
+            payment_status__in=['pending', 'partial', 'overdue']
+        )
+    )
+    
+    total_expected = sum(p.rent_amount for p in all_payments)
+    
+    # Collection rate calculation
+    collection_rate = 0
+    if total_expected > 0:
+        collection_rate = (float(total_collected) / float(total_expected)) * 100
+    
+    # Payment status distribution
+    status_distribution = {
+        'pending': all_payments.filter(payment_status='pending').count(),
+        'partial': all_payments.filter(payment_status='partial').count(),
+        'paid': all_payments.filter(payment_status='paid').count(),
+        'overdue': all_payments.filter(payment_status='overdue').count(),
     }
     
+    # Overdue payments (older than current month and not paid)
+    overdue_payments = all_payments.filter(
+        month__lt=current_month,
+        payment_status__in=['pending', 'partial']
+    ).order_by('month')
+    
+    overdue_count = overdue_payments.count()
+    overdue_amount = sum(p.remaining_amount() for p in overdue_payments)
+    
+    # Recent payment activity (last 10 payments)
+    recent_payments = PaymentRecord.objects.select_related(
+        'monthly_payment__room', 'monthly_payment__guest'
+    ).order_by('-payment_date', '-created_at')[:10]
+    
+    # Monthly trend data (last 6 months)
+    monthly_trends = []
+    for i in range(5, -1, -1):
+        trend_month = date(today.year, today.month, 1) - timedelta(days=i*30)
+        trend_month = date(trend_month.year, trend_month.month, 1)
+        
+        trend_payments = all_payments.filter(month=trend_month)
+        trend_collected = sum(p.paid_amount for p in trend_payments)
+        trend_expected = sum(p.rent_amount for p in trend_payments)
+        
+        monthly_trends.append({
+            'month': trend_month.strftime('%b %Y'),
+            'collected': float(trend_collected),
+            'expected': float(trend_expected),
+            'rate': (float(trend_collected) / float(trend_expected) * 100) if trend_expected > 0 else 0
+        })
+    
+    # Payment method breakdown
+    payment_methods = PaymentRecord.objects.values('payment_method').annotate(
+        count=Count('id'),
+        total=Sum('payment_amount', output_field=DecimalField())
+    ).order_by('-total')
+    
+    # Buildings list for filter - extract building codes and map to display names
+    building_codes = sorted(set(room.number.split('-')[0] if '-' in room.number else room.number[0] 
+                                 for room in rooms if room.number))
+    buildings = [get_building_display_name(code) for code in building_codes]
+    
+    # Prepare context
     context = {
         'rooms': rooms,
-        'payments': payments[:100],
+        'payments': payments[:100],  # Limit for performance
         'monthly_payments': monthly_payments,
-        'payment_stats': payment_stats,
+        'recent_payments': recent_payments,
+        'overdue_payments': overdue_payments[:20],  # Limit overdue display
+        
+        # Analytics data
+        'analytics': {
+            'current_month_revenue': current_month_revenue,
+            'current_month_expected': current_month_expected,
+            'current_month_pending': current_month_pending,
+            'total_collected': total_collected,
+            'total_pending': total_pending,
+            'total_expected': total_expected,
+            'collection_rate': round(collection_rate, 2),
+            'overdue_count': overdue_count,
+            'overdue_amount': overdue_amount,
+        },
+        
+        # Status distribution
+        'status_distribution': status_distribution,
+        
+        # Trends
+        'monthly_trends': json.dumps(monthly_trends),
+        'payment_methods': payment_methods,
+        
+        # Filter data
+        'buildings': buildings,
+        'current_filters': {
+            'status': filter_status,
+            'month': filter_month,
+            'room': filter_room,
+            'building': filter_building,
+        },
+        
+        # Legacy stats (for compatibility)
+        'payment_stats': {
+            'pending': status_distribution['pending'],
+            'partial': status_distribution['partial'],
+            'paid': status_distribution['paid'],
+            'overdue': status_distribution['overdue'],
+            'total_pending_amount': total_pending,
+        },
     }
     
-    return render(request, 'manage_payments.html', context)
+    return render(request, template_name, context)
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
@@ -1008,7 +1235,7 @@ def manage_electricity_bills(request):
         'bill_stats': bill_stats,
     }
     
-    return render(request, 'manage_electricity_bills.html', context)
+    return render(request, 'manage_electricity_bills_v2.html', context)
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
@@ -1275,6 +1502,53 @@ def create_electricity_bill(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 @require_http_methods(["POST"])
+
+def ensure_monthly_payment_exists(room, month, guest=None):
+    """
+    Ensure a MonthlyPayment record exists for the given room and month.
+    Auto-creates if missing using guest's agreed rent.
+    Returns the MonthlyPayment object.
+    """
+    from decimal import Decimal
+    
+    # Get active guest if not provided
+    if not guest:
+        guest = Guest.objects.filter(room=room, is_active=True).first()
+    
+    # Determine rent amount (from guest's agreed rent or room's default rent)
+    rent_amount = Decimal('7000.00')  # Default fallback
+    if guest and hasattr(guest, 'agreed_rent') and guest.agreed_rent:
+        rent_amount = Decimal(str(guest.agreed_rent))
+    elif hasattr(room, 'rent_amount') and room.rent_amount:
+        rent_amount = Decimal(str(room.rent_amount))
+    
+    # Get or create monthly payment
+    monthly_payment, created = MonthlyPayment.objects.get_or_create(
+        room=room,
+        month=month,
+        defaults={
+            'guest': guest,
+            'rent_amount': rent_amount,
+            'payment_status': 'pending',
+            'paid_amount': Decimal('0.00')
+        }
+    )
+    
+    # Update guest and rent if record exists but data changed
+    if not created:
+        updated = False
+        if guest and monthly_payment.guest != guest:
+            monthly_payment.guest = guest
+            updated = True
+        # Update rent amount if it changed (e.g., guest's agreed rent was updated)
+        if monthly_payment.rent_amount != rent_amount:
+            monthly_payment.rent_amount = rent_amount
+            updated = True
+        if updated:
+            monthly_payment.save()
+    
+    return monthly_payment
+
 def bulk_create_electricity_bills(request):
     """Create electricity bills for multiple rooms at once"""
     try:
@@ -1845,5 +2119,107 @@ def delete_payment_record(request, record_id):
         monthly_payment.save()
         
         return JsonResponse({'success': True, 'message': 'Payment record deleted'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["GET"])
+def get_payment_record_details(request, record_id):
+    """Get details of a specific payment record for editing"""
+    try:
+        record = get_object_or_404(PaymentRecord, id=record_id)
+        
+        return JsonResponse({
+            'success': True,
+            'record': {
+                'id': record.id,
+                'amount': str(record.payment_amount),
+                'date': record.payment_date.strftime('%Y-%m-%d'),
+                'method': record.payment_method,
+                'method_display': record.get_payment_method_display(),
+                'reference_number': record.reference_number or '',
+                'notes': record.notes or '',
+                'created_by': record.created_by.get_full_name() if record.created_by else 'Unknown',
+                'created_at': record.created_at.strftime('%Y-%m-%d %H:%M')
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["GET"])
+def get_monthly_payment_records(request, payment_id):
+    """Get all payment records for a monthly payment"""
+    try:
+        monthly_payment = get_object_or_404(MonthlyPayment, id=payment_id)
+        records = PaymentRecord.objects.filter(monthly_payment=monthly_payment).order_by('-payment_date')
+        
+        records_data = []
+        for record in records:
+            records_data.append({
+                'id': record.id,
+                'amount': str(record.payment_amount),
+                'date': record.payment_date.strftime('%d %b %Y'),
+                'method': record.payment_method,
+                'method_display': record.get_payment_method_display(),
+                'reference_number': record.reference_number or '',
+                'notes': record.notes or '',
+                'created_by': record.created_by.get_full_name() if record.created_by else 'Unknown',
+                'created_at': record.created_at.strftime('%d %b %Y %H:%M')
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'payment': {
+                'id': monthly_payment.id,
+                'room_number': monthly_payment.room.number,
+                'month': monthly_payment.month.strftime('%B %Y'),
+                'total_due': str(monthly_payment.get_total_amount_due()),
+                'paid_amount': str(monthly_payment.paid_amount),
+                'remaining': str(monthly_payment.remaining_amount()),
+                'status': monthly_payment.payment_status
+            },
+            'records': records_data
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["GET"])
+def get_payments_by_month(request):
+    """Get all monthly payments for a specific month"""
+    try:
+        month_str = request.GET.get('month')
+        if not month_str:
+            return JsonResponse({'success': False, 'message': 'Month required'}, status=400)
+        
+        month = datetime.strptime(month_str, '%Y-%m-%d').date()
+        
+        # Get all monthly payments for this month
+        payments = MonthlyPayment.objects.filter(month=month).select_related('room', 'guest').order_by('room__number')
+        
+        payments_data = []
+        for payment in payments:
+            # Show all payments, but indicate which are already paid
+            payments_data.append({
+                'id': payment.id,
+                'room_number': payment.room.number,
+                'tenant_name': payment.guest.full_name if payment.guest else 'No Tenant',
+                'total_due': str(payment.get_total_amount_due()),
+                'paid': str(payment.paid_amount),
+                'remaining': str(payment.get_total_remaining()),
+                'status': payment.payment_status,
+                'status_display': payment.get_payment_status_display()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'payments': payments_data,
+            'month': month.strftime('%B %Y')
+        })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
