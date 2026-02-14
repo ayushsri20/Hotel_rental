@@ -150,7 +150,7 @@
     <input type="text" id="searchInput" onkeyup="filterTable()" class="input" placeholder="Search by name or UID..."
       style="min-width: 250px;">
   </div>
-  <div class="badge-premium badge-success">{{ guests|length }} Active Residents</div>
+  <div class="badge-premium badge-success">{{ guest_stats.active }} Active Residents</div>
 </div>
 
 <div class="guest-grid" id="guestGrid">
@@ -174,7 +174,12 @@
         <div class="info-label">Assigned Room</div>
         <div class="info-value">
           {% if guest.room %}
+          {% if guest.is_active %}
           {{ guest.room.number }} ({{ guest.room.get_room_type_display|default:"N/A" }})
+          {% else %}
+          <span style="color: var(--text-muted); text-decoration: line-through;">{{ guest.room.number }}</span>
+          <span style="font-size: 0.7em; color: var(--danger);">(Released)</span>
+          {% endif %}
           {% else %}
           —
           {% endif %}
