@@ -111,8 +111,7 @@
       </div>
       <div style="text-align: right;">
         <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">Latest Reading</div>
-        <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{
-          data.latest_reading|floatformat:0 }}</div>
+        <div style="font-size: 1.125rem; font-weight: 900; color: var(--text-main);">{{ data.latest_reading|floatformat:0 }}</div>
         {% if data.latest_units %}
         <div style="font-size: 0.75rem; color: var(--success); font-weight: 600; margin-top: 0.25rem;">
           {{ data.latest_units|floatformat:0 }} units used
