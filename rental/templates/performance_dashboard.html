@@ -207,8 +207,7 @@
           <td data-label="Net Status">
             {% if rd.balance <= 0 %} <span class="badge-premium badge-success" style="font-size: 0.65rem;">CLEAR</span>
               {% else %}
-              <span class="badge-premium badge-danger" style="font-size: 0.65rem;">DUE ₹{{ rd.balance|floatformat:0
-                }}</span>
+              <span class="badge-premium badge-danger" style="font-size: 0.65rem;">DUE ₹{{ rd.balance|floatformat:0 }}</span>
               {% endif %}
           </td>
         </tr>
