@@ -112,23 +112,23 @@
   <div class="card-premium stat-card">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Expected
       Yield</div>
-    <div style="font-size: 2rem; font-weight: 900; color: var(--primary);">₹{{ total_expected_rent|floatformat:0 }}
+    <div style="font-size: 2rem; font-weight: 900; color: var(--primary);"><span id="expected-yield">₹{{ total_expected_rent|floatformat:0 }}</span>
     </div>
   </div>
   <div class="card-premium stat-card" style="border-top-color: var(--success);">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Realized
       Revenue</div>
-    <div style="font-size: 2rem; font-weight: 900; color: var(--success);">₹{{ total_collected|floatformat:0 }}</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--success);"><span id="realized-revenue">₹{{ total_collected|floatformat:0 }}</span></div>
   </div>
   <div class="card-premium stat-card" style="border-top-color: var(--danger);">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Accounts
       Receivable</div>
-    <div style="font-size: 2rem; font-weight: 900; color: var(--danger);">₹{{ total_pending|floatformat:0 }}</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--danger);"><span id="accounts-receivable">₹{{ total_pending|floatformat:0 }}</span></div>
   </div>
   <div class="card-premium stat-card">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Efficiency
     </div>
-    <div style="font-size: 2rem; font-weight: 900; color: var(--primary);">{{ collection_efficiency|floatformat:1 }}%
+    <div style="font-size: 2rem; font-weight: 900; color: var(--primary);"><span id="efficiency">{{ collection_efficiency|floatformat:1 }}%</span>
     </div>
   </div>
 </div>
@@ -168,7 +168,7 @@
         <div
           style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 800; margin-bottom: 0.5rem;">
           <span>UNIT UTILIZATION</span>
-          <span>{{ occupancy_rate|floatformat:0 }}%</span>
+          <span><span id="occupancy">{{ occupancy_rate|floatformat:0 }}%</span></span>
         </div>
         <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
           <div style="width: {{ occupancy_rate }}%; height: 100%; background: var(--primary);"></div>
@@ -216,4 +216,117 @@
     </table>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  // Real-Time Dashboard Metrics Auto-Refresh
+  let refreshInterval;
+  let lastUpdated = new Date();
+
+  // Format timestamp for display
+  function formatTimestamp(isoString) {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffSeconds < 5) return 'Just now';
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+    return date.toLocaleTimeString();
+  }
+
+  // Fetch and update metrics
+  async function refreshMetrics() {
+    try {
+      const response = await fetch('/api/dashboard/metrics/');
+      const data = await response.json();
+      
+      if (data.success) {
+        const metrics = data.metrics;
+        
+        // Update metric values with smooth animation
+        updateMetricValue('expected-yield', metrics.expected_yield);
+        updateMetricValue('realized-revenue', metrics.realized_revenue);
+        updateMetricValue('accounts-receivable', metrics.accounts_receivable);
+        updateMetricValue('efficiency', metrics.collection_efficiency);
+        updateMetricValue('occupancy', metrics.occupancy_rate);
+        
+        // Update timestamp
+        lastUpdated = new Date(data.meta.last_updated);
+        updateTimestamp();
+        
+        console.log('✓ Dashboard metrics refreshed');
+      }
+    } catch (error) {
+      console.error('Error refreshing metrics:', error);
+    }
+  }
+
+  // Update a metric value with animation
+  function updateMetricValue(elementId, newValue) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const currentText = element.textContent;
+    const currentValue = parseFloat(currentText.replace(/[^0-9.-]/g, ''));
+    
+    // Only update if value changed
+    if (Math.abs(currentValue - newValue) > 0.01) {
+      // Add flash animation
+      element.style.transition = 'background-color 0.3s';
+      element.style.backgroundColor = 'rgba(var(--success-rgb), 0.1)';
+      
+      // Update value
+      if (elementId === 'efficiency' || elementId === 'occupancy') {
+        element.textContent = newValue.toFixed(1) + '%';
+      } else {
+        element.textContent = '₹' + newValue.toLocaleString('en-IN', {maximumFractionDigits: 0});
+      }
+      
+      // Remove flash after animation
+      setTimeout(() => {
+        element.style.backgroundColor = '';
+      }, 300);
+    }
+  }
+
+  // Update "Last Updated" timestamp
+  function updateTimestamp() {
+    const timestampEl = document.getElementById('last-updated');
+    if (timestampEl) {
+      timestampEl.textContent = formatTimestamp(lastUpdated.toISOString());
+    }
+  }
+
+  // Start auto-refresh
+  function startAutoRefresh() {
+    // Initial refresh
+    refreshMetrics();
+    
+    // Refresh every 5 seconds
+    refreshInterval = setInterval(refreshMetrics, 5000);
+    
+    // Update timestamp every second
+    setInterval(updateTimestamp, 1000);
+  }
+
+  // Pause/resume based on tab visibility
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      // Tab is hidden, pause refresh
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        console.log('⏸ Dashboard refresh paused (tab hidden)');
+      }
+    } else {
+      // Tab is visible, resume refresh
+      console.log('▶ Dashboard refresh resumed');
+      refreshMetrics(); // Immediate refresh
+      refreshInterval = setInterval(refreshMetrics, 5000);
+    }
+  });
+
+  // Start when page loads
+  document.addEventListener('DOMContentLoaded', startAutoRefresh);
+</script>
 {% endblock %}
