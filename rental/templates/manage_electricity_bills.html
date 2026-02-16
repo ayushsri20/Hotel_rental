@@ -401,7 +401,7 @@
       formData.append('month', month);
       formData.append('rate_per_unit', rate);
       formData.append('readings', JSON.stringify(readings));
-      formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
       const res = await fetch('{% url "bulk_create_electricity_bills" %}', {
         method: 'POST',
