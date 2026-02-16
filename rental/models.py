@@ -205,6 +205,52 @@ class Guest(models.Model):
                 raise ValidationError({
                     'room': f'Room {self.room.number} is full ({current_occupancy}/{self.room.capacity} tenants). Cannot assign more guests.'
                 })
+    
+    def save(self, *args, **kwargs):
+        """Auto-generate monthly payment when guest checks in"""
+        from datetime import datetime
+        from decimal import Decimal
+        
+        # Check if this is a new guest or if they're being activated
+        is_new = self.pk is None
+        was_inactive = False
+        
+        if not is_new:
+            try:
+                old_instance = Guest.objects.get(pk=self.pk)
+                was_inactive = not old_instance.is_active and self.is_active
+            except Guest.DoesNotExist:
+                pass
+        
+        # Save the guest first
+        super().save(*args, **kwargs)
+        
+        # Auto-generate monthly payment for current month if:
+        # 1. Guest is active
+        # 2. Guest has a room assigned
+        # 3. Guest has a check-in date
+        # 4. This is a new guest OR guest was just activated
+        if self.is_active and self.room and self.check_in_date and (is_new or was_inactive):
+            current_month = datetime.now().date().replace(day=1)
+            
+            # Check if payment already exists for this room and month
+            existing_payment = MonthlyPayment.objects.filter(
+                room=self.room,
+                month=current_month
+            ).first()
+            
+            if not existing_payment:
+                # Create monthly payment for current month
+                MonthlyPayment.objects.create(
+                    room=self.room,
+                    guest=self,
+                    month=current_month,
+                    rent_amount=self.room.price,
+                    paid_amount=Decimal('0.00'),
+                    payment_status='pending',
+                    notes=f'Auto-generated on check-in for {self.full_name}'
+                )
+
 
 
 class MonthlyPayment(models.Model):
