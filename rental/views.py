@@ -2223,3 +2223,123 @@ def get_payments_by_month(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def generate_single_room_bill(request):
+    """Generate electricity bill for a single room from rental ledger"""
+    try:
+        from calendar import monthrange
+        
+        room_id = request.POST.get('room_id')
+        month_str = request.POST.get('month')
+        ending_reading_str = request.POST.get('ending_reading')
+        rate_per_unit_str = request.POST.get('rate_per_unit', '8')
+        
+        # Validate required fields
+        if not room_id:
+            return JsonResponse({'success': False, 'message': 'Room ID is required'}, status=400)
+        if not month_str:
+            return JsonResponse({'success': False, 'message': 'Month is required'}, status=400)
+        if not ending_reading_str:
+            return JsonResponse({'success': False, 'message': 'Meter reading is required'}, status=400)
+        
+        # Parse numeric fields
+        try:
+            ending_reading = float(ending_reading_str)
+            rate_per_unit = float(rate_per_unit_str)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'message': 'Invalid numeric input'}, status=400)
+        
+        # Get room
+        try:
+            room = Room.objects.get(id=room_id)
+        except Room.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Room not found'}, status=404)
+        
+        # Parse month
+        try:
+            if len(month_str) == 10 and month_str[4] == '-' and month_str[7] == '-':
+                month = datetime.strptime(month_str, '%Y-%m-%d').date()
+            elif len(month_str) == 7 and month_str[4] == '-':
+                month = datetime.strptime(month_str, '%Y-%m').date()
+            else:
+                return JsonResponse({'success': False, 'message': f'Invalid month format: {month_str}'}, status=400)
+        except ValueError as e:
+            return JsonResponse({'success': False, 'message': f'Error parsing month: {str(e)}'}, status=400)
+        
+        # Get previous bill to determine starting reading
+        previous_bill = ElectricityBill.objects.filter(
+            room=room,
+            month__lt=month
+        ).order_by('-month').first()
+        
+        starting_reading = previous_bill.ending_reading if previous_bill else 13.0
+        
+        # Validate readings
+        if ending_reading < starting_reading:
+            return JsonResponse({
+                'success': False,
+                'message': f'Ending reading ({ending_reading}) must be greater than or equal to starting reading ({starting_reading})'
+            }, status=400)
+        
+        # Calculate bill
+        units_consumed = ending_reading - starting_reading
+        bill_amount = units_consumed * rate_per_unit
+        
+        # Calculate due date (last day of month)
+        last_day = monthrange(month.year, month.month)[1]
+        due_date = month.replace(day=last_day)
+        
+        # Get active guest
+        guest = Guest.objects.filter(room=room, is_active=True).first()
+        
+        # Create or update bill
+        bill, created = ElectricityBill.objects.get_or_create(
+            room=room,
+            month=month,
+            defaults={
+                'guest': guest,
+                'starting_reading': starting_reading,
+                'ending_reading': ending_reading,
+                'units_consumed': units_consumed,
+                'rate_per_unit': rate_per_unit,
+                'bill_amount': bill_amount,
+                'due_date': due_date,
+            }
+        )
+        
+        if not created:
+            # Update existing bill
+            bill.guest = guest
+            bill.starting_reading = starting_reading
+            bill.ending_reading = ending_reading
+            bill.units_consumed = units_consumed
+            bill.rate_per_unit = rate_per_unit
+            bill.bill_amount = bill_amount
+            bill.due_date = due_date
+            bill.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Electricity bill {"created" if created else "updated"} for {room.number}',
+            'bill': {
+                'id': bill.id,
+                'room': room.number,
+                'month': month.strftime('%B %Y'),
+                'starting_reading': str(starting_reading),
+                'ending_reading': str(ending_reading),
+                'units_consumed': str(units_consumed),
+                'rate_per_unit': str(rate_per_unit),
+                'bill_amount': str(bill_amount),
+                'status': bill.bill_status,
+            }
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'message': f'Error generating bill: {str(e)}'
+        }, status=400)

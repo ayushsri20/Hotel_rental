@@ -824,6 +824,9 @@
         📝 Record Payment
       </button>
       <button class="quick-action-btn" onclick="viewDetails('{{ payment.id }}')">
+      <button class="quick-action-btn" onclick="openGenerateBillModal('{{ payment.room.id }}', '{{ payment.room.number }}', '{{ payment.month|date:'Y-m-d' }}')">
+        ⚡ Generate Bill
+      </button>
         📊 View History
       </button>
     </div>
@@ -993,6 +996,60 @@
         <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">✓ Save Payment Record</button>
         <button type="button" onclick="document.getElementById('addPaymentModal').style.display='none'"
           class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Generate Electricity Bill Modal -->
+<div id="generateBillModal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
+    <h2 class="font-luxury text-luxury" style="font-size: 2rem; margin-bottom: 1rem;">⚡ Generate Electricity Bill</h2>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem; font-weight: 500;">Create electricity bill for room</p>
+    <form id="generateBillForm">
+      {% csrf_token %}
+      <input type="hidden" id="billRoomId" name="room_id">
+      
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Room Number</label>
+        <input type="text" id="billRoomNumber" class="input" readonly style="background: var(--bg-canvas); cursor: not-allowed;">
+      </div>
+      
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Billing Month</label>
+        <input type="month" id="billMonth" name="month" class="input" required>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group">
+          <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Previous Reading</label>
+          <input type="number" id="billPreviousReading" class="input" readonly style="background: var(--bg-canvas); cursor: not-allowed;">
+        </div>
+        <div class="form-group">
+          <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Current Reading</label>
+          <input type="number" id="billEndingReading" name="ending_reading" class="input" step="0.01" required oninput="calculateBillPreview()">
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group">
+          <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Rate per Unit (₹)</label>
+          <input type="number" id="billRatePerUnit" name="rate_per_unit" class="input" value="8" step="0.01" required oninput="calculateBillPreview()">
+        </div>
+        <div class="form-group">
+          <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Units Consumed</label>
+          <input type="number" id="billUnitsConsumed" class="input" readonly style="background: var(--bg-canvas); cursor: not-allowed;">
+        </div>
+      </div>
+      
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Bill Amount</label>
+        <input type="text" id="billAmount" class="input" readonly style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1)); cursor: not-allowed; font-weight: 900; font-size: 1.25rem; color: var(--primary);">
+      </div>
+      
+      <div style="display: flex; gap: 1rem;">
+        <button type="submit" class="btn-premium btn-premium-primary" style="flex: 2;">⚡ Generate Bill</button>
+        <button type="button" onclick="document.getElementById('generateBillModal').style.display='none'" class="btn-premium btn-premium-secondary" style="flex: 1;">Cancel</button>
       </div>
     </form>
   </div>
@@ -1528,5 +1585,85 @@
         showToast('Error deleting record', 'error');
       });
   }
+
+  // Generate Electricity Bill Modal Functions
+  function openGenerateBillModal(roomId, roomNumber, month) {
+    document.getElementById('billRoomId').value = roomId;
+    document.getElementById('billRoomNumber').value = roomNumber;
+    
+    // Convert YYYY-MM-DD to YYYY-MM for month input
+    const monthValue = month.substring(0, 7);
+    document.getElementById('billMonth').value = monthValue;
+    
+    // Fetch previous reading
+    fetchPreviousReading(roomId, monthValue);
+    
+    document.getElementById('generateBillModal').style.display = 'flex';
+  }
+  
+  async function fetchPreviousReading(roomId, month) {
+    // Set default values while loading
+    document.getElementById('billPreviousReading').value = '13.00';
+    document.getElementById('billEndingReading').value = '';
+    document.getElementById('billUnitsConsumed').value = '0.00';
+    document.getElementById('billAmount').value = '₹0.00';
+    
+    try {
+      const response = await fetch(`/api/room/${roomId}/electricity-history/`);
+      const data = await response.json();
+      
+      if (data.success && data.history && data.history.length > 0) {
+        // Get the most recent bill's ending reading
+        const latestBill = data.history[0];
+        document.getElementById('billPreviousReading').value = parseFloat(latestBill.units) + 13; // Approximate
+      }
+    } catch (error) {
+      console.log('Could not fetch previous reading, using default');
+    }
+  }
+  
+  function calculateBillPreview() {
+    const previousReading = parseFloat(document.getElementById('billPreviousReading').value) || 0;
+    const endingReading = parseFloat(document.getElementById('billEndingReading').value) || 0;
+    const ratePerUnit = parseFloat(document.getElementById('billRatePerUnit').value) || 8;
+    
+    const unitsConsumed = Math.max(0, endingReading - previousReading);
+    const billAmount = unitsConsumed * ratePerUnit;
+    
+    document.getElementById('billUnitsConsumed').value = unitsConsumed.toFixed(2);
+    document.getElementById('billAmount').value = `₹${billAmount.toFixed(2)}`;
+  }
+  
+  // Handle Generate Bill Form Submission
+  document.getElementById('generateBillForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    try {
+      const response = await fetch('{% url "generate_single_room_bill" %}', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(`✓ ${data.message}\n\nBill Details:\n` +
+              `Units: ${data.bill.units_consumed}\n` +
+              `Amount: ₹${data.bill.bill_amount}`);
+        
+        document.getElementById('generateBillModal').style.display = 'none';
+        location.reload(); // Reload to show updated totals
+      } else {
+        alert(`✗ Error: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('✗ Failed to generate bill. Please try again.');
+    }
+  });
+
 </script>
 {% endblock %}

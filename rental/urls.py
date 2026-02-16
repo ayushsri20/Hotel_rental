@@ -37,6 +37,7 @@ urlpatterns = [
     path('api/payment/record-bill-from-dashboard/', record_bill_payment_from_dashboard, name='record_bill_payment_dashboard'),
     path('api/maintenance/record/', record_maintenance, name='record_maintenance'),
     path('api/electricity/bill/add/', views.create_electricity_bill, name='create_electricity_bill'),
+    path('api/electricity/bill/generate/', views.generate_single_room_bill, name='generate_single_room_bill'),
     path('api/electricity/bill/bulk-add/', views.bulk_create_electricity_bills, name='bulk_create_electricity_bills'),
     path('api/electricity/payment/record/', views.record_electricity_payment, name='record_electricity_payment'),
     path('manage-users/', views.manage_users, name='manage_users'),
