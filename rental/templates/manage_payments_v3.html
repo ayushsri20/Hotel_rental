@@ -658,7 +658,7 @@
       <select name="building" class="filter-input" onchange="this.form.submit()">
         <option value="">All Buildings</option>
         {% for building in buildings %}
-        <option value="{{ building }}" {% if current_filters.building==building %}selected{% endif %}>Building {{
+        <option value="{{ building }}" {% if current_filters.building == building %}selected{% endif %}>Building {{
           building }}</option>
         {% endfor %}
       </select>
