@@ -645,11 +645,11 @@
   <form method="GET" id="filterForm">
     <div class="filter-grid">
       <select name="status" class="filter-input" onchange="this.form.submit()">
-        <option value="all" {% if current_filters.status=='all' %}selected{% endif %}>All Status</option>
-        <option value="pending" {% if current_filters.status=='pending' %}selected{% endif %}>Pending</option>
-        <option value="partial" {% if current_filters.status=='partial' %}selected{% endif %}>Partial</option>
-        <option value="paid" {% if current_filters.status=='paid' %}selected{% endif %}>Paid</option>
-        <option value="overdue" {% if current_filters.status=='overdue' %}selected{% endif %}>Overdue</option>
+        <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All Status</option>
+        <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="partial" {% if current_filters.status == 'partial' %}selected{% endif %}>Partial</option>
+        <option value="paid" {% if current_filters.status == 'paid' %}selected{% endif %}>Paid</option>
+        <option value="overdue" {% if current_filters.status == 'overdue' %}selected{% endif %}>Overdue</option>
       </select>
 
       <input type="month" name="month" class="filter-input" value="{{ current_filters.month }}"
