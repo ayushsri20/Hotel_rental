@@ -494,6 +494,81 @@
   .toast.error {
     border-left: 4px solid #ef4444;
   }
+
+  /* View Toggle & Table Styles */
+  .view-toggle {
+    display: inline-flex;
+    background: var(--bg-main);
+    padding: 0.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .view-btn {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .view-btn.active {
+    background: var(--bg-canvas);
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .ledger-table-container {
+    display: none;
+    /* Hidden by default */
+    background: var(--bg-main);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+  }
+
+  .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .ledger-table th {
+    background: var(--bg-canvas);
+    text-align: left;
+    padding: 1rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+    border-bottom: 2px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .ledger-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    vertical-align: middle;
+  }
+
+  .ledger-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .ledger-table tr:hover td {
+    background: var(--bg-canvas);
+  }
 </style>
 {% endblock %}
 
@@ -509,6 +584,16 @@
       <button onclick="openModal('addPaymentModal')" class="btn-premium btn-premium-primary">
         ➕ Record Payment
       </button>
+
+      <div class="view-toggle">
+        <button class="view-btn active" onclick="switchView('grid')" id="btn-grid">
+          📱 Grid
+        </button>
+        <button class="view-btn" onclick="switchView('list')" id="btn-list">
+          📋 List
+        </button>
+      </div>
+
       <button onclick="exportData('csv')" class="btn-premium btn-premium-secondary">
         📊 Export CSV
       </button>
@@ -560,11 +645,11 @@
   <form method="GET" id="filterForm">
     <div class="filter-grid">
       <select name="status" class="filter-input" onchange="this.form.submit()">
-        <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All Status</option>
-        <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>Pending</option>
-        <option value="partial" {% if current_filters.status == 'partial' %}selected{% endif %}>Partial</option>
-        <option value="paid" {% if current_filters.status == 'paid' %}selected{% endif %}>Paid</option>
-        <option value="overdue" {% if current_filters.status == 'overdue' %}selected{% endif %}>Overdue</option>
+        <option value="all" {% if current_filters.status=='all' %}selected{% endif %}>All Status</option>
+        <option value="pending" {% if current_filters.status=='pending' %}selected{% endif %}>Pending</option>
+        <option value="partial" {% if current_filters.status=='partial' %}selected{% endif %}>Partial</option>
+        <option value="paid" {% if current_filters.status=='paid' %}selected{% endif %}>Paid</option>
+        <option value="overdue" {% if current_filters.status=='overdue' %}selected{% endif %}>Overdue</option>
       </select>
 
       <input type="month" name="month" class="filter-input" value="{{ current_filters.month }}"
@@ -573,7 +658,8 @@
       <select name="building" class="filter-input" onchange="this.form.submit()">
         <option value="">All Buildings</option>
         {% for building in buildings %}
-        <option value="{{ building }}" {% if current_filters.building == building %}selected{% endif %}>Building {{ building }}</option>
+        <option value="{{ building }}" {% if current_filters.building==building %}selected{% endif %}>Building {{
+          building }}</option>
         {% endfor %}
       </select>
 
@@ -654,7 +740,7 @@
       <div class="payment-progress">
         {% widthratio payment.paid_amount payment.get_total_amount_due 100 as progress_percent %}
         <div class="progress-bar-container">
-          <div class="progress-bar-fill" style="width: {{ progress_percent }}%"></div>
+          <div class="progress-bar-fill" style="width: {{ progress_percent|default:0 }}%"></div>
         </div>
         <div class="progress-labels">
           <span>Paid: ₹{{ payment.paid_amount }}</span>
@@ -751,6 +837,82 @@
   {% endfor %}
 </div>
 
+<!-- Table View -->
+<div class="ledger-table-container glass-panel" id="paymentsTable">
+  <table class="ledger-table">
+    <thead>
+      <tr>
+        <th>Room</th>
+        <th>Tenant</th>
+        <th>Month</th>
+        <th>Status</th>
+        <th>Rent</th>
+        <th>Utilities</th>
+        <th>Total Due</th>
+        <th>Paid</th>
+        <th>Remaining</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payment in monthly_payments %}
+      <tr class="payment-row-table" data-room="{{ payment.room.number }}" data-status="{{ payment.payment_status }}">
+        <td style="font-weight: 700; color: var(--primary);">{{ payment.room.number }}</td>
+        <td>
+          {% if payment.guest %}
+          <div style="font-weight: 600;">{{ payment.guest.full_name }}</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">{{ payment.guest.phone }}</div>
+          {% else %}
+          <span style="color: var(--text-muted); font-style: italic;">No Tenant</span>
+          {% endif %}
+        </td>
+        <td style="white-space: nowrap;">{{ payment.month|date:"M Y" }}</td>
+        <td>
+          <span class="status-badge status-{{ payment.payment_status }}"
+            style="font-size: 0.65rem; padding: 0.25rem 0.5rem;">
+            {% if payment.payment_status == 'paid' %}✓ Paid
+            {% elif payment.payment_status == 'partial' %}⏳ Partial
+            {% elif payment.payment_status == 'overdue' %}⚠️ Overdue
+            {% else %}○ Pending{% endif %}
+          </span>
+        </td>
+        <td>₹{{ payment.rent_amount }}</td>
+        <td>
+          {% if payment.get_electricity_amount > 0 %}
+          <span style="color: #f59e0b;">₹{{ payment.get_electricity_amount }}</span>
+          {% else %}
+          <span style="color: var(--text-muted);">-</span>
+          {% endif %}
+        </td>
+        <td style="font-weight: 700;">₹{{ payment.get_total_amount_due }}</td>
+        <td style="font-weight: 700; color: #10b981;">₹{{ payment.paid_amount }}</td>
+        <td style="font-weight: 700; color: #ef4444;">₹{{ payment.get_total_remaining }}</td>
+        <td>
+          <div style="display: flex; gap: 0.5rem;">
+            <button
+              onclick="openPaymentModal('{{ payment.id }}', '{{ payment.room.number }}', '{{ payment.get_total_remaining }}')"
+              class="btn-premium btn-premium-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;"
+              title="Record Payment">
+              ➕
+            </button>
+            <button onclick="viewDetails('{{ payment.id }}')" class="btn-premium btn-premium-secondary"
+              style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="View History">
+              📊
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="10" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+          No payments found for this criteria.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 <!-- Add Payment Modal -->
 <div id="addPaymentModal" class="modal-overlay" onclick="closeModal(event)">
   <div class="card-premium modal-content glass-panel" onclick="event.stopPropagation()">
@@ -775,6 +937,8 @@
         <label
           style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Room
           & Tenant</label>
+        <input type="text" id="tenantSearch" class="input" placeholder="Type to search tenant..."
+          style="margin-bottom: 0.5rem; font-size: 0.8rem; padding: 0.5rem;" onkeyup="filterTenantOptions()">
         <select name="payment_id" id="formPaymentId" class="input" required>
           <option value="">Loading...</option>
         </select>
@@ -941,46 +1105,38 @@
     }, 3000);
   }
 
+  // Store payments data globally for filtering
+  window.currentMonthPayments = [];
+
   // Load payments for selected month
   function loadPaymentsForMonth() {
     const monthSelector = document.getElementById('monthSelector');
     const paymentSelector = document.getElementById('formPaymentId');
-    const selectedMonth = monthSelector.value;
+    let selectedMonth = monthSelector.value;
+    const amountInput = document.querySelector('input[name="payment_amount"]');
 
-    // Clear current options
+    // If no month selected or selector is empty, use current month
+    if (!selectedMonth) {
+      const now = new Date();
+      selectedMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    } else if (selectedMonth.length === 7) {
+      // Convert YYYY-MM to YYYY-MM-DD format for API
+      selectedMonth += '-01';
+    }
+
+    // Clear current state
     paymentSelector.innerHTML = '<option value="">Loading...</option>';
+    amountInput.value = '';
+    const searchInput = document.getElementById('tenantSearch');
+    if (searchInput) searchInput.value = ''; // Clear search
 
     // Fetch payments for selected month
     fetch(`/api/payments/by-month/?month=${selectedMonth}`)
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          paymentSelector.innerHTML = '<option value="">Select Room...</option>';
-
-          if (data.payments.length === 0) {
-            paymentSelector.innerHTML = '<option value="">No rooms found for this month</option>';
-            return;
-          }
-
-          data.payments.forEach(payment => {
-            const option = document.createElement('option');
-            option.value = payment.id;
-
-            // Show status indicator
-            const statusIcon = payment.status === 'paid' ? '✓' :
-              payment.status === 'partial' ? '⏳' :
-                payment.status === 'overdue' ? '⚠️' : '○';
-
-            option.textContent = `${statusIcon} Room ${payment.room_number} - ${payment.tenant_name} (₹${payment.remaining} pending)`;
-
-            // Disable if already paid
-            if (payment.status === 'paid') {
-              option.disabled = true;
-              option.textContent += ' - PAID';
-            }
-
-            paymentSelector.appendChild(option);
-          });
+          window.currentMonthPayments = data.payments; // Store for search
+          renderTenantOptions(data.payments);
         } else {
           paymentSelector.innerHTML = '<option value="">Error loading rooms</option>';
           showToast(data.message || 'Error loading payments', 'error');
@@ -993,9 +1149,120 @@
       });
   }
 
+  // Render options into the select box
+  function renderTenantOptions(payments) {
+    const paymentSelector = document.getElementById('formPaymentId');
+    paymentSelector.innerHTML = '<option value="">Select Room / Tenant...</option>';
+
+    if (payments.length == = 0) {
+      paymentSelector.innerHTML = '<option value="">No payments found</option>';
+      return;
+    }
+
+    payments.forEach(payment => {
+      const option = document.createElement('option');
+      option.value = payment.id;
+      option.dataset.remaining = payment.remaining;
+
+      const statusIcon = payment.status == = 'paid' ? '✓' :
+        payment.status == = 'partial' ? '⏳' :
+          payment.status == = 'overdue' ? '⚠️' : '○';
+
+      option.textContent = `${statusIcon} Room ${payment.room_number} - ${payment.tenant_name} (₹${payment.remaining})`;
+
+      if (payment.status == = 'paid') {
+      option.disabled = true;
+      option.textContent += ' - PAID';
+    }
+    paymentSelector.appendChild(option);
+  });
+  }
+
+  // Filter options based on search input
+  function filterTenantOptions() {
+    const searchTerm = document.getElementById('tenantSearch').value.toLowerCase();
+
+    if (!searchTerm) {
+      renderTenantOptions(window.currentMonthPayments);
+      return;
+    }
+
+    const filtered = window.currentMonthPayments.filter(p => {
+      return p.room_number.toLowerCase().includes(searchTerm) ||
+        p.tenant_name.toLowerCase().includes(searchTerm);
+    });
+
+    renderTenantOptions(filtered);
+  }
+
+  // Auto-fill amount when room is selected
+  function attachFormListeners() {
+    const formPaymentIdElement = document.getElementById('formPaymentId');
+    if (!formPaymentIdElement) {
+      console.error('formPaymentId element not found');
+      return;
+    }
+
+    formPaymentIdElement.addEventListener('change', function () {
+      const selectedOption = this.options[this.selectedIndex];
+      const amountInput = document.querySelector('input[name="payment_amount"]');
+
+      if (selectedOption && selectedOption.dataset.remaining) {
+        // Auto-fill the exact remaining amount
+        amountInput.value = selectedOption.dataset.remaining;
+
+        // Flash the input to indicate auto-fill
+        amountInput.style.transition = 'background-color 0.3s';
+        amountInput.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'; // Light green
+        setTimeout(() => {
+          amountInput.style.backgroundColor = '';
+        }, 500);
+
+        // Update helper text if it exists (or create it)
+        let helper = document.getElementById('amountHelper');
+        if (!helper) {
+          helper = document.createElement('div');
+          helper.id = 'amountHelper';
+          helper.style.fontSize = '0.75rem';
+          helper.style.color = 'var(--text-muted)';
+          helper.style.marginTop = '0.25rem';
+          amountInput.parentNode.appendChild(helper);
+        }
+        helper.innerHTML = `Remaining Balance: <strong style="color: var(--primary)">₹${selectedOption.dataset.remaining}</strong>`;
+      } else {
+        amountInput.value = '';
+        const helper = document.getElementById('amountHelper');
+        if (helper) helper.innerHTML = '';
+      }
+    });
+  }
+
+  // Initialize month selector with current month if empty
+  function initializeMonthSelector() {
+    const monthSelector = document.getElementById('monthSelector');
+    if (!monthSelector) return;
+
+    // If selector is empty, add current month as default option
+    if (monthSelector.options.length === 0) {
+      const now = new Date();
+      const monthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const monthLabel = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const option = document.createElement('option');
+      option.value = monthValue;
+      option.textContent = monthLabel;
+      option.selected = true;
+      monthSelector.appendChild(option);
+    }
+  }
+
   // Load current month's payments on page load
   document.addEventListener('DOMContentLoaded', function () {
+    initializeMonthSelector();
     loadPaymentsForMonth();
+    attachFormListeners();
+    const savedView = localStorage.getItem('ledgerView') || 'grid';
+    switchView(savedView);
   });
 
   // Payment form submission
@@ -1061,11 +1328,35 @@
     }
   }
 
+  // View Switching
+  function switchView(view) {
+    const grid = document.getElementById('paymentsGrid');
+    const table = document.getElementById('paymentsTable');
+    const btnGrid = document.getElementById('btn-grid');
+    const btnList = document.getElementById('btn-list');
+
+    if (view == = 'grid') {
+      grid.style.display = 'grid';
+      table.style.display = 'none';
+      btnGrid.classList.add('active');
+      btnList.classList.remove('active');
+    } else {
+      grid.style.display = 'none';
+      table.style.display = 'block';
+      btnGrid.classList.remove('active');
+      btnList.classList.add('active');
+    }
+
+    // Save preference
+    localStorage.setItem('ledgerView', view);
+  }
+
   // Filter payments (client-side search)
   function filterPayments() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const cards = document.querySelectorAll('.ledger-card');
 
+    // Filter Grid Cards
+    const cards = document.querySelectorAll('.ledger-card');
     cards.forEach(card => {
       const roomNumber = card.dataset.room.toLowerCase();
       const tenantName = card.querySelector('.tenant-name')?.textContent.toLowerCase() || '';
@@ -1076,7 +1367,28 @@
         card.style.display = 'none';
       }
     });
+
+    // Filter Table Rows
+    const rows = document.querySelectorAll('.payment-row-table');
+    rows.forEach(row => {
+      const roomNumber = row.dataset.room.toLowerCase();
+      // Tenant name is in 2nd column
+      const tenantName = row.children[1].textContent.toLowerCase();
+
+      if (roomNumber.includes(searchTerm) || tenantName.includes(searchTerm)) {
+        row.style.display = 'table-row';
+      } else {
+        row.style.display = 'none';
+      }
+    });
   }
+
+  // Load view preference on startup
+  document.addEventListener('DOMContentLoaded', function () {
+    loadPaymentsForMonth();
+    const savedView = localStorage.getItem('ledgerView') || 'grid';
+    switchView(savedView);
+  });
 
   // Clear all filters
   function clearFilters() {
@@ -1132,7 +1444,7 @@
       </div>
     `;
 
-    if (records.length === 0) {
+    if (records.length == = 0) {
       html += '<div style="text-align: center; padding: 3rem; color: var(--text-muted);">No payment records yet</div>';
     } else {
       html += '<div style="display: flex; flex-direction: column; gap: 1rem;">';
