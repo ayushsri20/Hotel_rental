@@ -2247,8 +2247,9 @@ def generate_single_room_bill(request):
         
         # Parse numeric fields
         try:
-            ending_reading = float(ending_reading_str)
-            rate_per_unit = float(rate_per_unit_str)
+            from decimal import Decimal
+            ending_reading = Decimal(str(ending_reading_str))
+            rate_per_unit = Decimal(str(rate_per_unit_str))
         except (TypeError, ValueError):
             return JsonResponse({'success': False, 'message': 'Invalid numeric input'}, status=400)
         
@@ -2275,7 +2276,7 @@ def generate_single_room_bill(request):
             month__lt=month
         ).order_by('-month').first()
         
-        starting_reading = previous_bill.ending_reading if previous_bill else 13.0
+        starting_reading = previous_bill.ending_reading if previous_bill else Decimal('13.0')
         
         # Validate readings
         if ending_reading < starting_reading:
