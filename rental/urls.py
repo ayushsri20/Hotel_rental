@@ -53,4 +53,5 @@ urlpatterns = [
     path('api/payment-record/<int:record_id>/update/', views.update_payment_record, name='update_payment_record'),
     path('api/payment-record/<int:record_id>/delete/', views.delete_payment_record, name='delete_payment_record'),
     path('api/payments/by-month/', views.get_payments_by_month, name='get_payments_by_month'),
+    path('api/dashboard/metrics/', dashboard_metrics_api, name='dashboard_metrics_api'),
 ]

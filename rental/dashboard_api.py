@@ -19,7 +19,6 @@ def is_admin(user):
     return user.is_staff or user.is_superuser
 
 @login_required(login_url='login')
-@user_passes_test(is_admin)
 def dashboard_metrics_api(request):
     """
     Lightweight API endpoint that returns dashboard metrics for real-time updates.
