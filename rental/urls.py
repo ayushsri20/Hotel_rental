@@ -54,5 +54,3 @@ urlpatterns = [
     path('api/payment-record/<int:record_id>/delete/', views.delete_payment_record, name='delete_payment_record'),
     path('api/payments/by-month/', views.get_payments_by_month, name='get_payments_by_month'),
 ]
-    path('api/room/<int:room_id>/electricity-history/', views.get_room_electricity_history, name='get_room_electricity_history'),
-    path('api/dashboard/metrics/', dashboard_metrics_api, name='dashboard_metrics_api'),
