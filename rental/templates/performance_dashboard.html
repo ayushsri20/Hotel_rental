@@ -251,7 +251,7 @@
     <div style="height: 300px; display: flex; align-items: flex-end; gap: 2rem;">
       <!-- Simple CSS Bar Chart for distribution -->
       {% for b_name, count in building_occupancy.items %}
-      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+      <div style="flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 0.5rem;">
         <div
           id="occupancy-bar-{{ b_name }}" data-building="{{ b_name }}" data-residents="{{ count }}"
           style="width: 100%; background: var(--grad-primary); border-radius: 4px 4px 0 0; height: {% widthratio count 12 100 %}%; transition: height 1s;">
@@ -384,7 +384,7 @@ function formatTimestamp(isoString) {
 
 async function refreshMetrics() {
   try {
-    const response = await fetch('/api/dashboard/metrics/');
+    const response = await fetch('/api/dashboard/metrics/', { cache: 'no-store' });
     const data = await response.json();
     if (data.success) {
       const m = data.metrics;
