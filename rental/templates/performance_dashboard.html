@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Analytics Hub - Panesar PG{% endblock %}
+{% block title %}Analytics Hub{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -52,6 +52,62 @@
     color: var(--primary);
     font-weight: 800;
     font-size: 0.75rem;
+  }
+
+  .primary-metric-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--success);
+  }
+
+  .live-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--success);
+    display: inline-block;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+    animation: live-pulse 2s infinite;
+  }
+
+  @keyframes live-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  }
+
+  .payment-signal {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: var(--radius-md);
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .payment-signal.fresh {
+    animation: signal-flash 1.5s ease-out;
+  }
+
+  @keyframes signal-flash {
+    from { background: rgba(16, 185, 129, 0.35); }
+    to { background: rgba(16, 185, 129, 0.08); }
+  }
+
+  .payment-signal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 280px;
+    flex: 1;
   }
 
   @media (max-width: 768px) {
@@ -109,17 +165,34 @@
   </div>
 </header>
 
+<div class="card-premium primary-metric-card">
+  <div>
+    <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.35rem;">
+      <span class="live-dot"></span>
+      <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Payments Received (Realized Revenue)</span>
+    </div>
+    <div style="font-size: 2.75rem; font-weight: 900; color: var(--success);"><span id="realized-revenue">₹{{ total_collected|floatformat:0 }}</span></div>
+    <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Room rent collected this month · updated <span id="last-updated">just now</span></div>
+  </div>
+  <div class="payment-signal-list" id="paymentSignals">
+    {% for payment in recent_payments %}
+    <div class="payment-signal" data-created="{{ payment.created_at }}">
+      <span class="live-dot" style="animation:none;"></span>
+      <span>₹{{ payment.amount|floatformat:0 }} · Room {{ payment.room_number }}{% if payment.guest_name %} · {{ payment.guest_name }}{% endif %}</span>
+      <span style="margin-left:auto; color:var(--text-muted); font-weight:500;">{{ payment.date|date:'d M' }}</span>
+    </div>
+    {% empty %}
+    <div style="font-size:0.8rem; color:var(--text-muted);">No payments recorded yet.</div>
+    {% endfor %}
+  </div>
+</div>
+
 <div class="stat-row">
   <div class="card-premium stat-card">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Expected
-      Rent Expected</div>
+      Rent (Assigned Rooms)</div>
     <div style="font-size: 2rem; font-weight: 900; color: var(--primary);"><span id="expected-yield">₹{{ total_expected_rent|floatformat:0 }}</span>
     </div>
-  </div>
-  <div class="card-premium stat-card" style="border-top-color: var(--success);">
-    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Realized
-      Revenue</div>
-    <div style="font-size: 2rem; font-weight: 900; color: var(--success);"><span id="realized-revenue">₹{{ total_collected|floatformat:0 }}</span></div>
   </div>
   <div class="card-premium stat-card" style="border-top-color: var(--warning);">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Electricity Collected</div>
@@ -144,10 +217,12 @@
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Maintenance Costs</div>
     <div style="font-size: 2rem; font-weight: 900; color: var(--warning);"><span id="maintenance-expenses">₹{{ total_maintenance_expenses|floatformat:0 }}</span></div>
   </div>
-  <div class="card-premium stat-card" style="border-top-color: var(--success);">
+  {% if show_net_revenue %}
+  <div class="card-premium stat-card" id="net-revenue-card" style="border-top-color: var(--success);">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Net Revenue</div>
     <div style="font-size: 2rem; font-weight: 900; color: var(--success);"><span id="net-revenue">₹{{ net_revenue|floatformat:0 }}</span></div>
   </div>
+  {% endif %}
 </div>
 
 <div class="card-premium glass-panel" style="margin-bottom: 2rem;">
@@ -185,6 +260,8 @@
       </div>
       {% endfor %}
     </div>
+    <h4 style="margin: 1.5rem 0 0.5rem; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Tenants per Building</h4>
+    <svg id="occupancyLineChart" viewBox="0 0 600 220" preserveAspectRatio="none" style="width:100%; height:220px;"></svg>
   </div>
 
   <div class="perf-chart-container" style="display: flex; flex-direction: column; justify-content: center;">
@@ -226,7 +303,7 @@
     style="padding: 1.5rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
     <h2 class="font-luxury" style="color: var(--primary); font-size: 1.25rem;">Detailed Unit Audit</h2>
     <span class="metric-bubble">{{ room_data|length }} Units Scanned</span>
-    <span class="metric-bubble" style="background: var(--success-light); color: var(--success);">⏱ Last Updated: <span id="last-updated">Just now</span></span>
+    <span class="metric-bubble" style="background: var(--success-light); color: var(--success);">⏱ Live</span>
   </div>
   <div style="overflow-x: auto;">
     <table class="data-table-luxury">
@@ -324,8 +401,10 @@ async function refreshMetrics() {
         if (bar) bar.style.height = `${Math.min((residents / 12) * 100, 100)}%`;
         if (label) label.textContent = `${building}: ${residents} residents`;
       });
-      updateValue('maintenance-expenses', '₹' + m.total_expenses.toLocaleString('en-IN', {maximumFractionDigits: 0}));
+      updateValue('maintenance-expenses', '₹' + m.maintenance_expenses.toLocaleString('en-IN', {maximumFractionDigits: 0}));
       updateValue('net-revenue', '₹' + m.net_revenue.toLocaleString('en-IN', {maximumFractionDigits: 0}));
+      renderOccupancyLineChart(m.resident_distribution || {});
+      renderPaymentSignals(data.recent_payments || []);
       lastUpdated = new Date(data.meta.last_updated);
       updateTimestamp();
     }
@@ -348,6 +427,69 @@ function updateTimestamp() {
   const el = document.getElementById('last-updated');
   if (el) el.textContent = formatTimestamp(lastUpdated.toISOString());
 }
+
+let knownPaymentKeys = new Set(
+  Array.from(document.querySelectorAll('#paymentSignals .payment-signal')).map(el => el.dataset.created)
+);
+
+function renderPaymentSignals(payments) {
+  const container = document.getElementById('paymentSignals');
+  if (!container) return;
+  if (!payments.length) {
+    container.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">No payments recorded yet.</div>';
+    return;
+  }
+  container.innerHTML = payments.map(payment => {
+    const isNew = !knownPaymentKeys.has(payment.created_at);
+    const guest = payment.guest_name ? ` · ${payment.guest_name}` : '';
+    const amount = payment.amount.toLocaleString('en-IN', {maximumFractionDigits: 0});
+    return `<div class="payment-signal${isNew ? ' fresh' : ''}" data-created="${payment.created_at}">
+      <span class="live-dot" style="animation:${isNew ? 'live-pulse 2s infinite' : 'none'};"></span>
+      <span>₹${amount} · Room ${payment.room_number}${guest}</span>
+      <span style="margin-left:auto; color:var(--text-muted); font-weight:500;">${formatTimestamp(payment.created_at)}</span>
+    </div>`;
+  }).join('');
+  knownPaymentKeys = new Set(payments.map(payment => payment.created_at));
+}
+
+function renderOccupancyLineChart(distribution) {
+  const svg = document.getElementById('occupancyLineChart');
+  if (!svg) return;
+  const entries = Object.entries(distribution);
+  if (!entries.length) return;
+
+  const width = 600, height = 220, padding = 34;
+  const maxValue = Math.max(1, ...entries.map(([, count]) => count));
+  const stepX = entries.length > 1 ? (width - padding * 2) / (entries.length - 1) : 0;
+  const points = entries.map(([building, count], index) => ({
+    building,
+    count,
+    x: padding + index * stepX,
+    y: height - padding - (count / maxValue) * (height - padding * 2),
+  }));
+
+  const gridLines = [0, 0.5, 1].map(ratio => {
+    const y = height - padding - ratio * (height - padding * 2);
+    return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="rgba(148,163,184,0.3)" stroke-width="1"/>
+      <text x="4" y="${y + 4}" font-size="10" fill="#94a3b8">${Math.round(ratio * maxValue)}</text>`;
+  }).join('');
+
+  const polyline = `<polyline fill="none" stroke="#10b981" stroke-width="3" stroke-linejoin="round"
+    points="${points.map(p => `${p.x},${p.y}`).join(' ')}"/>`;
+
+  const markers = points.map(p => `
+    <circle cx="${p.x}" cy="${p.y}" r="4.5" fill="#10b981"/>
+    <text x="${p.x}" y="${p.y - 10}" font-size="11" font-weight="700" fill="#0f172a" text-anchor="middle">${p.count}</text>
+    <text x="${p.x}" y="${height - padding + 16}" font-size="11" fill="#64748b" text-anchor="middle">${p.building}</text>`).join('');
+
+  svg.innerHTML = gridLines + polyline + markers;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderOccupancyLineChart({
+    {% for b_name, count in building_occupancy.items %}'{{ b_name|escapejs }}': {{ count }},{% endfor %}
+  });
+});
 
 function startAutoRefresh() {
   refreshMetrics();

@@ -61,7 +61,10 @@ def dashboard_metrics_api(request):
                 monthly_rent = monthly_payment.rent_amount
                 bill = monthly_payment.room.electricity_bills.filter(month=current_month).first()
                 rent_collected = monthly_payment.paid_amount
-                electricity_collected = bill.paid_amount if bill else Decimal('0.00')
+                # Electricity counts as collected only once the tenant has settled
+                # the full room dues (rent + electricity) for the month.
+                dues_cleared = monthly_payment.get_total_remaining() <= 0
+                electricity_collected = bill.paid_amount if (bill and dues_cleared) else Decimal('0.00')
                 electricity_expense = bill.bill_amount if bill else Decimal('0.00')
                 pending = monthly_payment.get_total_remaining()
             else:
@@ -81,11 +84,12 @@ def dashboard_metrics_api(request):
         
         # Calculate derived metrics
         total_expected_due = acc_expected_monthly
-        total_expected_rent = sum(
-            room.effective_rent for room in all_rooms
-            if Guest.objects.filter(room=room, is_active=True).exists()
-        )
-        total_expected_rent = Decimal(total_expected_rent)
+        total_expected_rent = Decimal('0.00')
+        for room in all_rooms:
+            if not Guest.objects.filter(room=room, is_active=True).exists():
+                continue
+            monthly_payment = MonthlyPayment.objects.filter(room=room, month=current_month).first()
+            total_expected_rent += monthly_payment.rent_amount if monthly_payment else room.effective_rent
         total_collected = acc_rent_collected
         total_electricity_collected = acc_electricity_collected
         total_electricity_expense = acc_electricity_expense
@@ -123,6 +127,19 @@ def dashboard_metrics_api(request):
                 'occupancy_rate': float(occupancy_rate),
                 'resident_distribution': resident_distribution,
             },
+            'recent_payments': [
+                {
+                    'room_number': record.monthly_payment.room.number,
+                    'guest_name': record.monthly_payment.guest.full_name if record.monthly_payment.guest else '',
+                    'amount': float(record.payment_amount),
+                    'method': record.get_payment_method_display(),
+                    'date': record.payment_date.isoformat(),
+                    'created_at': record.created_at.isoformat(),
+                }
+                for record in PaymentRecord.objects.select_related(
+                    'monthly_payment__room', 'monthly_payment__guest'
+                ).order_by('-created_at')[:5]
+            ],
             'meta': {
                 'total_rooms': total_rooms,
                 'occupied_rooms': occupied_rooms,
