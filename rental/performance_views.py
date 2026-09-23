@@ -68,7 +68,10 @@ def performance_dashboard(request):
                 monthly_rent = monthly_payment.rent_amount
                 bill = monthly_payment.room.electricity_bills.filter(month=current_month).first()
                 rent_collected = monthly_payment.paid_amount
-                electricity_collected = bill.paid_amount if bill else Decimal('0.00')
+                # Electricity is recognised as collected only once the tenant has
+                # settled the full room dues (rent + electricity) for the month.
+                dues_cleared = monthly_payment.get_total_remaining() <= 0
+                electricity_collected = bill.paid_amount if (bill and dues_cleared) else Decimal('0.00')
                 electricity_expense = bill.bill_amount if bill else Decimal('0.00')
                 pending = monthly_payment.get_total_remaining()
                 payment_status = monthly_payment.payment_status
@@ -136,6 +139,20 @@ def performance_dashboard(request):
         total_expenses = maintenance_expenses + total_electricity_expense
         net_revenue = total_collected + total_electricity_collected - total_expenses
 
+        recent_payments = [
+            {
+                'room_number': record.monthly_payment.room.number,
+                'guest_name': record.monthly_payment.guest.full_name if record.monthly_payment.guest else '',
+                'amount': float(record.payment_amount),
+                'method': record.get_payment_method_display(),
+                'date': record.payment_date,
+                'created_at': record.created_at.isoformat(),
+            }
+            for record in PaymentRecord.objects.select_related(
+                'monthly_payment__room', 'monthly_payment__guest'
+            ).order_by('-created_at')[:5]
+        ]
+
         expense_rows = []
         for bill in ElectricityBill.objects.filter(
             month=current_month, guest__is_active=True
@@ -202,6 +219,8 @@ def performance_dashboard(request):
             'collection_efficiency': float(collection_efficiency),
             'occupancy_rate': float(occupancy_rate),
             'building_occupancy': building_occupancy,
+            'recent_payments': recent_payments,
+            'show_net_revenue': float(net_revenue) != float(total_collected),
             'expense_categories': MaintenanceExpense.EXPENSE_CATEGORIES,
             'room_data': room_data,
             'expense_rows': expense_rows,

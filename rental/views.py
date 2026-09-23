@@ -196,7 +196,15 @@ def dashboard(request):
         # Calculate active stats
         active_rooms_count = rooms.filter(is_available=False).count()
         occupancy_rate = (active_rooms_count / rooms.count() * 100) if rooms.count() > 0 else 0
-        
+
+        current_month = datetime.now().date().replace(day=1)
+        payments_received = MonthlyPayment.objects.filter(month=current_month).aggregate(
+            total=Sum('paid_amount')
+        )['total'] or Decimal('0.00')
+        recent_payments = PaymentRecord.objects.select_related(
+            'monthly_payment__room', 'monthly_payment__guest'
+        ).order_by('-created_at')[:4]
+
         context = {
             'total_rooms': rooms.count(),
             'available_rooms': rooms.filter(is_available=True).count(),
@@ -208,6 +216,8 @@ def dashboard(request):
             'all_bookings': bookings[:5],
             'total_guests': guests.count(),
             'buildings': mapped_buildings,
+            'payments_received': payments_received,
+            'recent_payments': recent_payments,
             'is_admin': request.user.is_staff or request.user.is_superuser,
         }
         

@@ -5,82 +5,6 @@
 
 {% block extra_head %}
 <style>
-  /* ── Dashboard Header ─────────────────────────────────────── */
-  .dash-hero {
-    background: var(--grad-primary);
-    border-radius: var(--radius-lg);
-    padding: 2rem 2.5rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .dash-hero h1 {
-    font-family: 'Cinzel', serif;
-    font-size: 2rem;
-    color: #fff;
-    letter-spacing: 0.04em;
-  }
-
-  .dash-hero p {
-    color: rgba(255,255,255,0.75);
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-  }
-
-  /* ── Horizontal Module Nav Strip ──────────────────────────── */
-  .module-nav {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    background: var(--bg-canvas);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: 0.625rem 1rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow-sm);
-    align-items: center;
-  }
-
-  .module-nav-label {
-    font-size: 0.65rem;
-    font-weight: 800;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding-right: 0.75rem;
-    border-right: 1px solid var(--border-subtle);
-    margin-right: 0.25rem;
-  }
-
-  .module-nav a {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.45rem 0.9rem;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: var(--transition-all);
-    border: 1px solid transparent;
-  }
-
-  .module-nav a:hover,
-  .module-nav a.active {
-    background: var(--primary-light);
-    color: var(--primary);
-    border-color: var(--primary);
-  }
-
-  .module-nav a span.nav-icon {
-    font-size: 1rem;
-  }
-
   /* ── Metric Cards Grid ─────────────────────────────────────── */
   .metric-grid {
     display: grid;
@@ -361,9 +285,67 @@
     box-shadow: var(--shadow-lg);
   }
 
+  /* ── Analytics Strip ───────────────────────────────────────── */
+  .analytics-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-subtle);
+    border-left: 4px solid #10b981;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .analytics-strip-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 240px;
+  }
+
+  .analytics-strip-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .signal-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.5rem;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+
+  .signal-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #10b981;
+    display: inline-block;
+    animation: signal-pulse 2s infinite;
+  }
+
+  @keyframes signal-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
+    70% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  }
+
   @media (max-width: 640px) {
     .metric-grid { grid-template-columns: 1fr 1fr; }
-    .module-nav-label { display: none; }
   }
   @media (max-width: 480px) {
     .metric-grid { grid-template-columns: 1fr; }
@@ -379,70 +361,38 @@
 </div>
 {% endif %}
 
-<!-- ── Hero Header ──────────────────────────────────────────── -->
-<div class="dash-hero">
-  <div>
-    <h1>PANESAR HOTELS</h1>
-    <p>Live Operational Dashboard</p>
-  </div>
-  <div style="display:flex;align-items:center;gap:0.75rem;">
-    <span style="width:8px;height:8px;background:#10b981;border-radius:50%;display:inline-block;box-shadow:0 0 0 3px rgba(16,185,129,0.3);"></span>
-    <span style="color:rgba(255,255,255,0.85);font-size:0.8rem;font-weight:600;">System Online</span>
-  </div>
-</div>
-
-<!-- ── Module Nav Strip (Horizontal, below hero) ────────────── -->
-<nav class="module-nav">
-  <span class="module-nav-label">Navigate</span>
-  <a href="{% url 'home' %}" class="active">
-    <span class="nav-icon">🏠</span> Overview
-  </a>
-  <a href="{% url 'manage_guests' %}">
-    <span class="nav-icon">👥</span> Residents
-  </a>
-  <a href="{% url 'manage_payments' %}">
-    <span class="nav-icon">💳</span> Payments
-  </a>
-  <a href="{% url 'manage_electricity_bills' %}">
-    <span class="nav-icon">⚡</span> Utilities
-  </a>
-  {% if is_admin %}
-  <a href="{% url 'performance_dashboard' %}">
-    <span class="nav-icon">📊</span> Analytics
-  </a>
-  {% endif %}
-</nav>
-
-<!-- ── Metric Cards ─────────────────────────────────────────── -->
-<section class="metric-grid">
-
-  <!-- Card 1: Analytics / Occupancy -->
-  {% if is_admin %}
-  <a href="{% url 'performance_dashboard' %}" class="metric-card">
+<!-- ── Analytics Strip (full width) ─────────────────────────── -->
+{% if is_admin %}
+<a href="{% url 'performance_dashboard' %}" class="analytics-strip">
+  <div class="analytics-strip-main">
     <div class="metric-top">
       <div class="metric-icon">📊</div>
       <span class="metric-badge gold">Analytics</span>
     </div>
-    <div>
-      <div class="metric-label">Yield</div>
-      <div class="metric-value">{{ occupancy_rate }}<sub>%</sub></div>
+    <div class="metric-label">Payments Received (this month)</div>
+    <div class="metric-value" style="color:#059669;">₹{{ payments_received|floatformat:0 }}</div>
+    <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;color:var(--text-muted);font-weight:600;">
+      <span class="signal-dot"></span> Live · Yield {{ occupancy_rate }}% · {{ active_rooms_count }}/{{ total_rooms }} occupied
     </div>
-    <div class="ring-wrap">
-      <svg class="ring-svg" width="52" height="52" viewBox="0 0 52 52">
-        <circle class="ring-bg" cx="26" cy="26" r="20" fill="none" stroke-width="5"/>
-        <circle class="ring-fg" cx="26" cy="26" r="20" fill="none" stroke-width="5"
-          stroke-dasharray="125.66"
-          stroke-dashoffset="{{ occupancy_ring_offset|default:'50' }}"
-          id="ring-occupancy"
-        />
-      </svg>
-      <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.4;">
-        <strong style="color:var(--text-main);">{{ active_rooms_count }}/{{ total_rooms }}</strong><br>Occupied
-      </div>
+  </div>
+  <div class="analytics-strip-feed">
+    <div style="font-size:0.65rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);">Recent Updates</div>
+    {% for payment in recent_payments %}
+    <div class="signal-row">
+      <span class="signal-dot"></span>
+      <span>₹{{ payment.payment_amount|floatformat:0 }} · Room {{ payment.monthly_payment.room.number }}{% if payment.monthly_payment.guest %} · {{ payment.monthly_payment.guest.full_name }}{% endif %}</span>
+      <span style="margin-left:auto;color:var(--text-muted);font-weight:500;">{{ payment.payment_date|date:'d M' }}</span>
     </div>
-    <span class="metric-action">View Insights →</span>
-  </a>
-  {% endif %}
+    {% empty %}
+    <div style="font-size:0.8rem;color:var(--text-muted);">No payments recorded yet.</div>
+    {% endfor %}
+  </div>
+  <span class="metric-action">View Insights →</span>
+</a>
+{% endif %}
+
+<!-- ── Metric Cards ─────────────────────────────────────────── -->
+<section class="metric-grid">
 
   <!-- Card 2: Tenancy Register -->
   <a href="{% url 'manage_guests' %}" class="metric-card">

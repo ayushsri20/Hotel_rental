@@ -507,7 +507,8 @@ class BuildingRoomIntegrationTests(TestCase):
         self.assertEqual(response.context['total_expected_rent'], 7001.0)
         self.assertEqual(response.context['total_expected_due'], 7081.0)
         self.assertEqual(response.context['total_collected'], 0.0)
-        self.assertEqual(response.context['total_electricity_collected'], 30.0)
+        # Partially settled dues: electricity is not recognised as collected yet.
+        self.assertEqual(response.context['total_electricity_collected'], 0.0)
         self.assertEqual(response.context['total_electricity_expense'], 80.0)
 
         response = self.client.get(reverse('dashboard_metrics_api'))
@@ -515,6 +516,33 @@ class BuildingRoomIntegrationTests(TestCase):
         self.assertEqual(response.json()['metrics']['expected_yield'], 7001.0)
         self.assertEqual(response.json()['metrics']['expected_total_due'], 7081.0)
         self.assertEqual(response.json()['metrics']['realized_revenue'], 0.0)
-        self.assertEqual(response.json()['metrics']['electricity_collected'], 30.0)
+        self.assertEqual(response.json()['metrics']['electricity_collected'], 0.0)
         self.assertEqual(response.json()['metrics']['electricity_expense'], 80.0)
-        self.assertEqual(response.json()['metrics']['net_revenue'], -50.0)
+        self.assertEqual(response.json()['metrics']['net_revenue'], -80.0)
+
+    def test_electricity_counts_as_collected_only_after_full_dues_are_paid(self):
+        room = Room.objects.create(
+            number='G-110', building=self.building, room_type='single', price=5000,
+        )
+        guest = Guest.objects.create(
+            first_name='Settled', last_name='Tenant', room=room,
+            check_in_date=date.today(), is_active=True,
+        )
+        month = date.today().replace(day=1)
+        bill = ElectricityBill.objects.create(
+            room=room, guest=guest, month=month, starting_reading=0,
+            ending_reading=10, units_consumed=10, rate_per_unit=10,
+            bill_amount=Decimal('100.00'), paid_amount=Decimal('100.00'),
+            due_date=date.today(),
+        )
+        payment = MonthlyPayment.objects.get(room=room)
+        payment.paid_amount = Decimal('5000.00')
+        payment.payment_status = 'paid'
+        payment.save()
+
+        response = self.client.get(reverse('performance_dashboard'))
+        self.assertEqual(response.context['total_collected'], 5000.0)
+        self.assertEqual(response.context['total_electricity_collected'], float(bill.paid_amount))
+
+        metrics = self.client.get(reverse('dashboard_metrics_api')).json()['metrics']
+        self.assertEqual(metrics['electricity_collected'], 100.0)
