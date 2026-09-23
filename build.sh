@@ -4,7 +4,7 @@
 set -o errexit  # Exit on error
 
 echo "=== Build Environment ==="
-echo "Python version: $(python --version)"
+echo "Python version: $(python3 --version)"
 echo "Current directory: $(pwd)"
 
 # Verify requirements.txt exists
@@ -15,16 +15,16 @@ if [ ! -f "requirements.txt" ]; then
 fi
 
 echo "=== Installing dependencies ==="
-pip install --upgrade pip
-pip install -r requirements.txt
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 
 echo "=== System Check ==="
-python manage.py check
+python3 manage.py check
 
 echo "=== Collecting static files ==="
 # Ensure STATIC_ROOT directory exists
 mkdir -p staticfiles
-python manage.py collectstatic --noinput --clear
+python3 manage.py collectstatic --noinput --clear
 
 echo "=== Verifying static files ==="
 ls -la staticfiles/
@@ -33,9 +33,9 @@ if [ -d "staticfiles/rental" ]; then
 fi
 
 echo "=== Running database migrations ==="
-python manage.py migrate --noinput
+python3 manage.py migrate --noinput
 
 echo "=== WSGI Verification ==="
-python -c "import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hotel_project.settings'); from hotel_project.wsgi import application; print('✓ WSGI application loaded successfully')"
+python3 -c "import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'hotel_project.settings'); from hotel_project.wsgi import application; print('✓ WSGI application loaded successfully')"
 
 echo "=== Build completed successfully ==="

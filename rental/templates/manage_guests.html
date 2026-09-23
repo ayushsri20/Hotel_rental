@@ -299,7 +299,7 @@
         </div>
         <div class="form-group">
           <label>Agreed Rent (₹)</label>
-          <input type="number" name="agreed_rent" id="formAgreedRent" class="input" value="7000">
+          <input type="number" name="agreed_rent" id="formAgreedRent" class="input" placeholder="Uses selected room rent" step="0.01">
         </div>
       </div>
 
@@ -346,7 +346,7 @@
             phone: '{{ guest.phone|default:""|escapejs }}',
               room_id: '{{ guest.room.id|default:"" }}',
                 check_in_date: '{{ guest.check_in_date|date:"Y-m-d"|default:"" }}',
-                  agreed_rent: '{{ guest.room.agreed_rent|default:"7000" }}',
+                  agreed_rent: '{{ guest.room.effective_rent|default:"" }}',
                     occupation: '{{ guest.occupation|default:"student"|escapejs }}',
                       student_college: '{{ guest.student_college|default:""|escapejs }}'
   } {% if not forloop.last %}, {% endif %}
@@ -367,6 +367,7 @@
   function openModal(mode, guestId = null) {
     const form = document.getElementById('guestForm');
     form.reset();
+    document.getElementById('formAgreedRent').dataset.manual = '';
     document.getElementById('formGuestId').value = '';
     document.getElementById('modalTitle').textContent = mode === 'add' ? 'Register Resident' : 'Edit Resident';
     document.getElementById('submitBtn').textContent = mode === 'add' ? 'Complete Registration' : 'Save Changes';

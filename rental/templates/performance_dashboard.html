@@ -1,78 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Analytics Hub - Panesar PG
-<script>
-// Real-Time Dashboard Metrics Auto-Refresh
-let refreshInterval;
-let lastUpdated = new Date();
-
-function formatTimestamp(isoString) {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffSeconds = Math.floor((now - date) / 1000);
-  if (diffSeconds < 5) return 'Just now';
-  if (diffSeconds < 60) return `${diffSeconds}s ago`;
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
-  return date.toLocaleTimeString();
-}
-
-async function refreshMetrics() {
-  try {
-    const response = await fetch('/api/dashboard/metrics/');
-    const data = await response.json();
-    if (data.success) {
-      const m = data.metrics;
-      updateValue('expected-yield', '₹' + m.expected_yield.toLocaleString('en-IN', {maximumFractionDigits: 0}));
-      updateValue('realized-revenue', '₹' + m.realized_revenue.toLocaleString('en-IN', {maximumFractionDigits: 0}));
-      updateValue('accounts-receivable', '₹' + m.accounts_receivable.toLocaleString('en-IN', {maximumFractionDigits: 0}));
-      updateValue('efficiency', m.collection_efficiency.toFixed(1) + '%');
-      updateValue('occupancy', m.occupancy_rate.toFixed(0) + '%');
-      lastUpdated = new Date(data.meta.last_updated);
-      updateTimestamp();
-      console.log('✓ Dashboard metrics refreshed');
-    }
-  } catch (error) {
-    console.error('Error refreshing metrics:', error);
-  }
-}
-
-function updateValue(id, newValue) {
-  const el = document.getElementById(id);
-  if (el && el.textContent !== newValue) {
-    el.style.transition = 'background-color 0.3s';
-    el.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
-    el.textContent = newValue;
-    setTimeout(() => { el.style.backgroundColor = ''; }, 300);
-  }
-}
-
-function updateTimestamp() {
-  const el = document.getElementById('last-updated');
-  if (el) el.textContent = formatTimestamp(lastUpdated.toISOString());
-}
-
-function startAutoRefresh() {
-  refreshMetrics();
-  refreshInterval = setInterval(refreshMetrics, 5000);
-  setInterval(updateTimestamp, 1000);
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    clearInterval(refreshInterval);
-    console.log('⏸ Dashboard refresh paused');
-  } else {
-    console.log('▶ Dashboard refresh resumed');
-    refreshMetrics();
-    refreshInterval = setInterval(refreshMetrics, 5000);
-  }
-});
-
-document.addEventListener('DOMContentLoaded', startAutoRefresh);
-</script>
-
-{% endblock %}
+{% block title %}Analytics Hub - Panesar PG{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -164,76 +93,6 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
   }
 </style>
 
-<script>
-// Real-Time Dashboard Metrics Auto-Refresh
-let refreshInterval;
-let lastUpdated = new Date();
-
-function formatTimestamp(isoString) {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffSeconds = Math.floor((now - date) / 1000);
-  if (diffSeconds < 5) return 'Just now';
-  if (diffSeconds < 60) return `${diffSeconds}s ago`;
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
-  return date.toLocaleTimeString();
-}
-
-async function refreshMetrics() {
-  try {
-    const response = await fetch('/api/dashboard/metrics/');
-    const data = await response.json();
-    if (data.success) {
-      const m = data.metrics;
-      updateValue('expected-yield', '₹' + m.expected_yield.toLocaleString('en-IN', {maximumFractionDigits: 0}));
-      updateValue('realized-revenue', '₹' + m.realized_revenue.toLocaleString('en-IN', {maximumFractionDigits: 0}));
-      updateValue('accounts-receivable', '₹' + m.accounts_receivable.toLocaleString('en-IN', {maximumFractionDigits: 0}));
-      updateValue('efficiency', m.collection_efficiency.toFixed(1) + '%');
-      updateValue('occupancy', m.occupancy_rate.toFixed(0) + '%');
-      lastUpdated = new Date(data.meta.last_updated);
-      updateTimestamp();
-      console.log('✓ Dashboard metrics refreshed');
-    }
-  } catch (error) {
-    console.error('Error refreshing metrics:', error);
-  }
-}
-
-function updateValue(id, newValue) {
-  const el = document.getElementById(id);
-  if (el && el.textContent !== newValue) {
-    el.style.transition = 'background-color 0.3s';
-    el.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
-    el.textContent = newValue;
-    setTimeout(() => { el.style.backgroundColor = ''; }, 300);
-  }
-}
-
-function updateTimestamp() {
-  const el = document.getElementById('last-updated');
-  if (el) el.textContent = formatTimestamp(lastUpdated.toISOString());
-}
-
-function startAutoRefresh() {
-  refreshMetrics();
-  refreshInterval = setInterval(refreshMetrics, 5000);
-  setInterval(updateTimestamp, 1000);
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    clearInterval(refreshInterval);
-    console.log('⏸ Dashboard refresh paused');
-  } else {
-    console.log('▶ Dashboard refresh resumed');
-    refreshMetrics();
-    refreshInterval = setInterval(refreshMetrics, 5000);
-  }
-});
-
-document.addEventListener('DOMContentLoaded', startAutoRefresh);
-</script>
-
 {% endblock %}
 
 {% block content %}
@@ -253,7 +112,7 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
 <div class="stat-row">
   <div class="card-premium stat-card">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Expected
-      Yield</div>
+      Rent Expected</div>
     <div style="font-size: 2rem; font-weight: 900; color: var(--primary);"><span id="expected-yield">₹{{ total_expected_rent|floatformat:0 }}</span>
     </div>
   </div>
@@ -261,6 +120,14 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Realized
       Revenue</div>
     <div style="font-size: 2rem; font-weight: 900; color: var(--success);"><span id="realized-revenue">₹{{ total_collected|floatformat:0 }}</span></div>
+  </div>
+  <div class="card-premium stat-card" style="border-top-color: var(--warning);">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Electricity Collected</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--warning);"><span id="electricity-collected">₹{{ total_electricity_collected|floatformat:0 }}</span></div>
+  </div>
+  <div class="card-premium stat-card" style="border-top-color: var(--danger);">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Electricity Expense</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--danger);"><span id="electricity-expense">₹{{ total_electricity_expense|floatformat:0 }}</span></div>
   </div>
   <div class="card-premium stat-card" style="border-top-color: var(--danger);">
     <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Accounts
@@ -273,6 +140,34 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
     <div style="font-size: 2rem; font-weight: 900; color: var(--primary);"><span id="efficiency">{{ collection_efficiency|floatformat:1 }}%</span>
     </div>
   </div>
+  <div class="card-premium stat-card" style="border-top-color: var(--warning);">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Maintenance Costs</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--warning);"><span id="maintenance-expenses">₹{{ total_maintenance_expenses|floatformat:0 }}</span></div>
+  </div>
+  <div class="card-premium stat-card" style="border-top-color: var(--success);">
+    <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Net Revenue</div>
+    <div style="font-size: 2rem; font-weight: 900; color: var(--success);"><span id="net-revenue">₹{{ net_revenue|floatformat:0 }}</span></div>
+  </div>
+</div>
+
+<div class="card-premium glass-panel" style="margin-bottom: 2rem;">
+  <h2 class="font-luxury" style="color: var(--primary); font-size: 1.25rem; margin-bottom: 1rem;">Add Maintenance Expense</h2>
+  <form id="maintenanceForm" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; align-items:end;">
+    {% csrf_token %}
+    <label>Building
+      <select name="building_name" class="input" required>
+        {% for code, count in building_occupancy.items %}<option value="{{ code }}">{{ code }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Category
+      <select name="category" class="input">{% for value, label in expense_categories %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+    </label>
+    <label>Amount<input name="amount" class="input" type="number" min="0.01" step="0.01" required></label>
+    <label>Date<input name="date" class="input" type="date" value="{% now 'Y-m-d' %}" required></label>
+    <label>Description<input name="description" class="input" required></label>
+    <button type="submit" class="btn-premium btn-premium-primary">Save Expense</button>
+  </form>
+  <div id="maintenanceMessage" style="margin-top:0.75rem; color:var(--text-muted);"></div>
 </div>
 
 <div class="perf-grid">
@@ -283,9 +178,10 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
       {% for b_name, count in building_occupancy.items %}
       <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
         <div
-          style="width: 100%; background: var(--grad-primary); border-radius: 4px 4px 0 0; height: {% widthratio count 10 100 %}%; transition: height 1s;">
+          id="occupancy-bar-{{ b_name }}" data-building="{{ b_name }}" data-residents="{{ count }}"
+          style="width: 100%; background: var(--grad-primary); border-radius: 4px 4px 0 0; height: {% widthratio count 12 100 %}%; transition: height 1s;">
         </div>
-        <span style="font-size: 0.65rem; font-weight: 800;">Bldg {{ b_name }}</span>
+        <span id="occupancy-label-{{ b_name }}" style="font-size: 0.65rem; font-weight: 800;">{{ b_name }}: {{ count }} residents</span>
       </div>
       {% endfor %}
     </div>
@@ -320,7 +216,12 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
   </div>
 </div>
 
-<div class="card-premium glass-panel" style="padding: 0; overflow: hidden;">
+<div id="auditControls" style="display:flex; gap:0.5rem; padding:0 0 1rem;">
+  <button type="button" class="btn-premium btn-premium-primary analytics-view-btn" data-view="rent" onclick="showAuditView('rent')">Room Rent Collections</button>
+  <button type="button" class="btn-premium btn-premium-secondary analytics-view-btn" data-view="expense" onclick="showAuditView('expense')">Expenses & Electricity</button>
+</div>
+
+<div id="rentAudit" class="card-premium glass-panel" style="padding: 0; overflow: hidden;">
   <div
     style="padding: 1.5rem; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
     <h2 class="font-luxury" style="color: var(--primary); font-size: 1.25rem;">Detailed Unit Audit</h2>
@@ -334,7 +235,9 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
           <th>Room</th>
           <th>Type</th>
           <th>Primary Resident</th>
-          <th>Price Point</th>
+          <th>Rent Collected</th>
+          <th>Electricity Collected</th>
+          <th class="expense-column">Electricity Expense</th>
           <th>Payment Status</th>
           <th>Net Status</th>
         </tr>
@@ -345,7 +248,9 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
           <td data-label="Room" style="font-weight: 800; color: var(--primary);">{{ rd.room_number }}</td>
           <td data-label="Type">{{ rd.room_type }}</td>
           <td data-label="Resident" style="font-weight: 700;">{{ rd.active_guest|default:"—" }}</td>
-          <td data-label="Price">₹{{ rd.price }}</td>
+          <td data-label="Rent Collected">₹{{ rd.rent_collected|floatformat:2 }}</td>
+          <td data-label="Electricity Collected">₹{{ rd.electricity_collected|floatformat:2 }}</td>
+          <td data-label="Electricity Expense" class="expense-column">₹{{ rd.electricity_expense|floatformat:2 }}</td>
           <td data-label="Payment">₹{{ rd.paid|floatformat:0 }} / ₹{{ rd.expected|floatformat:0 }}</td>
           <td data-label="Net Status">
             {% if rd.balance <= 0 %} <span class="badge-premium badge-success" style="font-size: 0.65rem;">CLEAR</span>
@@ -354,6 +259,31 @@ document.addEventListener('DOMContentLoaded', startAutoRefresh);
               {% endif %}
           </td>
         </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="expenseAudit" class="card-premium glass-panel" style="padding: 0; overflow: hidden; display:none;">
+  <div style="padding:1.5rem; border-bottom:1px solid var(--border-subtle);">
+    <h2 class="font-luxury" style="color:var(--primary); font-size:1.25rem;">Expenses & Electricity Collections</h2>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="data-table-luxury">
+      <thead><tr><th>Date</th><th>Building</th><th>Category</th><th>Description</th><th>Expense Cost</th><th>Collected</th></tr></thead>
+      <tbody>
+        {% for row in expense_rows %}
+        <tr>
+          <td data-label="Date">{{ row.date|date:'d M Y' }}</td>
+          <td data-label="Building">{{ row.building }}</td>
+          <td data-label="Category">{{ row.category }}</td>
+          <td data-label="Description">{{ row.description }}</td>
+          <td data-label="Expense Cost">₹{{ row.expense|floatformat:2 }}</td>
+          <td data-label="Collected">₹{{ row.collected|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No expenses or electricity records this month.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -383,12 +313,21 @@ async function refreshMetrics() {
       const m = data.metrics;
       updateValue('expected-yield', '₹' + m.expected_yield.toLocaleString('en-IN', {maximumFractionDigits: 0}));
       updateValue('realized-revenue', '₹' + m.realized_revenue.toLocaleString('en-IN', {maximumFractionDigits: 0}));
+      updateValue('electricity-collected', '₹' + m.electricity_collected.toLocaleString('en-IN', {maximumFractionDigits: 0}));
+      updateValue('electricity-expense', '₹' + m.electricity_expense.toLocaleString('en-IN', {maximumFractionDigits: 0}));
       updateValue('accounts-receivable', '₹' + m.accounts_receivable.toLocaleString('en-IN', {maximumFractionDigits: 0}));
       updateValue('efficiency', m.collection_efficiency.toFixed(1) + '%');
       updateValue('occupancy', m.occupancy_rate.toFixed(0) + '%');
+      Object.entries(m.resident_distribution || {}).forEach(([building, residents]) => {
+        const bar = document.getElementById(`occupancy-bar-${building}`);
+        const label = document.getElementById(`occupancy-label-${building}`);
+        if (bar) bar.style.height = `${Math.min((residents / 12) * 100, 100)}%`;
+        if (label) label.textContent = `${building}: ${residents} residents`;
+      });
+      updateValue('maintenance-expenses', '₹' + m.total_expenses.toLocaleString('en-IN', {maximumFractionDigits: 0}));
+      updateValue('net-revenue', '₹' + m.net_revenue.toLocaleString('en-IN', {maximumFractionDigits: 0}));
       lastUpdated = new Date(data.meta.last_updated);
       updateTimestamp();
-      console.log('✓ Dashboard metrics refreshed');
     }
   } catch (error) {
     console.error('Error refreshing metrics:', error);
@@ -419,15 +358,57 @@ function startAutoRefresh() {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     clearInterval(refreshInterval);
-    console.log('⏸ Dashboard refresh paused');
   } else {
-    console.log('▶ Dashboard refresh resumed');
     refreshMetrics();
     refreshInterval = setInterval(refreshMetrics, 5000);
   }
 });
 
 document.addEventListener('DOMContentLoaded', startAutoRefresh);
+
+function showAuditView(view) {
+  const showExpenses = view === 'expense';
+  const rentAudit = document.getElementById('rentAudit');
+  const expenseAudit = document.getElementById('expenseAudit');
+  if (rentAudit) rentAudit.style.display = showExpenses ? 'none' : '';
+  if (expenseAudit) expenseAudit.style.display = showExpenses ? '' : 'none';
+  document.querySelectorAll('.analytics-view-btn').forEach(button => {
+    const active = button.dataset.view === view;
+    button.className = active
+      ? 'btn-premium btn-premium-primary analytics-view-btn'
+      : 'btn-premium btn-premium-secondary analytics-view-btn';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const buttons = document.querySelectorAll('.analytics-view-btn');
+  const rentAudit = document.getElementById('rentAudit');
+  const expenseAudit = document.getElementById('expenseAudit');
+  buttons.forEach(button => button.addEventListener('click', () => {
+    showAuditView(button.dataset.view);
+  }));
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  async function refreshExpenseAudit() {
+    const response = await fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    const parsed = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const current = document.getElementById('expenseAudit');
+    const next = parsed.getElementById('expenseAudit');
+    if (current && next) current.replaceWith(next);
+  }
+
+  const form = document.getElementById('maintenanceForm');
+  if (!form) return;
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const message = document.getElementById('maintenanceMessage');
+    const response = await fetch('{% url "record_maintenance" %}', { method: 'POST', body: new FormData(form) });
+    const data = await response.json();
+    message.textContent = data.success ? 'Expense saved and analytics updated.' : (data.message || 'Unable to save expense.');
+    if (data.success) { form.reset(); await refreshExpenseAudit(); await refreshMetrics(); }
+  });
+});
 </script>
 
 {% endblock %}

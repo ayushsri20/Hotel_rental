@@ -26,31 +26,96 @@
 </head>
 
 <body>
-    <!-- Global Navigation -->
+    <!-- ── Top Navigation Bar ────────────────────────────────── -->
     <nav class="navigation-bar">
-        <a href="/" class="brand-logo">
-            <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Panesar PG Logo">
-            <span>IMPERIAL PORTAL</span>
-        </a>
+        <div style="display:flex;align-items:center;gap:1rem;">
+            <button class="hamburger-btn" onclick="toggleNavDrawer()" aria-label="Menu">☰</button>
+            <a href="/" class="brand-logo">
+                <img src="{% static 'rental/images/panesar-logo.png' %}" alt="Logo">
+                <span>PANESAR PG</span>
+            </a>
+        </div>
         <div class="nav-actions">
             {% if user.is_staff %}
-            <a href="{% url 'manage_users' %}" class="btn-premium btn-premium-secondary">Staff Access</a>
+            <a href="{% url 'manage_users' %}" class="btn-premium btn-premium-secondary" style="font-size:0.8rem;padding:0.45rem 0.9rem;">Admin</a>
             {% endif %}
-            <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="margin-left: 1rem;">End
-                Session</a>
+            <a href="{% url 'logout' %}" class="btn-premium btn-premium-primary" style="font-size:0.8rem;padding:0.45rem 0.9rem;margin-left:0.5rem;">Logout</a>
         </div>
     </nav>
+
+    <!-- ── Slide-Out Navigation Drawer ──────────────────────── -->
+    <div id="drawerOverlay" class="drawer-overlay" onclick="toggleNavDrawer()"></div>
+    <aside id="navDrawer" class="nav-drawer">
+        <div class="drawer-header">
+            <div class="drawer-title">PANESAR HOTELS</div>
+            <button class="drawer-close" onclick="toggleNavDrawer()">&times;</button>
+        </div>
+        <div class="drawer-body">
+
+            <div style="font-size:0.65rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem;">Modules</div>
+
+            {% if user.is_staff %}
+            <a href="{% url 'performance_dashboard' %}" class="drawer-menu-item">
+                <span class="item-icon">📊</span>
+                <span>Analytics</span>
+            </a>
+            {% endif %}
+
+            <a href="{% url 'manage_guests' %}" class="drawer-menu-item">
+                <span class="item-icon">👥</span>
+                <span>Residents</span>
+            </a>
+
+            <a href="{% url 'manage_payments' %}" class="drawer-menu-item">
+                <span class="item-icon">💳</span>
+                <span>Payments</span>
+            </a>
+
+            <a href="{% url 'manage_electricity_bills' %}" class="drawer-menu-item">
+                <span class="item-icon">⚡</span>
+                <span>Utilities</span>
+            </a>
+
+            <div style="font-size:0.65rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:1.5rem;margin-bottom:0.75rem;">Quick Actions</div>
+
+            <a href="{% url 'manage_guests' %}" class="drawer-menu-item">
+                <span class="item-icon">➕</span>
+                <span>Add Resident</span>
+            </a>
+
+            <a href="{% url 'manage_payments' %}" class="drawer-menu-item">
+                <span class="item-icon">💰</span>
+                <span>Record Payment</span>
+            </a>
+
+            <a href="{% url 'manage_electricity_bills' %}" class="drawer-menu-item">
+                <span class="item-icon">📝</span>
+                <span>Meter Reading</span>
+            </a>
+
+        </div>
+    </aside>
 
     <main class="container-premium">
         {% block content %}{% endblock %}
     </main>
 
     {% block footer %}
-    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem;">
-        &copy; {% now "Y" %} Panesar PG Hotel. All Rights Reserved.
+    <footer style="text-align:center;padding:1.5rem 2rem;color:var(--text-muted);font-size:0.8rem;border-top:1px solid var(--border-subtle);margin-top:2rem;">
+        &copy; {% now "Y" %} Panesar PG Hotel
     </footer>
     {% endblock %}
 
+    <script>
+    function toggleNavDrawer() {
+        const drawer = document.getElementById('navDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        if (drawer && overlay) {
+            drawer.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+    }
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 

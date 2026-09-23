@@ -11,8 +11,11 @@ from django.db.models import Sum, F, Case, When, DecimalField, Count
 from django.utils import timezone
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+import logging
 
-from .models import Room, Guest, MonthlyPayment, PaymentRecord, ElectricityBill, MaintenanceExpense
+from .models import Building, Room, Guest, MonthlyPayment, PaymentRecord, ElectricityBill, MaintenanceExpense
+
+logger = logging.getLogger(__name__)
 
 def is_admin(user):
     """Check if user is admin"""
@@ -36,11 +39,6 @@ def performance_dashboard(request):
         total_rooms = all_rooms.count()
         occupied_rooms = Guest.objects.filter(room__isnull=False, is_active=True).count()
         
-        # Calculate total collections
-        total_collected = PaymentRecord.objects.aggregate(
-            total=Sum('payment_amount', output_field=DecimalField())
-        )['total'] or Decimal('0.00')
-        
         # Get current month data
         today = date.today()
         current_month = date(today.year, today.month, 1)
@@ -49,10 +47,16 @@ def performance_dashboard(request):
         room_collections = []
         # Use Decimal accumulators to avoid float rounding errors
         acc_expected_monthly = Decimal('0.00')
-        acc_collected_this_month = Decimal('0.00')
+        acc_rent_collected = Decimal('0.00')
+        acc_electricity_collected = Decimal('0.00')
+        acc_electricity_expense = Decimal('0.00')
         acc_pending_amount = Decimal('0.00')
         for room in all_rooms:
             guest = Guest.objects.filter(room=room, is_active=True).first()
+
+            # Vacant rooms are inventory, not revenue-generating units.
+            if not guest:
+                continue
             
             # Get monthly payment for current month
             monthly_payment = MonthlyPayment.objects.filter(
@@ -62,21 +66,26 @@ def performance_dashboard(request):
             
             if monthly_payment:
                 monthly_rent = monthly_payment.rent_amount
-                collected = monthly_payment.paid_amount
-                pending = monthly_payment.remaining_amount()
+                bill = monthly_payment.room.electricity_bills.filter(month=current_month).first()
+                rent_collected = monthly_payment.paid_amount
+                electricity_collected = bill.paid_amount if bill else Decimal('0.00')
+                electricity_expense = bill.bill_amount if bill else Decimal('0.00')
+                pending = monthly_payment.get_total_remaining()
                 payment_status = monthly_payment.payment_status
                 monthly_payment_id = monthly_payment.id
             else:
-                # No payment record, prefer room's agreed_rent if set, otherwise use room.price
-                monthly_rent = room.agreed_rent if getattr(room, 'agreed_rent', None) is not None else room.price
-                collected = Decimal('0.00')
+                # No payment record: use the room's canonical effective rent.
+                monthly_rent = room.effective_rent
+                rent_collected = Decimal('0.00')
+                electricity_collected = Decimal('0.00')
+                electricity_expense = Decimal('0.00')
                 pending = monthly_rent
                 payment_status = 'pending'
                 monthly_payment_id = None
             
             # Calculate collection percentage
             if monthly_rent > 0:
-                collection_percentage = int((collected / monthly_rent) * 100)
+                collection_percentage = int((rent_collected / monthly_rent) * 100)
             else:
                 collection_percentage = 0
             
@@ -84,8 +93,10 @@ def performance_dashboard(request):
             collection_percentage = min(collection_percentage, 100)
             
             # update Decimal accumulators before converting to floats for the template
-            acc_expected_monthly += Decimal(monthly_rent)
-            acc_collected_this_month += Decimal(collected)
+            acc_expected_monthly += monthly_payment.get_total_amount_due() if monthly_payment else Decimal(monthly_rent)
+            acc_rent_collected += Decimal(rent_collected)
+            acc_electricity_collected += Decimal(electricity_collected)
+            acc_electricity_expense += Decimal(electricity_expense)
             acc_pending_amount += Decimal(pending)
 
             room_data = {
@@ -93,7 +104,10 @@ def performance_dashboard(request):
                 'room_type': room.get_room_type_display(),
                 'guest_name': f"{guest.first_name} {guest.last_name}" if guest else "Vacant",
                 'monthly_rent': float(monthly_rent),
-                'collected': float(collected),
+                'collected': float(rent_collected),
+                'rent_collected': float(rent_collected),
+                'electricity_collected': float(electricity_collected),
+                'electricity_expense': float(electricity_expense),
                 'pending': float(pending),
                 'collection_percentage': collection_percentage,
                 'payment_status': payment_status,
@@ -102,9 +116,49 @@ def performance_dashboard(request):
             room_collections.append(room_data)
         
         # Calculate summary statistics
-        total_expected_rent = acc_expected_monthly
-        total_collected = acc_collected_this_month
+        total_expected_rent = sum(
+            rc['monthly_rent'] for rc in room_collections
+        )
+        total_expected_rent = Decimal(str(total_expected_rent))
+        total_expected_due = acc_expected_monthly
+        total_collected = acc_rent_collected
+        total_electricity_collected = acc_electricity_collected
+        total_electricity_expense = acc_electricity_expense
         total_pending = acc_pending_amount
+
+        maintenance_expenses = MaintenanceExpense.objects.filter(
+            is_paid=True,
+            date__year=current_month.year,
+            date__month=current_month.month,
+        ).aggregate(
+            total=Sum('amount', output_field=DecimalField())
+        )['total'] or Decimal('0.00')
+        total_expenses = maintenance_expenses + total_electricity_expense
+        net_revenue = total_collected + total_electricity_collected - total_expenses
+
+        expense_rows = []
+        for bill in ElectricityBill.objects.filter(
+            month=current_month, guest__is_active=True
+        ).select_related('room'):
+            expense_rows.append({
+                'date': bill.month,
+                'building': bill.room.number.split('-', 1)[0],
+                'category': 'Electricity',
+                'description': f'Room {bill.room.number} electricity',
+                'expense': bill.bill_amount,
+                'collected': bill.paid_amount,
+            })
+        for expense in MaintenanceExpense.objects.filter(
+            is_paid=True, date__year=current_month.year, date__month=current_month.month
+        ):
+            expense_rows.append({
+                'date': expense.date,
+                'building': expense.building_name,
+                'category': expense.get_category_display(),
+                'description': expense.description,
+                'expense': expense.amount,
+                'collected': Decimal('0.00'),
+            })
         
         # Occupancy rate
         occupancy_rate = (occupied_rooms / total_rooms * 100) if total_rooms > 0 else 0
@@ -112,14 +166,11 @@ def performance_dashboard(request):
         # Collection efficiency
         collection_efficiency = (total_collected / total_expected_rent * 100) if total_expected_rent > 0 else 0
         
-        # Building occupancy breakdown
-        building_occupancy = {}
-        for room in all_rooms:
-            prefix = room.number.split('-')[0] if '-' in room.number else 'Other'
-            if prefix not in building_occupancy:
-                building_occupancy[prefix] = 0
-            if not room.is_available:
-                building_occupancy[prefix] += 1
+        # Count active residents by building, independent of manual room availability.
+        building_occupancy = {building.code: 0 for building in Building.objects.filter(is_active=True)}
+        for guest in Guest.objects.filter(is_active=True, room__isnull=False).select_related('room__building'):
+            code = guest.room.building.code if guest.room.building else guest.room.number.split('-', 1)[0]
+            building_occupancy[code] = building_occupancy.get(code, 0) + 1
 
         # Prepare room_data for the detailed table
         room_data = []
@@ -131,26 +182,36 @@ def performance_dashboard(request):
                 'price': rc['monthly_rent'],
                 'expected': rc['expected'] if 'expected' in rc else rc['monthly_rent'],
                 'paid': rc['collected'],
+                'rent_collected': rc['rent_collected'],
+                'electricity_collected': rc['electricity_collected'],
+                'electricity_expense': rc['electricity_expense'],
                 'balance': rc['pending'],
             })
 
         context = {
             'total_expected_rent': float(total_expected_rent),
+            'total_expected_due': float(total_expected_due),
             'total_collected': float(total_collected),
+            'total_electricity_collected': float(total_electricity_collected),
+            'total_electricity_expense': float(total_electricity_expense),
+            'total_electricity_due': float(total_expected_due - total_expected_rent),
+            'total_expenses': float(total_expenses),
             'total_pending': float(total_pending),
+            'total_maintenance_expenses': float(maintenance_expenses),
+            'net_revenue': float(net_revenue),
             'collection_efficiency': float(collection_efficiency),
             'occupancy_rate': float(occupancy_rate),
             'building_occupancy': building_occupancy,
+            'expense_categories': MaintenanceExpense.EXPENSE_CATEGORIES,
             'room_data': room_data,
+            'expense_rows': expense_rows,
             'electricity_bills': [], # Fallback for now
         }
         
         return render(request, 'performance_dashboard.html', context)
     
     except Exception as e:
-        print(f"Error in performance_dashboard: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("Error in performance_dashboard")
         
         # Return with empty context on error
         context = {
@@ -271,7 +332,7 @@ def record_payment_from_dashboard(request):
         })
     
     except Exception as e:
-        print(f"Error recording payment: {str(e)}")
+        logger.exception("Error recording payment from dashboard")
         return JsonResponse({
             'success': False,
             'message': f'Error recording payment: {str(e)}'
@@ -346,7 +407,7 @@ def record_bill_payment_from_dashboard(request):
         })
     
     except Exception as e:
-        print(f"Error recording bill payment: {str(e)}")
+        logger.exception("Error recording bill payment from dashboard")
         return JsonResponse({
             'success': False,
             'message': f'Error recording payment: {str(e)}'
@@ -392,5 +453,5 @@ def record_maintenance(request):
         return JsonResponse({'success': True, 'message': 'Maintenance expense recorded', 'expense_id': expense.id})
 
     except Exception as e:
-        print(f"Error recording maintenance expense: {str(e)}")
+        logger.exception("Error recording maintenance expense")
         return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)

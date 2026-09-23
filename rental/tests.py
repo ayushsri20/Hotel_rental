@@ -2,8 +2,10 @@ from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.conf import settings
-from .models import Room, ElectricityBill, Guest
+from .models import Building, Room, ElectricityBill, Guest, MonthlyPayment, PaymentRecord, MaintenanceExpense
 from django.core.files.uploadedfile import SimpleUploadedFile
+from decimal import Decimal
+from datetime import date
 import json
 
 
@@ -257,3 +259,262 @@ class GuestFileUploadTests(TestCase):
         guest.refresh_from_db()
         self.assertEqual(guest.first_name, 'Updated')
         self.assertTrue(guest.govt_id_photo)
+
+
+@override_settings(
+    MIDDLEWARE=[m for m in settings.MIDDLEWARE if 'LoginRequiredMiddleware' not in m],
+    APPEND_SLASH=False
+)
+class GuestCheckInPaymentTests(TestCase):
+    """Auto-generated rent must use negotiated agreed_rent, not list price."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser(
+            username='admin', email='admin@example.com', password='password'
+        )
+        self.room = Room.objects.create(
+            number='C-301',
+            room_type='double',
+            price=2000.0,
+            is_available=True,
+        )
+        self.client.force_login(self.admin)
+
+    def test_add_guest_monthly_payment_uses_agreed_rent(self):
+        data = {
+            'first_name': 'Priya',
+            'last_name': 'Shah',
+            'email': 'priya@test.com',
+            'phone': '9876543299',
+            'room_id': str(self.room.id),
+            'check_in_date': date.today().isoformat(),
+            'agreed_rent': '7000',
+        }
+        response = self.client.post(reverse('add_guest'), data)
+        self.assertEqual(response.status_code, 200)
+        resp = json.loads(response.content)
+        self.assertTrue(resp.get('success'), f"Error: {resp.get('message')}")
+
+        payment = MonthlyPayment.objects.filter(room=self.room).first()
+        self.assertIsNotNone(payment)
+        self.assertEqual(payment.rent_amount, Decimal('7000.00'))
+        self.room.refresh_from_db()
+        self.assertEqual(self.room.agreed_rent, Decimal('7000.00'))
+
+    def test_guest_save_uses_existing_agreed_rent(self):
+        self.room.agreed_rent = Decimal('6500.00')
+        self.room.save()
+        guest = Guest.objects.create(
+            first_name='Amit',
+            last_name='Kumar',
+            room=self.room,
+            is_active=True,
+            check_in_date=date.today(),
+        )
+        payment = MonthlyPayment.objects.get(room=self.room, guest=guest)
+        self.assertEqual(payment.rent_amount, Decimal('6500.00'))
+
+    def test_room_effective_rent_is_used_when_guest_rent_is_omitted(self):
+        self.room.price = Decimal('8000.00')
+        self.room.agreed_rent = Decimal('7001.00')
+        self.room.save()
+        response = self.client.post(reverse('add_guest'), {
+            'first_name': 'Real',
+            'last_name': 'Tenant',
+            'room_id': str(self.room.id),
+            'check_in_date': date.today().isoformat(),
+            'agreed_rent': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        payment = MonthlyPayment.objects.get(room=self.room)
+        self.assertEqual(payment.rent_amount, Decimal('7001.00'))
+        self.room.refresh_from_db()
+        self.assertEqual(self.room.effective_rent, Decimal('7001.00'))
+
+
+@override_settings(
+    MIDDLEWARE=[m for m in settings.MIDDLEWARE if 'LoginRequiredMiddleware' not in m],
+    APPEND_SLASH=False
+)
+class BuildingRoomIntegrationTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser(
+            username='building-admin', email='building@example.com', password='password'
+        )
+        self.client.force_login(self.admin)
+        self.building = Building.objects.create(code='G', name='Building 6')
+
+    def test_add_room_requires_and_persists_building(self):
+        response = self.client.post(reverse('add_room'), {
+            'room_number': 'G-101',
+            'building_id': self.building.id,
+            'room_type': 'double',
+            'price': '8000',
+            'capacity': '2',
+        })
+        self.assertEqual(response.status_code, 200)
+        room = Room.objects.get(number='G-101')
+        self.assertEqual(room.building, self.building)
+
+    def test_room_rent_update_only_changes_unpaid_current_month(self):
+        room = Room.objects.create(
+            number='G-102', building=self.building, room_type='single', price=5000
+        )
+        month = date.today().replace(day=1)
+        unpaid = MonthlyPayment.objects.create(room=room, month=month, rent_amount=5000)
+        paid = MonthlyPayment.objects.create(
+            room=room, month=date(2020, 1, 1), rent_amount=5000,
+            paid_amount=Decimal('1000'), payment_status='partial'
+        )
+        response = self.client.post(reverse('update_room', args=[room.id]), {
+            'number': room.number,
+            'room_type': room.room_type,
+            'capacity': room.capacity,
+            'price': '6000',
+            'agreed_rent': '6500',
+            'building_id': self.building.id,
+            'is_available': 'true',
+        })
+        self.assertEqual(response.status_code, 200)
+        unpaid.refresh_from_db()
+        paid.refresh_from_db()
+        self.assertEqual(unpaid.rent_amount, Decimal('6500.00'))
+        self.assertEqual(paid.rent_amount, Decimal('5000.00'))
+
+    def test_management_pages_render_for_admin(self):
+        for route_name in ('manage_buildings', 'manage_guests', 'manage_payments', 'manage_electricity_bills'):
+            response = self.client.get(reverse(route_name))
+            self.assertEqual(response.status_code, 200, route_name)
+
+    def test_tenancy_form_exposes_building_and_room_data(self):
+        room = Room.objects.create(
+            number='G-105', building=self.building, room_type='double',
+            price=8000, agreed_rent=7001,
+        )
+        response = self.client.get(reverse('manage_guests'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="formBuilding"')
+        self.assertContains(response, 'Building 6 (G)')
+        self.assertContains(response, room.number)
+        self.assertContains(response, 'effective_rent')
+
+    def test_room_rent_flows_into_monthly_payment_form(self):
+        room = Room.objects.create(
+            number='G-103', building=self.building, room_type='double',
+            price=8000, agreed_rent=7001,
+        )
+        response = self.client.post(reverse('create_monthly_payment'), {
+            'room_id': room.id,
+            'month': date.today().strftime('%Y-%m'),
+        })
+        self.assertEqual(response.status_code, 200)
+        payment = MonthlyPayment.objects.get(room=room)
+        self.assertEqual(payment.rent_amount, Decimal('7001.00'))
+
+    def test_assignment_form_lists_all_rooms_and_rejects_closed_room(self):
+        closed_room = Room.objects.create(
+            number='G-104', building=self.building, room_type='double',
+            price=7000, is_available=False,
+        )
+        response = self.client.get(reverse('manage_guests'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'is_available')
+
+        response = self.client.post(reverse('add_guest'), {
+            'first_name': 'Closed',
+            'last_name': 'Room',
+            'room_id': closed_room.id,
+            'check_in_date': date.today().isoformat(),
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('closed', response.json()['message'].lower())
+
+    def test_vacant_rooms_are_excluded_from_analytics_and_expenses_are_included(self):
+        occupied = Room.objects.create(
+            number='G-106', building=self.building, room_type='single', price=6000,
+        )
+        Room.objects.create(
+            number='G-107', building=self.building, room_type='single', price=9000,
+        )
+        Guest.objects.create(
+            first_name='Occupied', last_name='Tenant', room=occupied,
+            check_in_date=date.today(), is_active=True,
+        )
+        MaintenanceExpense.objects.create(
+            building_name='G', category='repairs', amount=Decimal('1000'),
+            date=date.today(), description='Repair', is_paid=True,
+        )
+        MaintenanceExpense.objects.create(
+            building_name='G', category='repairs', amount=Decimal('5000'),
+            date=date(2020, 1, 15), description='Historical repair', is_paid=True,
+        )
+        response = self.client.get(reverse('performance_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_expected_rent'], 6000.0)
+        self.assertEqual(response.context['total_maintenance_expenses'], 1000.0)
+        self.assertEqual(response.context['net_revenue'], -1000.0)
+        self.assertTrue(any(row['category'] == 'General Repairs' for row in response.context['expense_rows']))
+
+        metrics = self.client.get(reverse('dashboard_metrics_api')).json()['metrics']
+        self.assertEqual(metrics['resident_distribution']['G'], 1)
+
+        response = self.client.post(reverse('record_maintenance'), {
+            'building_name': 'G', 'category': 'cleaning', 'amount': '250',
+            'date': date.today().isoformat(), 'description': 'Cleaning',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+
+    def test_ledger_rejects_overpayment(self):
+        room = Room.objects.create(
+            number='G-108', building=self.building, room_type='single', price=6000,
+        )
+        payment = MonthlyPayment.objects.create(
+            room=room, month=date.today().replace(day=1), rent_amount=Decimal('6000.00')
+        )
+        response = self.client.post(reverse('record_payment'), {
+            'payment_id': payment.id,
+            'payment_amount': '6001',
+            'payment_date': date.today().isoformat(),
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(PaymentRecord.objects.filter(monthly_payment=payment).count(), 0)
+
+    def test_electricity_is_included_once_in_ledger_and_dashboard_totals(self):
+        room = Room.objects.create(
+            number='G-109', building=self.building, room_type='single', price=7001,
+        )
+        guest = Guest.objects.create(
+            first_name='Utility', last_name='Tenant', room=room,
+            check_in_date=date.today(), is_active=True,
+        )
+        month = date.today().replace(day=1)
+        payment = MonthlyPayment.objects.get(room=room)
+        ElectricityBill.objects.create(
+            room=room, guest=guest, month=month, starting_reading=10,
+            ending_reading=20, units_consumed=10, rate_per_unit=8,
+            bill_amount=Decimal('80.00'), paid_amount=Decimal('30.00'),
+            due_date=date.today(),
+        )
+        payment.refresh_from_db()
+        self.assertEqual(payment.get_total_amount_due(), Decimal('7081.00'))
+        self.assertEqual(payment.get_total_remaining(), Decimal('7051.00'))
+
+        response = self.client.get(reverse('performance_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_expected_rent'], 7001.0)
+        self.assertEqual(response.context['total_expected_due'], 7081.0)
+        self.assertEqual(response.context['total_collected'], 0.0)
+        self.assertEqual(response.context['total_electricity_collected'], 30.0)
+        self.assertEqual(response.context['total_electricity_expense'], 80.0)
+
+        response = self.client.get(reverse('dashboard_metrics_api'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['metrics']['expected_yield'], 7001.0)
+        self.assertEqual(response.json()['metrics']['expected_total_due'], 7081.0)
+        self.assertEqual(response.json()['metrics']['realized_revenue'], 0.0)
+        self.assertEqual(response.json()['metrics']['electricity_collected'], 30.0)
+        self.assertEqual(response.json()['metrics']['electricity_expense'], 80.0)
+        self.assertEqual(response.json()['metrics']['net_revenue'], -50.0)

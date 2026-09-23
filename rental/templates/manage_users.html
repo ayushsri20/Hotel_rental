@@ -218,6 +218,15 @@
 
 {% block scripts %}
 <script>
+    async function refreshUserView() {
+        const response = await fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const parsed = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const nextContent = parsed.querySelector('main')?.innerHTML;
+        const currentContent = document.querySelector('main');
+        if (nextContent && currentContent) currentContent.innerHTML = nextContent;
+        bindUserForms();
+    }
+
     function openAddModal() {
         document.getElementById('addUserForm').reset();
         document.getElementById('addModal').style.display = 'flex';
@@ -242,29 +251,35 @@
         }
     }
 
-    document.getElementById('addUserForm').onsubmit = async (e) => {
+    function bindUserForms() {
+    const addForm = document.getElementById('addUserForm');
+    const editForm = document.getElementById('editUserForm');
+    if (addForm) addForm.onsubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         formData.set('is_staff', document.getElementById('addIsStaff').checked);
         const res = await fetch(`/api/user/add/`, { method: 'POST', body: formData });
-        if ((await res.json()).success) location.reload(); else alert('Provisioning Error');
+        if ((await res.json()).success) { document.getElementById('addModal').style.display = 'none'; await refreshUserView(); } else alert('Provisioning Error');
     };
 
-    document.getElementById('editUserForm').onsubmit = async (e) => {
+    if (editForm) editForm.onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('editUserId').value;
         const formData = new FormData(e.target);
         formData.set('is_staff', document.getElementById('editIsStaff').checked);
         const res = await fetch(`/api/user/${id}/update/`, { method: 'POST', body: formData });
-        if ((await res.json()).success) location.reload(); else alert('Credential Update Error');
+        if ((await res.json()).success) { document.getElementById('editModal').style.display = 'none'; await refreshUserView(); } else alert('Credential Update Error');
     };
+    }
+
+    bindUserForms();
 
     async function deleteUser(id) {
         if (!confirm('Evict staff member from portal?')) return;
         const fd = new FormData();
         fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
         const res = await fetch(`/api/user/${id}/delete/`, { method: 'POST', body: fd });
-        if ((await res.json()).success) location.reload(); else alert('De-provisioning Error');
+        if ((await res.json()).success) await refreshUserView(); else alert('De-provisioning Error');
     }
 </script>
 {% endblock %}

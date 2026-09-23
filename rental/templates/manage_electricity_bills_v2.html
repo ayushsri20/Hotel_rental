@@ -245,6 +245,13 @@
 
 {% block scripts %}
 <script>
+  async function refreshElectricityView() {
+    const response = await fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    const parsed = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const nextContent = parsed.querySelector('main')?.innerHTML;
+    const currentContent = document.querySelector('main');
+    if (nextContent && currentContent) currentContent.innerHTML = nextContent;
+  }
   // Modal functions
   function closeModal(e) {
     if (e.target.id === 'bulkBillModal' || e.target.classList.contains('modal-overlay')) {
@@ -410,7 +417,8 @@
 
       if (data.success) {
         alert(`✓ Successfully generated ${data.created_count} electricity bills!`);
-        location.reload();
+        document.getElementById('bulkBillModal').style.display = 'none';
+        await refreshElectricityView();
       } else {
         alert('Error: ' + data.message);
         btn.disabled = false;

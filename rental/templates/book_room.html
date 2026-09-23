@@ -41,9 +41,19 @@
     font-size: 0.875rem;
   }
 
+  .booking-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
   @media (max-width: 480px) {
     .room-preview {
       padding: 1.5rem;
+    }
+
+    .booking-fields {
+      grid-template-columns: 1fr;
     }
   }
 </style>
@@ -64,7 +74,7 @@
 
     <form method="POST">
       {% csrf_token %}
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+      <div class="booking-fields">
         <div class="form-group">
           <label>First Name</label>
           <input type="text" name="first_name" class="input" required placeholder="John">

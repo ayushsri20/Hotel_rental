@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 import json
 from django.db import transaction
 from django.db.models import Sum, Q, Avg
-from .models import Room, Booking, Guest, MonthlyPayment, PaymentRecord, ElectricityBill
+from .models import Building, Room, Booking, Guest, MonthlyPayment, PaymentRecord, ElectricityBill
 from collections import defaultdict
 from datetime import datetime
 from django.utils import timezone
@@ -219,21 +219,10 @@ def dashboard(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def manage_buildings(request):
-    rooms = Room.objects.all().order_by('number')
-    
-    # Group rooms by building
-    buildings = defaultdict(list)
-    for room in rooms:
-        building_name = room.number.split('-')[0]
-        buildings[building_name].append(room)
-    
-    sorted_buildings = sorted(buildings.items())
-    
-    # Apply display name mapping
-    mapped_buildings = [(get_building_display_name(code), rooms) for code, rooms in sorted_buildings]
-    
+    buildings = Building.objects.prefetch_related('rooms').filter(is_active=True)
     context = {
-        'buildings': mapped_buildings,
+        'buildings': [(building, building.rooms.all().order_by('number')) for building in buildings],
+        'all_buildings': buildings,
         'room_types': Room.ROOM_TYPES,
     }
     
@@ -318,18 +307,7 @@ def manage_guests(request):
         'without_room': guests.filter(room__isnull=True).count(),
     }
     
-    # Generate dynamic building list from existing rooms
-    building_prefixes = set()
-    
-    for room in rooms:
-        prefix = room.number.split('-')[0] if '-' in room.number else room.number[0]
-        building_prefixes.add(prefix)
-    
-    # Sort and convert to list with display names using centralized mapping
-    buildings = sorted([
-        {'prefix': prefix, 'name': get_building_full_name(prefix)}
-        for prefix in building_prefixes
-    ], key=lambda x: x['prefix'])
+    buildings = list(Building.objects.filter(is_active=True).order_by('code'))
     
     # Prepare rich room data for JS filtering
     rooms_data = []
@@ -337,10 +315,17 @@ def manage_guests(request):
         rooms_data.append({
             'id': r.id,
             'number': r.number,
+            'building_id': r.building_id,
+            'building_code': r.building.code if r.building else '',
+            'building_name': r.building.name if r.building else 'Unassigned',
             'type': r.room_type,
+            'price': str(r.price),
+            'agreed_rent': str(r.agreed_rent) if r.agreed_rent is not None else '',
+            'effective_rent': str(r.effective_rent),
             'capacity': r.capacity,
             'occupancy': r.current_occupancy,
             'is_full': r.is_full,
+            'is_available': r.is_available,
             'tenants': [{'id': t.id, 'name': t.full_name} for t in r.get_active_tenants()]
         })
 
@@ -371,6 +356,9 @@ def update_room(request, room_id):
             room.number = new_number
 
         room.room_type = request.POST.get('room_type', room.room_type)
+        building_id = request.POST.get('building_id')
+        if building_id:
+            room.building = get_object_or_404(Building, id=building_id, is_active=True)
         room.capacity = int(request.POST.get('capacity', room.capacity))
         # Support per-room negotiated rent (agreed_rent). If provided, persist it.
         room.price = float(request.POST.get('price', room.price))
@@ -382,6 +370,10 @@ def update_room(request, room_id):
                 pass
         room.is_available = request.POST.get('is_available') == 'true'
         room.save()
+        current_month = timezone.now().date().replace(day=1)
+        MonthlyPayment.objects.filter(room=room, month=current_month, paid_amount=0).update(
+            rent_amount=room.effective_rent
+        )
         
         return JsonResponse({
             'success': True,
@@ -394,6 +386,7 @@ def update_room(request, room_id):
                 'price': str(room.price),
                 'agreed_rent': str(room.agreed_rent) if room.agreed_rent is not None else None,
                 'is_available': room.is_available,
+                'building_id': room.building_id,
             }
         })
     except Exception as e:
@@ -408,6 +401,7 @@ def update_room(request, room_id):
 def add_room(request):
     try:
         room_number = request.POST.get('room_number')
+        building_id = request.POST.get('building_id')
         room_type = request.POST.get('room_type')
         price = float(request.POST.get('price', 0))
         capacity = int(request.POST.get('capacity', 1))
@@ -424,9 +418,14 @@ def add_room(request):
                 'success': False,
                 'message': f'Room {room_number} already exists'
             }, status=400)
+
+        if not building_id:
+            return JsonResponse({'success': False, 'message': 'Building is required'}, status=400)
+        building = get_object_or_404(Building, id=building_id, is_active=True)
         
         room = Room.objects.create(
             number=room_number,
+            building=building,
             room_type=room_type,
             price=price,
             capacity=capacity,
@@ -445,6 +444,7 @@ def add_room(request):
                     'price': str(room.price),
                     'agreed_rent': str(room.agreed_rent) if room.agreed_rent is not None else None,
                 'is_available': room.is_available,
+                'building_id': room.building_id,
             }
         })
     except Exception as e:
@@ -471,6 +471,35 @@ def delete_room(request, room_id):
             'success': False,
             'message': str(e)
         }, status=400)
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def add_building(request):
+    code = request.POST.get('code', '').strip().upper()
+    name = request.POST.get('name', '').strip()
+    if not code or not name:
+        return JsonResponse({'success': False, 'message': 'Building code and name are required'}, status=400)
+    if Building.objects.filter(code=code).exists():
+        return JsonResponse({'success': False, 'message': 'Building code already exists'}, status=400)
+    building = Building.objects.create(code=code, name=name)
+    return JsonResponse({'success': True, 'building': {'id': building.id, 'code': building.code, 'name': building.name}})
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def update_building(request, building_id):
+    building = get_object_or_404(Building, id=building_id)
+    code = request.POST.get('code', building.code).strip().upper()
+    name = request.POST.get('name', building.name).strip()
+    if not code or not name:
+        return JsonResponse({'success': False, 'message': 'Building code and name are required'}, status=400)
+    if Building.objects.filter(code=code).exclude(id=building.id).exists():
+        return JsonResponse({'success': False, 'message': 'Building code already exists'}, status=400)
+    building.code = code
+    building.name = name
+    building.save()
+    return JsonResponse({'success': True, 'building': {'id': building.id, 'code': building.code, 'name': building.name}})
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
@@ -518,10 +547,17 @@ def add_guest(request):
             try: return datetime.strptime(d, '%Y-%m-%d').date()
             except: return None
 
-        # Get room and agreed_rent
+        # The room's effective rent is the source of truth. An explicit rent in this
+        # form is treated as a deliberate negotiated override for this room.
         room_id = request.POST.get('room_id') or None
+        room = None
         if room_id:
             room = get_object_or_404(Room, id=room_id)
+            if not room.is_available:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Room {room.number} is currently closed for allocation'
+                }, status=400)
             if room.is_full:
                  return JsonResponse({
                     'success': False,
@@ -533,6 +569,17 @@ def add_guest(request):
         
         # Use transaction to ensure atomicity
         with transaction.atomic():
+            if room:
+                if agreed_rent_str:
+                    try:
+                        negotiated_rent = Decimal(agreed_rent_str)
+                        if negotiated_rent <= 0:
+                            raise ValueError
+                        room.agreed_rent = negotiated_rent
+                    except (ValueError, ArithmeticError):
+                        return JsonResponse({'success': False, 'message': 'Invalid agreed rent'}, status=400)
+                room.save()
+
             guest = Guest.objects.create(
                 first_name=first_name,
                 last_name=last_name,
@@ -556,7 +603,7 @@ def add_guest(request):
                 occupancy_preference=occupancy_preference,
             )
             
-            # Room status update and agreed_rent handling
+            # Room status update
             if guest.room:
                 # Refresh room data from database to get accurate occupancy
                 guest.room.refresh_from_db()
@@ -564,16 +611,7 @@ def add_guest(request):
                 # Mark as not available only if it reached capacity
                 if guest.room.is_full:
                     guest.room.is_available = False
-                
-                # Set agreed_rent on the room if provided (default ₹7000)
-                if agreed_rent_str:
-                    try:
-                        guest.room.agreed_rent = float(agreed_rent_str)
-                    except ValueError:
-                        guest.room.agreed_rent = 7000  # Default
-                elif not guest.room.agreed_rent:
-                    guest.room.agreed_rent = 7000  # Default if not set
-                guest.room.save()
+                    guest.room.save()
 
             if 'govt_id_photo' in request.FILES:
                 guest.govt_id_photo = request.FILES['govt_id_photo']
@@ -725,6 +763,12 @@ def update_guest(request, guest_id):
                 if new_room_id:
                     new_room = Room.objects.get(id=new_room_id)
                     new_room.refresh_from_db()
+
+                    if not new_room.is_available:
+                        return JsonResponse({
+                            'success': False,
+                            'message': f'Room {new_room.number} is currently closed for allocation'
+                        }, status=400)
                     
                     # We check if NEW room is full (excluding the guest themselves if they were already there, 
                     # but here guest.room_id != new_room_id so they weren't)
@@ -836,9 +880,7 @@ def checkout_guest(request, guest_id):
             'message': f'Guest {guest.full_name} checked out successfully. Room {room.number if room else "N/A"} now has a free slot.'
         })
     except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        print(f"CHECKOUT ERROR for guest {guest_id}: {error_details}") # Print to console/logs
+        logger.exception("Checkout error for guest %s", guest_id)
         return JsonResponse({'success': False, 'message': f"System Error: {str(e)}"}, status=400)
 
 @login_required(login_url='login')
@@ -1061,22 +1103,32 @@ def manage_payments(request):
     
     # Current month analytics
     current_month_payments = all_payments.filter(month=current_month)
-    current_month_revenue = sum(p.paid_amount for p in current_month_payments)
-    current_month_expected = sum(p.rent_amount for p in current_month_payments)
-    current_month_pending = sum(p.remaining_amount() for p in current_month_payments)
+    current_month_payments = current_month_payments.filter(guest__is_active=True)
+    current_month_revenue = sum(
+        p.paid_amount + (p.room.electricity_bills.filter(month=current_month).first().paid_amount
+                         if p.room.electricity_bills.filter(month=current_month).first() else Decimal('0.00'))
+        for p in current_month_payments
+    )
+    current_month_expected = sum(p.get_total_amount_due() for p in current_month_payments)
+    current_month_pending = sum(p.get_total_remaining() for p in current_month_payments)
     
     # Overall analytics
     total_collected = PaymentRecord.objects.aggregate(
         total=Sum('payment_amount', output_field=DecimalField())
     )['total'] or Decimal('0.00')
+    total_collected += ElectricityBill.objects.filter(guest__is_active=True).aggregate(
+        total=Sum('paid_amount', output_field=DecimalField())
+    )['total'] or Decimal('0.00')
+
+    active_payments = all_payments.filter(guest__is_active=True)
     
     total_pending = sum(
-        p.remaining_amount() for p in all_payments.filter(
+        p.get_total_remaining() for p in active_payments.filter(
             payment_status__in=['pending', 'partial', 'overdue']
         )
     )
     
-    total_expected = sum(p.rent_amount for p in all_payments)
+    total_expected = sum(p.get_total_amount_due() for p in active_payments)
     
     # Collection rate calculation
     collection_rate = 0
@@ -1092,7 +1144,7 @@ def manage_payments(request):
     }
     
     # Overdue payments (older than current month and not paid)
-    overdue_payments = all_payments.filter(
+    overdue_payments = active_payments.filter(
         month__lt=current_month,
         payment_status__in=['pending', 'partial']
     ).order_by('month')
@@ -1112,8 +1164,13 @@ def manage_payments(request):
         trend_month = date(trend_month.year, trend_month.month, 1)
         
         trend_payments = all_payments.filter(month=trend_month)
-        trend_collected = sum(p.paid_amount for p in trend_payments)
-        trend_expected = sum(p.rent_amount for p in trend_payments)
+        trend_payments = trend_payments.filter(guest__is_active=True)
+        trend_collected = sum(
+            p.paid_amount + (p.room.electricity_bills.filter(month=trend_month).first().paid_amount
+                             if p.room.electricity_bills.filter(month=trend_month).first() else Decimal('0.00'))
+            for p in trend_payments
+        )
+        trend_expected = sum(p.get_total_amount_due() for p in trend_payments)
         
         monthly_trends.append({
             'month': trend_month.strftime('%b %Y'),
@@ -1266,12 +1323,9 @@ def create_monthly_payment(request):
         except Room.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Room not found'}, status=404)
         
-        # If rent_amount not provided, use agreed_rent if set, otherwise room.price
-        if not rent_amount or rent_amount <= 0:
-            if getattr(room, 'agreed_rent', None) is not None:
-                rent_amount = float(room.agreed_rent)
-            else:
-                rent_amount = float(room.price)
+        # If no amount is supplied, always use the room's effective rent.
+        if rent_amount is None or rent_amount <= 0:
+            rent_amount = room.effective_rent
 
         # Parse month - handle both YYYY-MM-DD and YYYY-MM formats
         try:
@@ -1328,10 +1382,10 @@ def record_payment(request):
         
         # Validate and parse amount
         try:
-            payment_amount = float(request.POST.get('payment_amount', 0))
+            payment_amount = Decimal(request.POST.get('payment_amount', '0'))
             if payment_amount <= 0:
                 return JsonResponse({'success': False, 'message': 'Payment amount must be greater than 0'}, status=400)
-        except ValueError:
+        except (ValueError, TypeError, ArithmeticError):
             return JsonResponse({'success': False, 'message': 'Invalid payment amount'}, status=400)
         
         # Validate and parse date
@@ -1350,6 +1404,12 @@ def record_payment(request):
         notes = request.POST.get('notes', '').strip()
         
         monthly_payment = get_object_or_404(MonthlyPayment, id=payment_id)
+
+        if payment_amount > monthly_payment.remaining_amount():
+            return JsonResponse({
+                'success': False,
+                'message': f'Payment amount exceeds remaining balance of ₹{monthly_payment.remaining_amount()}'
+            }, status=400)
         
         # Create payment record
         record = PaymentRecord.objects.create(
@@ -1515,12 +1575,8 @@ def ensure_monthly_payment_exists(room, month, guest=None):
     if not guest:
         guest = Guest.objects.filter(room=room, is_active=True).first()
     
-    # Determine rent amount (from guest's agreed rent or room's default rent)
-    rent_amount = Decimal('7000.00')  # Default fallback
-    if guest and hasattr(guest, 'agreed_rent') and guest.agreed_rent:
-        rent_amount = Decimal(str(guest.agreed_rent))
-    elif hasattr(room, 'rent_amount') and room.rent_amount:
-        rent_amount = Decimal(str(room.rent_amount))
+    # Room effective rent is the single source of truth for new rent records.
+    rent_amount = room.effective_rent
     
     # Get or create monthly payment
     monthly_payment, created = MonthlyPayment.objects.get_or_create(
@@ -1687,10 +1743,14 @@ def record_electricity_payment(request):
     """Record electricity bill payment"""
     try:
         bill_id = request.POST.get('bill_id')
-        paid_amount = float(request.POST.get('paid_amount', 0))
+        paid_amount = Decimal(request.POST.get('paid_amount', '0'))
+        if paid_amount <= 0:
+            return JsonResponse({'success': False, 'message': 'Payment amount must be greater than 0'}, status=400)
         paid_date = request.POST.get('paid_date')
         
         bill = get_object_or_404(ElectricityBill, id=bill_id)
+        if paid_amount > bill.remaining_amount():
+            return JsonResponse({'success': False, 'message': 'Payment exceeds the electricity balance'}, status=400)
         bill.paid_amount += paid_amount
         
         if bill.paid_amount >= bill.bill_amount:
@@ -1773,8 +1833,11 @@ def booking_page(request):
 def get_available_rooms(request):
     """Get list of available rooms"""
     try:
-        # Get only available rooms
-        available_rooms = Room.objects.filter(is_available=True)
+        # Return open and not-full rooms only; allocation UI uses the richer
+        # manage-guests payload to display closed/full rooms as disabled.
+        available_rooms = Room.objects.filter(is_available=True).annotate(
+            active_tenant_count=Count('guest', filter=Q(guest__is_active=True))
+        ).filter(active_tenant_count__lt=Room.MAX_CAPACITY)
         
         rooms_data = [{
             'id': room.id,
@@ -1916,7 +1979,7 @@ def submit_booking(request):
                 month=current,
                 defaults={
                     'guest': guest,
-                    'rent_amount': (room.agreed_rent if getattr(room, 'agreed_rent', None) is not None else room.price),
+                    'rent_amount': room.effective_rent,
                     'paid_amount': 0,
                     'payment_status': 'pending',
                 }
@@ -1936,7 +1999,7 @@ def submit_booking(request):
             'booking_id': booking.id
         }
         
-        print(f"✓ Booking created successfully: {json.dumps(console_log_data, indent=2)}")
+        logger.info("Booking created: %s", console_log_data)
         
         return JsonResponse({
             'success': True,
@@ -1946,7 +2009,7 @@ def submit_booking(request):
         })
         
     except Exception as e:
-        print(f"✗ Booking error: {str(e)}")
+        logger.exception("Booking creation error")
         return JsonResponse({
             'success': False,
             'message': f'Error creating booking: {str(e)}'
@@ -2067,7 +2130,15 @@ def update_payment_record(request, record_id):
         old_amount = record.payment_amount
         raw_amount = request.POST.get('payment_amount', str(old_amount))
         new_amount = Decimal(raw_amount)
+        if new_amount <= 0:
+            return JsonResponse({'success': False, 'message': 'Payment amount must be greater than 0'}, status=400)
         
+        existing_total = PaymentRecord.objects.filter(
+            monthly_payment=monthly_payment
+        ).exclude(id=record.id).aggregate(total=Sum('payment_amount'))['total'] or Decimal('0.00')
+        if existing_total + new_amount > monthly_payment.rent_amount:
+            return JsonResponse({'success': False, 'message': 'Payment total cannot exceed the rent amount'}, status=400)
+
         record.payment_amount = new_amount
         date_str = request.POST.get('payment_date')
         if date_str:
@@ -2080,7 +2151,7 @@ def update_payment_record(request, record_id):
         # Recalculate total paid for the month
         total_paid = PaymentRecord.objects.filter(monthly_payment=monthly_payment).aggregate(
             total=Sum('payment_amount'))['total'] or Decimal('0.00')
-        
+
         monthly_payment.paid_amount = total_paid
         # Update status
         if monthly_payment.paid_amount >= monthly_payment.rent_amount:

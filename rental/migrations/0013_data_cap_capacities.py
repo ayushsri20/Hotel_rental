@@ -2,6 +2,9 @@
 Data migration to cap all room capacities at 2 tenants and report any issues.
 """
 from django.db import migrations
+import logging
+
+logger = logging.getLogger(__name__)
 
 def cap_room_capacities(apps, schema_editor):
     """Cap all room capacities at 2 and report any rooms with >2 active tenants"""
@@ -27,26 +30,18 @@ def cap_room_capacities(apps, schema_editor):
                 'active_tenants': active_tenants
             })
     
-    # Print summary
-    print(f"\n{'='*60}")
-    print(f"Room Capacity Migration Summary")
-    print(f"{'='*60}")
-    print(f"✅ Updated {updated_count} rooms to capacity=2")
-    
     if problem_rooms:
-        print(f"\n⚠️  WARNING: {len(problem_rooms)} rooms have MORE than 2 active tenants:")
-        print(f"{'='*60}")
-        for room in problem_rooms:
-            print(f"  Room {room['room_number']}: {room['active_tenants']} tenants (was capacity {room['old_capacity']})")
-        print(f"\n⚠️  ACTION REQUIRED: Manually reassign excess tenants!")
+        logger.warning(
+            "Capacity migration found %s rooms with more than 2 active tenants: %s",
+            len(problem_rooms),
+            problem_rooms,
+        )
     else:
-        print(f"\n✅ No rooms with >2 active tenants found")
-    
-    print(f"{'='*60}\n")
+        logger.info("Capacity migration capped %s rooms at 2 tenants", updated_count)
 
 def reverse_cap(apps, schema_editor):
     """Reverse migration - restore original capacities (not recommended)"""
-    print("⚠️  Reverse migration: Room capacities remain at 2 (original values not stored)")
+    logger.warning("Reverse migration cannot restore original room capacities")
 
 class Migration(migrations.Migration):
 

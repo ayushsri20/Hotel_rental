@@ -1,3 +1,6 @@
+  padding: 0.75rem;
+  max-width: 560px;
+  margin: 0 auto;
 {% extends 'base.html' %}
 {% load static %}
 
@@ -166,12 +169,14 @@
   /* Enhanced Payment Cards */
   .ledger-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.5rem;
   }
 
   .ledger-card {
-    padding: 0;
+    padding: 0.5rem;
+    max-width: 560px;
+    margin: 0 auto;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -824,12 +829,12 @@
         📝 Record Payment
       </button>
       <button class="quick-action-btn" onclick="viewDetails('{{ payment.id }}')">
+        📊 View History
+      </button>
         <button class="quick-action-btn"
           onclick="openGenerateBillModal('{{ payment.room.id }}', '{{ payment.room.number }}', '{{ payment.month|date:'Y-m-d' }}')">
           ⚡ Generate Bill
         </button>
-        📊 View History
-      </button>
     </div>
   </div>
   {% empty %}
@@ -1154,6 +1159,12 @@
 
 {% block scripts %}
 <script>
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    return parts.length === 2 ? parts.pop().split(';').shift() : '{{ csrf_token }}';
+  }
+
   // Modal functions
   function closeModal(e) {
     if (e.target.classList.contains('modal-overlay')) {
@@ -1211,7 +1222,7 @@
     // Fetch payments for selected month
     fetch(`/api/payments/by-month/?month=${selectedMonth}`)
       .then(response => response.json())
-      .then(data => {
+      .then(async data => {
         if (data.success) {
           window.currentMonthPayments = data.payments; // Store for search
           renderTenantOptions(data.payments);
@@ -1343,6 +1354,20 @@
     switchView(savedView);
   });
 
+  async function refreshPaymentData() {
+    const response = await fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    const html = await response.text();
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    ['.analytics-grid', '#paymentsGrid', '#paymentsTable'].forEach(selector => {
+      const current = document.querySelector(selector);
+      const next = parsed.querySelector(selector);
+      if (current && next) current.replaceWith(next);
+    });
+    initializeMonthSelector();
+    await loadPaymentsForMonth();
+    switchView(localStorage.getItem('ledgerView') || 'grid');
+  }
+
   // Payment form submission
   document.getElementById('paymentForm').onsubmit = async (e) => {
     e.preventDefault();
@@ -1353,7 +1378,8 @@
     const data = await res.json();
     if (data.success) {
       showToast(data.message, 'success');
-      setTimeout(() => location.reload(), 1500);
+      document.getElementById('addPaymentModal').style.display = 'none';
+      await refreshPaymentData();
     } else {
       showToast(data.message || 'Error recording payment', 'error');
     }
@@ -1384,7 +1410,8 @@
     const data = await res.json();
     if (data.success) {
       showToast('Payment updated successfully', 'success');
-      setTimeout(() => location.reload(), 1500);
+      document.getElementById('editPaymentModal').style.display = 'none';
+      await refreshPaymentData();
     } else {
       showToast(data.message || 'Error updating payment', 'error');
     }
@@ -1400,7 +1427,7 @@
     const data = await res.json();
     if (data.success) {
       showToast('Payment deleted successfully', 'success');
-      setTimeout(() => location.reload(), 1500);
+      await refreshPaymentData();
     } else {
       showToast(data.message || 'Error deleting payment', 'error');
     }
@@ -1475,8 +1502,19 @@
 
   // Export data
   function exportData(format) {
-    showToast('Export feature coming soon!', 'success');
-    // TODO: Implement export functionality
+    if (format !== 'csv') return;
+    const rows = [['Room', 'Tenant', 'Month', 'Status', 'Rent', 'Utilities', 'Total Due', 'Paid', 'Remaining']];
+    document.querySelectorAll('#paymentsTable tbody tr.payment-row-table').forEach(row => {
+      rows.push(Array.from(row.children).slice(0, 9).map(cell => cell.textContent.trim().replace(/\s+/g, ' ')));
+    });
+    const csv = rows.map(row => row.map(value => `"${value.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `rental-ledger-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast('Ledger exported successfully', 'success');
   }
 
   // View payment history
@@ -1484,7 +1522,7 @@
     // Fetch payment history for this monthly payment
     fetch(`/api/room/payment/${paymentId}/records/`)
       .then(response => response.json())
-      .then(data => {
+      .then(async data => {
         if (data.success) {
           displayPaymentHistory(data.payment, data.records);
         } else {
@@ -1556,7 +1594,7 @@
     // Fetch record details and populate edit modal
     fetch(`/api/payment-record/${recordId}/`)
       .then(response => response.json())
-      .then(data => {
+      .then(async data => {
         if (data.success) {
           document.getElementById('editRecordId').value = recordId;
           document.getElementById('editAmount').value = data.record.amount;
@@ -1592,13 +1630,12 @@
       }
     })
       .then(response => response.json())
-      .then(data => {
+      .then(async data => {
         if (data.success) {
           showToast('Payment record deleted successfully', 'success');
           // Refresh history
           viewDetails(paymentId);
-          // Reload page to update totals
-          setTimeout(() => location.reload(), 1000);
+          await refreshPaymentData();
         } else {
           showToast(data.message || 'Error deleting record', 'error');
         }
@@ -1641,7 +1678,6 @@
         document.getElementById('billPreviousReading').value = parseFloat(latestBill.ending_reading || (latestBill.units + 13)); // Approximate
       }
     } catch (error) {
-      console.log('Could not fetch previous reading, using default');
     }
   }
 
@@ -1678,7 +1714,7 @@
           `Amount: ₹${data.bill.bill_amount}`);
 
         document.getElementById('generateBillModal').style.display = 'none';
-        location.reload(); // Reload to show updated totals
+        await refreshPaymentData();
       } else {
         alert(`✗ Error: ${data.message}`);
       }

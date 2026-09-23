@@ -41,6 +41,10 @@ class Command(BaseCommand):
         skipped_count = 0
         
         for guest in active_guests:
+            if not guest.room:
+                skipped_count += 1
+                continue
+
             # Check if payment already exists for this room and month
             existing_payment = MonthlyPayment.objects.filter(
                 room=guest.room,
@@ -55,12 +59,12 @@ class Command(BaseCommand):
                 )
                 skipped_count += 1
             else:
-                # Create monthly payment with room's agreed rent
+                rent_amount = guest.room.effective_rent
                 MonthlyPayment.objects.create(
                     room=guest.room,
                     guest=guest,
                     month=payment_month,
-                    rent_amount=guest.room.price,  # Use room's price as rent amount
+                    rent_amount=rent_amount,
                     paid_amount=Decimal('0.00'),
                     payment_status='pending',
                     notes=f'Auto-generated monthly rent for {payment_month.strftime("%B %Y")}'
@@ -68,7 +72,7 @@ class Command(BaseCommand):
                 
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"✅ Room {guest.room.number} ({guest.full_name}): Created ₹{guest.room.price}"
+                        f"✅ Room {guest.room.number} ({guest.full_name}): Created ₹{rent_amount}"
                     )
                 )
                 created_count += 1

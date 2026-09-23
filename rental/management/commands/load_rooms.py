@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from rental.models import Room
+from rental.models import Building, Room
 
 
 class Command(BaseCommand):
@@ -7,6 +7,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """Create 36 rooms across 6 buildings (M1, 1-5) with 6 rooms each"""
+
+        buildings = {
+            'A': Building.objects.get_or_create(code='A', defaults={'name': 'M1'})[0],
+            'B': Building.objects.get_or_create(code='B', defaults={'name': '1'})[0],
+            'C': Building.objects.get_or_create(code='C', defaults={'name': '2'})[0],
+            'D': Building.objects.get_or_create(code='D', defaults={'name': '3'})[0],
+            'E': Building.objects.get_or_create(code='E', defaults={'name': '4'})[0],
+            'F': Building.objects.get_or_create(code='F', defaults={'name': '5'})[0],
+        }
         
         # M1 Complex (A) - Premium building
         m1_rooms = [
@@ -80,8 +89,10 @@ class Command(BaseCommand):
         
         for room_number, room_type, price in all_rooms:
             if not Room.objects.filter(number=room_number).exists():
+                building_code = room_number.split('-', 1)[0]
                 Room.objects.create(
                     number=room_number,
+                    building=buildings[building_code],
                     room_type=room_type,
                     price=price,
                     is_available=True

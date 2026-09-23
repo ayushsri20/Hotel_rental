@@ -2,6 +2,22 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
+class Building(models.Model):
+    """A managed building containing rental rooms."""
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['code']
+
+    def __str__(self):
+        return self.name
+
+
 class Room(models.Model):
     """Room model with strict 2-tenant maximum capacity"""
     
@@ -14,6 +30,13 @@ class Room(models.Model):
         ('suite', 'Suite'),
     ]
     number = models.CharField(max_length=10, unique=True)
+    building = models.ForeignKey(
+        Building,
+        on_delete=models.PROTECT,
+        related_name='rooms',
+        null=True,
+        blank=True,
+    )
     room_type = models.CharField(max_length=10, choices=ROOM_TYPES)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     agreed_rent = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Per-room negotiated rent (overrides price when set)")
@@ -54,6 +77,11 @@ class Room(models.Model):
         AND has not reached physical capacity.
         """
         return self.is_available and not self.is_full
+
+    @property
+    def effective_rent(self):
+        """Negotiated rent when set, otherwise the listed room price."""
+        return self.agreed_rent if self.agreed_rent is not None else self.price
     
     def clean(self):
         """Validate room capacity does not exceed system maximum"""
@@ -65,6 +93,10 @@ class Room(models.Model):
         if self.capacity < 1:
             raise ValidationError({
                 'capacity': 'Room capacity must be at least 1.'
+            })
+        if self.pk and self.capacity < self.current_occupancy:
+            raise ValidationError({
+                'capacity': f'Room has {self.current_occupancy} active tenants and cannot have a lower capacity.'
             })
     
     def save(self, *args, **kwargs):
@@ -211,6 +243,9 @@ class Guest(models.Model):
         from datetime import datetime
         from decimal import Decimal
         
+        # Enforce model validation (capacity checks, dates, fields)
+        self.full_clean()
+
         # Check if this is a new guest or if they're being activated
         is_new = self.pk is None
         was_inactive = False
@@ -245,7 +280,7 @@ class Guest(models.Model):
                     room=self.room,
                     guest=self,
                     month=current_month,
-                    rent_amount=self.room.price,
+                    rent_amount=self.room.effective_rent,
                     paid_amount=Decimal('0.00'),
                     payment_status='pending',
                     notes=f'Auto-generated on check-in for {self.full_name}'
@@ -302,7 +337,11 @@ class MonthlyPayment(models.Model):
     
     def get_total_remaining(self):
         """Calculate total remaining amount including electricity"""
-        return self.get_total_amount_due() - self.paid_amount
+        from decimal import Decimal
+
+        electricity_bill = self.room.electricity_bills.filter(month=self.month).first()
+        electricity_remaining = electricity_bill.remaining_amount() if electricity_bill else Decimal('0.00')
+        return self.remaining_amount() + electricity_remaining
 
 
 class PaymentRecord(models.Model):
@@ -361,6 +400,19 @@ class ElectricityBill(models.Model):
     def __str__(self):
         return f"{self.room.number} - {self.month.strftime('%B %Y')} - ₹{self.bill_amount}"
     
+    def save(self, *args, **kwargs):
+        """Ensure units_consumed and bill_amount are precisely calculated on save"""
+        from decimal import Decimal, ROUND_HALF_UP
+
+        if self.starting_reading is not None and self.ending_reading is not None:
+            starting_reading = Decimal(str(self.starting_reading))
+            ending_reading = Decimal(str(self.ending_reading))
+            self.units_consumed = ending_reading - starting_reading
+            if self.rate_per_unit:
+                raw_amount = self.units_consumed * Decimal(str(self.rate_per_unit))
+                self.bill_amount = raw_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        super().save(*args, **kwargs)
+
     def remaining_amount(self):
         return self.bill_amount - self.paid_amount
 

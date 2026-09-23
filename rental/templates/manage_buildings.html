@@ -144,9 +144,31 @@
 </div>
 
 <div class="card-premium add-room-section glass-panel">
+  <h3 class="font-luxury" style="margin-bottom: 1.5rem; color: var(--primary);">Manage Buildings</h3>
+  <form id="addBuildingForm" class="add-room-form" style="margin-bottom: 2rem;">
+    {% csrf_token %}
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Building Code</label>
+      <input type="text" id="newBuildingCode" class="room-input" placeholder="e.g., G" maxlength="20" required style="width: 100%;">
+    </div>
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Building Name</label>
+      <input type="text" id="newBuildingName" class="room-input" placeholder="e.g., Building 6" required style="width: 100%;">
+    </div>
+    <button type="submit" class="btn-premium btn-premium-primary">Add Building</button>
+  </form>
   <h3 class="font-luxury" style="margin-bottom: 1.5rem; color: var(--primary);">➕ Add New Room</h3>
   <form id="addRoomForm" class="add-room-form">
     {% csrf_token %}
+    <div class="form-group">
+      <label style="font-size: 0.75rem;">Building</label>
+      <select id="newRoomBuilding" class="room-input" required style="width: 100%;">
+        <option value="">Select building</option>
+        {% for building in all_buildings %}
+        <option value="{{ building.id }}">{{ building.name }} ({{ building.code }})</option>
+        {% endfor %}
+      </select>
+    </div>
     <div class="form-group">
       <label style="font-size: 0.75rem;">Room Number</label>
       <input type="text" id="newRoomNumber" class="room-input" placeholder="e.g., G-01" required style="width: 100%;">
@@ -185,7 +207,11 @@
   {% for building_name, rooms_list in buildings %}
   <div class="card-premium building-card" style="padding: 0;">
     <div class="building-header" style="background: var(--grad-primary); color: white; padding: 1rem;">
-      <div class="font-luxury" style="font-size: 1.25rem;">Building {{ building_name }}</div>
+      <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        <input class="room-input building-code" value="{{ building_name.code }}" style="width:70px;">
+        <input class="room-input building-name" value="{{ building_name.name }}" style="min-width:150px;">
+        <button class="btn-premium btn-premium-secondary btn-building-save" data-id="{{ building_name.id }}" style="padding:0.35rem 0.6rem;">Save</button>
+      </div>
       <div style="font-size: 0.7rem; opacity: 0.8;">{{ rooms_list|length }} Units</div>
     </div>
 
@@ -209,9 +235,9 @@
             </td>
             <td data-label="Type">
               <select class="room-input room-type" style="width: 90px;">
-                <option value="single" {% if room.room_type=='single' %}selected{% endif %}>Single</option>
-                <option value="double" {% if room.room_type=='double' %}selected{% endif %}>Double</option>
-                <option value="suite" {% if room.room_type=='suite' %}selected{% endif %}>Suite</option>
+                <option value="single" {% if room.room_type == 'single' %}selected{% endif %}>Single</option>
+                <option value="double" {% if room.room_type == 'double' %}selected{% endif %}>Double</option>
+                <option value="suite" {% if room.room_type == 'suite' %}selected{% endif %}>Suite</option>
               </select>
             </td>
             <td data-label="Capacity">
@@ -274,13 +300,27 @@
     const alertEl = type === 'success' ? document.getElementById('successAlert') : document.getElementById('errorAlert');
     alertEl.textContent = message;
     alertEl.style.display = 'block';
-    setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+    setTimeout(() => { alertEl.style.display = 'none'; }, 4000)blob:vscode-file://vscode-app/336b8fa7-afae-4534-ae7a-84ce77f402a7;
+  }
+
+  async function refreshInventory() {
+    const response = await fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    const html = await response.text();
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const nextGrid = parsed.querySelector('.building-grid');
+    const currentGrid = document.querySelector('.building-grid');
+    if (nextGrid && currentGrid) currentGrid.replaceWith(nextGrid);
+    const nextBuildingOptions = parsed.querySelector('#newRoomBuilding')?.innerHTML;
+    const currentBuildingOptions = document.querySelector('#newRoomBuilding');
+    if (nextBuildingOptions && currentBuildingOptions) currentBuildingOptions.innerHTML = nextBuildingOptions;
+    bindInventoryActions();
   }
 
   document.getElementById('addRoomForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData();
     formData.append('room_number', document.getElementById('newRoomNumber').value);
+    formData.append('building_id', document.getElementById('newRoomBuilding').value);
     formData.append('room_type', document.getElementById('newRoomType').value);
     formData.append('capacity', document.getElementById('newRoomCapacity').value);
     formData.append('price', document.getElementById('newRoomPrice').value);
@@ -292,9 +332,46 @@
       const data = await response.json();
       if (data.success) {
         showAlert(data.message, 'success');
-        setTimeout(() => location.reload(), 1000);
+        e.target.reset();
+        await refreshInventory();
       } else showAlert(data.message, 'error');
     } catch (error) { showAlert('Error: ' + error.message, 'error'); }
+  });
+
+  document.getElementById('addBuildingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    formData.append('code', document.getElementById('newBuildingCode').value);
+    formData.append('name', document.getElementById('newBuildingName').value);
+    try {
+      const response = await fetch('{% url "add_building" %}', { method: 'POST', body: formData });
+      const data = await response.json();
+      if (data.success) {
+        showAlert('Building added successfully', 'success');
+        e.target.reset();
+        await refreshInventory();
+      } else showAlert(data.message, 'error');
+    } catch (error) { showAlert('Error: ' + error.message, 'error'); }
+  });
+
+  function bindInventoryActions() {
+  document.querySelectorAll('.btn-building-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const header = btn.closest('.building-header');
+      const formData = new FormData();
+      formData.append('code', header.querySelector('.building-code').value);
+      formData.append('name', header.querySelector('.building-name').value);
+      formData.append('csrfmiddlewaretoken', csrftoken);
+      try {
+        const response = await fetch(`/api/building/${btn.dataset.id}/update/`, { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.success) {
+          showAlert('Building updated successfully', 'success');
+          await refreshInventory();
+        }
+        else showAlert(data.message, 'error');
+      } catch (error) { showAlert('Error: ' + error.message, 'error'); }
+    });
   });
 
   document.querySelectorAll('.btn-save').forEach(btn => {
@@ -313,7 +390,10 @@
       try {
         const response = await fetch(`/api/room/${roomId}/update/`, { method: 'POST', body: formData });
         const data = await response.json();
-        if (data.success) showAlert(data.message, 'success');
+        if (data.success) {
+          showAlert(data.message, 'success');
+          await refreshInventory();
+        }
         else showAlert(data.message, 'error');
       } catch (error) { showAlert('Error: ' + error.message, 'error'); }
     });
@@ -330,10 +410,13 @@
         const data = await response.json();
         if (data.success) {
           showAlert(data.message, 'success');
-          setTimeout(() => location.reload(), 1000);
+          await refreshInventory();
         } else showAlert(data.message, 'error');
       } catch (error) { showAlert('Error: ' + error.message, 'error'); }
     });
   });
+  }
+
+  bindInventoryActions();
 </script>
 {% endblock %}

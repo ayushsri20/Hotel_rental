@@ -137,3 +137,7 @@ Thumbs.db
 
 # Local development
 *.sqlite3
+
+# Sensitive/local files
+CREDENTIALS.md
+cookies.txt
